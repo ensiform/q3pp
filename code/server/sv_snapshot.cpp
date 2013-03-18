@@ -86,9 +86,9 @@ static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to,
 
 		if ( newnum == oldnum ) {
 			// delta update from old position
-			// because the force parm is qfalse, this will not result
+			// because the force parm is false, this will not result
 			// in any bytes being emited if the entity has not changed at all
-			MSG_WriteDeltaEntity (msg, oldent, newent, qfalse );
+			MSG_WriteDeltaEntity (msg, oldent, newent, false );
 			oldindex++;
 			newindex++;
 			continue;
@@ -96,14 +96,14 @@ static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to,
 
 		if ( newnum < oldnum ) {
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity (msg, &sv.svEntities[newnum].baseline, newent, qtrue );
+			MSG_WriteDeltaEntity (msg, &sv.svEntities[newnum].baseline, newent, true );
 			newindex++;
 			continue;
 		}
 
 		if ( newnum > oldnum ) {
 			// the old entity isn't present in the new message
-			MSG_WriteDeltaEntity (msg, oldent, NULL, qtrue );
+			MSG_WriteDeltaEntity (msg, oldent, NULL, true );
 			oldindex++;
 			continue;
 		}
@@ -290,7 +290,7 @@ SV_AddEntitiesVisibleFromPoint
 ===============
 */
 static void SV_AddEntitiesVisibleFromPoint( vec3_t origin, clientSnapshot_t *frame, 
-									snapshotEntityNumbers_t *eNums, qboolean portal ) {
+									snapshotEntityNumbers_t *eNums, bool portal ) {
 	int		e, i;
 	sharedEntity_t *ent;
 	svEntity_t	*svEnt;
@@ -420,7 +420,7 @@ static void SV_AddEntitiesVisibleFromPoint( vec3_t origin, clientSnapshot_t *fra
 					continue;
 				}
 			}
-			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue );
+			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, true );
 		}
 
 	}
@@ -489,7 +489,7 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 
 	// add all the entities directly visible to the eye, which
 	// may include portal entities that merge other viewpoints
-	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, qfalse );
+	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, false );
 
 	// if there were portals visible, there may be out of order entities
 	// in the list which will need to be resorted for the delta compression
@@ -608,7 +608,7 @@ void SV_SendClientSnapshot( client_t *client ) {
 	}
 
 	MSG_Init (&msg, msg_buf, sizeof(msg_buf));
-	msg.allowoverflow = qtrue;
+	msg.allowoverflow = true;
 
 	// NOTE, MRE: all server->client messages now acknowledge
 	// let the client know which reliable clientCommands we have received
@@ -658,7 +658,7 @@ void SV_SendClientMessages(void)
 
 		if(c->netchan.unsentFragments || c->netchan_start_queue)
 		{
-			c->rateDelayed = qtrue;
+			c->rateDelayed = true;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
 
@@ -673,7 +673,7 @@ void SV_SendClientMessages(void)
 			if(SV_RateMsec(c) > 0)
 			{
 				// Not enough time since last packet passed through the line
-				c->rateDelayed = qtrue;
+				c->rateDelayed = true;
 				continue;
 			}
 		}
@@ -681,6 +681,6 @@ void SV_SendClientMessages(void)
 		// generate and send a new message
 		SV_SendClientSnapshot(c);
 		c->lastSnapshotTime = svs.time;
-		c->rateDelayed = qfalse;
+		c->rateDelayed = false;
 	}
 }

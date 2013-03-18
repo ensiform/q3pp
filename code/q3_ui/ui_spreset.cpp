@@ -152,17 +152,17 @@ void UI_ResetMenu(void) {
 
 	s_reset.menu.draw       = Reset_MenuDraw;
 	s_reset.menu.key        = Reset_MenuKey;
-	s_reset.menu.wrapAround = qtrue;
+	s_reset.menu.wrapAround = true;
 
 	trap_GetClientState( &cstate );
 
 	if ( cstate.connState >= CA_CONNECTED ) {
 		// float on top of running game
-		s_reset.menu.fullscreen = qfalse;
+		s_reset.menu.fullscreen = false;
 	}
 	else {
 		// game not running
-		s_reset.menu.fullscreen = qtrue;
+		s_reset.menu.fullscreen = true;
 	}
 
 	s_reset.yes.generic.type		= MTYPE_PTEXT;      

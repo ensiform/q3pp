@@ -175,18 +175,18 @@ static void R_SetupEntityLightingGrid( trRefEntity_t *ent, world_t *world ) {
 		byte	*data;
 		int		lat, lng;
 		vec3_t	normal;
-		qboolean ignore;
+		bool ignore;
 		#if idppc
 		float d0, d1, d2, d3, d4, d5;
 		#endif
 		factor = 1.0;
 		data = gridData;
-		ignore = qfalse;
+		ignore = false;
 		for ( j = 0 ; j < 3 ; j++ ) {
 			if ( i & (1<<j) ) {
 				if ((pos[j] + 1) >= world->lightGridBounds[j] - 1)
 				{
-					ignore = qtrue; // ignore values outside lightgrid
+					ignore = true; // ignore values outside lightgrid
 				}
 				factor *= frac[j];
 				data += gridStep[j];
@@ -327,7 +327,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	if ( ent->lightingCalculated ) {
 		return;
 	}
-	ent->lightingCalculated = qtrue;
+	ent->lightingCalculated = true;
 
 	//
 	// trace a sample point down to find ambient light
@@ -418,7 +418,7 @@ int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, ve
 	trRefEntity_t ent;
 	
 	if ( tr.world->lightGridData == NULL )
-	  return qfalse;
+	  return false;
 
 	Com_Memset(&ent, 0, sizeof(ent));
 	VectorCopy( point, ent.e.origin );
@@ -427,7 +427,7 @@ int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, ve
 	VectorCopy(ent.directedLight, directedLight);
 	VectorCopy(ent.lightDir, lightDir);
 
-	return qtrue;
+	return true;
 }
 
 
@@ -436,12 +436,12 @@ int R_LightDirForPoint( vec3_t point, vec3_t lightDir, vec3_t normal, world_t *w
 	trRefEntity_t ent;
 	
 	if ( world->lightGridData == NULL )
-	  return qfalse;
+	  return false;
 
 	Com_Memset(&ent, 0, sizeof(ent));
 	VectorCopy( point, ent.e.origin );
 	R_SetupEntityLightingGrid( &ent, world );
 	VectorCopy(ent.lightDir, lightDir);
 
-	return qtrue;
+	return true;
 }

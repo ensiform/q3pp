@@ -111,8 +111,8 @@ void RankStatus_MenuInit( void ) {
 
 	RankStatus_Cache();
 
-	s_rankstatus.menu.wrapAround = qtrue;
-	s_rankstatus.menu.fullscreen = qfalse;
+	s_rankstatus.menu.wrapAround = true;
+	s_rankstatus.menu.fullscreen = false;
 
 	s_rankstatus.frame.generic.type			= MTYPE_BITMAP;
 	s_rankstatus.frame.generic.flags		= QMF_INACTIVE;

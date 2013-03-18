@@ -72,7 +72,7 @@ static ingamemenu_t	s_ingame;
 InGame_RestartAction
 =================
 */
-static void InGame_RestartAction( qboolean result ) {
+static void InGame_RestartAction( bool result ) {
 	if( !result ) {
 		return;
 	}
@@ -87,7 +87,7 @@ static void InGame_RestartAction( qboolean result ) {
 InGame_QuitAction
 =================
 */
-static void InGame_QuitAction( qboolean result ) {
+static void InGame_QuitAction( bool result ) {
 	if( !result ) {
 		return;
 	}
@@ -165,8 +165,8 @@ void InGame_MenuInit( void ) {
 
 	InGame_Cache();
 
-	s_ingame.menu.wrapAround = qtrue;
-	s_ingame.menu.fullscreen = qfalse;
+	s_ingame.menu.wrapAround = true;
+	s_ingame.menu.fullscreen = false;
 
 	s_ingame.frame.generic.type			= MTYPE_BITMAP;
 	s_ingame.frame.generic.flags		= QMF_INACTIVE;

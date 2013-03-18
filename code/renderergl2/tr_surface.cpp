@@ -78,7 +78,7 @@ void RB_CheckVBOandIBO(VBO_t *vbo, IBO_t *ibo)
 	}
 
 	if (vbo != tess.vbo && ibo != tess.ibo)
-		tess.useInternalVBO = qfalse;
+		tess.useInternalVBO = false;
 }
 
 
@@ -414,19 +414,19 @@ static void RB_SurfaceVertsAndTris( int numVerts, srfVert_t *verts, int numTrian
 	tess.numVertexes += numVerts;
 }
 
-static qboolean RB_SurfaceVbo(VBO_t *vbo, IBO_t *ibo, int numVerts, int numIndexes, int firstIndex, int minIndex, int maxIndex, int dlightBits, int pshadowBits, qboolean shaderCheck)
+static bool RB_SurfaceVbo(VBO_t *vbo, IBO_t *ibo, int numVerts, int numIndexes, int firstIndex, int minIndex, int maxIndex, int dlightBits, int pshadowBits, bool shaderCheck)
 {
 	int i, mergeForward, mergeBack;
 	GLvoid *firstIndexOffset, *lastIndexOffset;
 
 	if (!vbo || !ibo)
 	{
-		return qfalse;
+		return false;
 	}
 
 	if (shaderCheck && !(!ShaderRequiresCPUDeforms(tess.shader) && !tess.shader->isSky && !tess.shader->isPortal))
 	{
-		return qfalse;
+		return false;
 	}
 
 	RB_CheckVBOandIBO(vbo, ibo);
@@ -514,7 +514,7 @@ static qboolean RB_SurfaceVbo(VBO_t *vbo, IBO_t *ibo, int numVerts, int numIndex
 	tess.numIndexes  += numIndexes;
 	tess.numVertexes += numVerts;
 
-	return qtrue;
+	return true;
 }
 
 /*
@@ -524,7 +524,7 @@ RB_SurfaceTriangles
 */
 static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 	if( RB_SurfaceVbo (srf->vbo, srf->ibo, srf->numVerts, srf->numTriangles * 3,
-				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, qtrue ) )
+				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, true ) )
 	{
 		return;
 	}
@@ -1249,7 +1249,7 @@ RB_SurfaceFace
 */
 static void RB_SurfaceFace( srfSurfaceFace_t *srf ) {
 	if( RB_SurfaceVbo (srf->vbo, srf->ibo, srf->numVerts, srf->numTriangles * 3,
-				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, qtrue ) )
+				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, true ) )
 	{
 		return;
 	}
@@ -1318,7 +1318,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *srf ) {
 	//int		*vDlightBits;
 
 	if( RB_SurfaceVbo (srf->vbo, srf->ibo, srf->numVerts, srf->numTriangles * 3,
-				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, qtrue ) )
+				srf->firstIndex, srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, true ) )
 	{
 		return;
 	}
@@ -1577,7 +1577,7 @@ static void RB_SurfaceFlare(srfFlare_t *surf)
 static void RB_SurfaceVBOMesh(srfVBOMesh_t * srf)
 {
 	RB_SurfaceVbo (srf->vbo, srf->ibo, srf->numVerts, srf->numIndexes, srf->firstIndex,
-			srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, qfalse );
+			srf->minIndex, srf->maxIndex, srf->dlightBits, srf->pshadowBits, false );
 }
 
 void RB_SurfaceVBOMDVMesh(srfVBOMDVMesh_t * surface)
@@ -1598,7 +1598,7 @@ void RB_SurfaceVBOMDVMesh(srfVBOMDVMesh_t * surface)
 	R_BindVBO(surface->vbo);
 	R_BindIBO(surface->ibo);
 
-	tess.useInternalVBO = qfalse;
+	tess.useInternalVBO = false;
 
 	tess.numIndexes += surface->numIndexes;
 	tess.numVertexes += surface->numVerts;

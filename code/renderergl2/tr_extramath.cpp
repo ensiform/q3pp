@@ -81,7 +81,7 @@ void Matrix16Transform( const matrix_t in1, const vec4_t in2, vec4_t out )
 	out[ 3] = in1[ 3] * in2[ 0] + in1[ 7] * in2[ 1] + in1[11] * in2[ 2] + in1[15] * in2[ 3];
 }
 
-qboolean Matrix16Compare( const matrix_t a, const matrix_t b )
+bool Matrix16Compare( const matrix_t a, const matrix_t b )
 {
 	return !(a[ 0] != b[ 0] || a[ 4] != b[ 4] || a[ 8] != b[ 8] || a[12] != b[12] ||
              a[ 1] != b[ 1] || a[ 5] != b[ 5] || a[ 9] != b[ 9] || a[13] != b[13] ||
@@ -163,7 +163,7 @@ void VectorLerp( vec3_t a, vec3_t b, float lerp, vec3_t c)
 	c[2] = a[2] * (1.0f - lerp) + b[2] * lerp;
 }
 
-qboolean SpheresIntersect(vec3_t origin1, float radius1, vec3_t origin2, float radius2)
+bool SpheresIntersect(vec3_t origin1, float radius1, vec3_t origin2, float radius2)
 {
 	float radiusSum = radius1 + radius2;
 	vec3_t diff;
@@ -172,10 +172,10 @@ qboolean SpheresIntersect(vec3_t origin1, float radius1, vec3_t origin2, float r
 
 	if (DotProduct(diff, diff) <= radiusSum * radiusSum)
 	{
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 void BoundingSphereOfSpheres(vec3_t origin1, float radius1, vec3_t origin2, float radius2, vec3_t origin3, float *radius3)

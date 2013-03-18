@@ -86,7 +86,7 @@ typedef struct {
 	menubitmap_s	item_next;
 	menubitmap_s	item_null;
 
-	qboolean		reinit;
+	bool		reinit;
 
 	const char *	selectedArenaInfo;
 	int				numMaps;
@@ -361,7 +361,7 @@ static void UI_SPLevelMenu_ResetDraw( void ) {
 	UI_DrawProportionalString( SCREEN_WIDTH/2, 356 + PROP_HEIGHT * 3, "start over from the beginning.", UI_CENTER|UI_SMALLFONT, color_yellow );
 }
 
-static void UI_SPLevelMenu_ResetAction( qboolean result ) {
+static void UI_SPLevelMenu_ResetAction( bool result ) {
 	if( !result ) {
 		return;
 	}
@@ -530,7 +530,7 @@ static void UI_SPLevelMenu_CustomEvent( void* ptr, int notification ) {
 		return;
 	}
 
-	UI_StartServerMenu( qfalse );
+	UI_StartServerMenu( false );
 }
 
 
@@ -701,7 +701,7 @@ void UI_SPLevelMenu_Cache( void ) {
 
 	for( n = 0; n < 6; n++ ) {
 		trap_R_RegisterShaderNoMip( ui_medalPicNames[n] );
-		levelMenuInfo.awardSounds[n] = trap_S_RegisterSound( ui_medalSounds[n], qfalse );
+		levelMenuInfo.awardSounds[n] = trap_S_RegisterSound( ui_medalSounds[n], false );
 	}
 
 	levelMenuInfo.levelSelectedPic = trap_R_RegisterShaderNoMip( ART_LEVELFRAME_SELECTED );
@@ -732,8 +732,8 @@ static void UI_SPLevelMenu_Init( void ) {
 	}
 
 	memset( &levelMenuInfo, 0, sizeof(levelMenuInfo) );
-	levelMenuInfo.menu.fullscreen = qtrue;
-	levelMenuInfo.menu.wrapAround = qtrue;
+	levelMenuInfo.menu.fullscreen = true;
+	levelMenuInfo.menu.wrapAround = true;
 	levelMenuInfo.menu.draw = UI_SPLevelMenu_MenuDraw;
 
 	UI_SPLevelMenu_Cache();
@@ -1012,5 +1012,5 @@ UI_SPLevelMenu_ReInit
 =================
 */
 void UI_SPLevelMenu_ReInit( void ) {
-	levelMenuInfo.reinit = qtrue;
+	levelMenuInfo.reinit = true;
 }

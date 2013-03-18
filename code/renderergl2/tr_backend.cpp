@@ -161,7 +161,7 @@ void GL_Cull( int cullType ) {
 	} 
 	else 
 	{
-		qboolean cullFront;
+		bool cullFront;
 		qglEnable( GL_CULL_FACE );
 
 		cullFront = (cullType == CT_FRONT_SIDED);
@@ -440,7 +440,7 @@ static void RB_Hyperspace( void ) {
 	qglClearColor( c, c, c, 1 );
 	qglClear( GL_COLOR_BUFFER_BIT );
 
-	backEnd.isHyperspace = qtrue;
+	backEnd.isHyperspace = true;
 }
 
 
@@ -468,15 +468,15 @@ void RB_BeginDrawingView (void) {
 	// sync with gl if needed
 	if ( r_finish->integer == 1 && !glState.finishCalled ) {
 		qglFinish ();
-		glState.finishCalled = qtrue;
+		glState.finishCalled = true;
 	}
 	if ( r_finish->integer == 0 ) {
-		glState.finishCalled = qtrue;
+		glState.finishCalled = true;
 	}
 
 	// we will need to change the projection matrix before drawing
 	// 2D images again
-	backEnd.projection2D = qfalse;
+	backEnd.projection2D = false;
 
 	if (glRefConfig.framebufferObject)
 	{
@@ -539,13 +539,13 @@ void RB_BeginDrawingView (void) {
 	}
 	else
 	{
-		backEnd.isHyperspace = qfalse;
+		backEnd.isHyperspace = false;
 	}
 
 	glState.faceCulling = -1;		// force face culling to set next time
 
 	// we will only draw a sun if there was sky rendered in this view
-	backEnd.skyRenderedThisView = qfalse;
+	backEnd.skyRenderedThisView = false;
 
 	// clip to the plane of the portal
 	if ( backEnd.viewParms.isPortal ) {
@@ -581,13 +581,13 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				entityNum, oldEntityNum;
 	int				dlighted, oldDlighted;
 	int				pshadowed, oldPshadowed;
-	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
+	bool		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	int				i;
 	drawSurf_t		*drawSurf;
 	int				oldSort;
 	float			originalTime;
 	FBO_t*			fbo = NULL;
-	qboolean		inQuery = qfalse;
+	bool		inQuery = false;
 
 	float			depth[2];
 
@@ -602,12 +602,12 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
 	oldFogNum = -1;
-	oldDepthRange = qfalse;
-	wasCrosshair = qfalse;
-	oldDlighted = qfalse;
-	oldPshadowed = qfalse;
+	oldDepthRange = false;
+	wasCrosshair = false;
+	oldDlighted = false;
+	oldPshadowed = false;
 	oldSort = -1;
-	depthRange = qfalse;
+	depthRange = false;
 
 	depth[0] = 0.f;
 	depth[1] = 1.f;
@@ -650,8 +650,8 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// change the modelview matrix if needed
 		//
 		if ( entityNum != oldEntityNum ) {
-			qboolean sunflare = qfalse;
-			depthRange = isCrosshair = qfalse;
+			bool sunflare = false;
+			depthRange = isCrosshair = false;
 
 			if ( entityNum != REFENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
@@ -671,10 +671,10 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				if(backEnd.currentEntity->e.renderfx & RF_DEPTHHACK)
 				{
 					// hack the depth range to prevent view model from poking into walls
-					depthRange = qtrue;
+					depthRange = true;
 					
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
-						isCrosshair = qtrue;
+						isCrosshair = true;
 				}
 			} else {
 				backEnd.currentEntity = &tr.worldEntity;
@@ -710,7 +710,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 						{
 							viewParms_t temp = backEnd.viewParms;
 
-							R_SetupProjection(&temp, r_znear->value, 0, qfalse);
+							R_SetupProjection(&temp, r_znear->value, 0, false);
 
 							GL_SetProjectionMatrix( temp.projectionMatrix );
 						}
@@ -756,7 +756,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	}
 
 	if (inQuery) {
-		inQuery = qfalse;
+		inQuery = false;
 		qglEndQueryARB(GL_SAMPLES_PASSED_ARB);
 	}
 
@@ -792,7 +792,7 @@ void	RB_SetGL2D (void) {
 	if (backEnd.projection2D && backEnd.last2DFBO == glState.currentFBO)
 		return;
 
-	backEnd.projection2D = qtrue;
+	backEnd.projection2D = true;
 	backEnd.last2DFBO = glState.currentFBO;
 
 	if (glState.currentFBO)
@@ -840,7 +840,7 @@ Stretches a raw 32 bit power of 2 bitmap image over the given screen rectangle.
 Used for cinematics.
 =============
 */
-void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
+void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, bool dirty) {
 	int			i, j;
 	int			start, end;
 	vec4_t quadVerts[4];
@@ -908,7 +908,7 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	RB_InstantQuad2(quadVerts, texCoords);
 }
 
-void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
+void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, bool dirty) {
 
 	GL_Bind( tr.scratchImage[client] );
 
@@ -1074,11 +1074,11 @@ const void	*RB_DrawSurfs( const void *data ) {
 	{
 		FBO_t *oldFbo = glState.currentFBO;
 
-		backEnd.depthFill = qtrue;
+		backEnd.depthFill = true;
 		qglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 		qglColorMask(!backEnd.colorMask[0], !backEnd.colorMask[1], !backEnd.colorMask[2], !backEnd.colorMask[3]);
-		backEnd.depthFill = qfalse;
+		backEnd.depthFill = false;
 
 		if (tr.msaaResolveFbo)
 		{
@@ -1292,7 +1292,7 @@ const void	*RB_DrawSurfs( const void *data ) {
 
 			if (glRefConfig.occlusionQuery)
 			{
-				tr.sunFlareQueryActive[tr.sunFlareQueryIndex] = qtrue;
+				tr.sunFlareQueryActive[tr.sunFlareQueryIndex] = true;
 				qglBeginQueryARB(GL_SAMPLES_PASSED_ARB, tr.sunFlareQuery[tr.sunFlareQueryIndex]);
 			}
 
@@ -1562,8 +1562,8 @@ const void	*RB_SwapBuffers( const void *data ) {
 
 	GLimp_EndFrame();
 
-	backEnd.framePostProcessed = qfalse;
-	backEnd.projection2D = qfalse;
+	backEnd.framePostProcessed = false;
+	backEnd.projection2D = false;
 
 	return (const void *)(cmd + 1);
 }
@@ -1612,7 +1612,7 @@ const void *RB_PostProcess(const void *data)
 {
 	const postProcessCommand_t *cmd = data;
 	FBO_t *srcFbo;
-	qboolean autoExposure;
+	bool autoExposure;
 
 	// finish any 2D drawing if needed
 	if(tess.numIndexes)
@@ -1696,7 +1696,7 @@ const void *RB_PostProcess(const void *data)
 		FBO_BlitFromTexture(tr.sunRaysImage, NULL, NULL, tr.screenScratchFbo, dstBox, NULL, NULL, 0);
 	}
 
-	backEnd.framePostProcessed = qtrue;
+	backEnd.framePostProcessed = true;
 
 	return (const void *)(cmd + 1);
 }

@@ -31,7 +31,7 @@ int g_console_field_width = 78;
 
 #define		CON_TEXTSIZE	32768
 typedef struct {
-	qboolean	initialized;
+	bool	initialized;
 
 	short	text[CON_TEXTSIZE];
 	int		current;		// line where next message will be printed
@@ -85,8 +85,8 @@ Con_ToggleMenu_f
 ===================
 */
 void Con_ToggleMenu_f( void ) {
-	CL_KeyEvent( K_ESCAPE, qtrue, Sys_Milliseconds() );
-	CL_KeyEvent( K_ESCAPE, qfalse, Sys_Milliseconds() );
+	CL_KeyEvent( K_ESCAPE, true, Sys_Milliseconds() );
+	CL_KeyEvent( K_ESCAPE, false, Sys_Milliseconds() );
 }
 
 /*
@@ -96,7 +96,7 @@ Con_MessageMode_f
 */
 void Con_MessageMode_f (void) {
 	chat_playerNum = -1;
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 
@@ -110,7 +110,7 @@ Con_MessageMode2_f
 */
 void Con_MessageMode2_f (void) {
 	chat_playerNum = -1;
-	chat_team = qtrue;
+	chat_team = true;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 25;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
@@ -127,7 +127,7 @@ void Con_MessageMode3_f (void) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
@@ -144,7 +144,7 @@ void Con_MessageMode4_f (void) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
@@ -333,7 +333,7 @@ Cmd_CompleteTxtName
 */
 void Cmd_CompleteTxtName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "txt", qfalse, qtrue );
+		Field_CompleteFilename( "", "txt", false, true );
 	}
 }
 
@@ -390,7 +390,7 @@ void Con_Shutdown(void)
 Con_Linefeed
 ===============
 */
-void Con_Linefeed (qboolean skipnotify)
+void Con_Linefeed (bool skipnotify)
 {
 	int		i;
 
@@ -424,13 +424,13 @@ void CL_ConsolePrint( char *txt ) {
 	int		y, l;
 	unsigned char	c;
 	unsigned short	color;
-	qboolean skipnotify = qfalse;		// NERVE - SMF
+	bool skipnotify = false;		// NERVE - SMF
 	int prev;							// NERVE - SMF
 
 	// TTimo - prefix for text that shows up in console but not in notify
 	// backported from RTCW
 	if ( !Q_strncmp( txt, "[skipnotify]", 12 ) ) {
-		skipnotify = qtrue;
+		skipnotify = true;
 		txt += 12;
 	}
 	
@@ -446,7 +446,7 @@ void CL_ConsolePrint( char *txt ) {
 		con.color[3] = 1.0f;
 		con.linewidth = -1;
 		Con_CheckResize ();
-		con.initialized = qtrue;
+		con.initialized = true;
 	}
 
 	color = ColorIndex(COLOR_WHITE);
@@ -539,7 +539,7 @@ void Con_DrawInput (void) {
 	SCR_DrawSmallChar( con.xadjust + 1 * SMALLCHAR_WIDTH, y, ']' );
 
 	Field_Draw( &g_consoleField, con.xadjust + 2 * SMALLCHAR_WIDTH, y,
-		SCREEN_WIDTH - 3 * SMALLCHAR_WIDTH, qtrue, qtrue );
+		SCREEN_WIDTH - 3 * SMALLCHAR_WIDTH, true, true );
 }
 
 
@@ -604,17 +604,17 @@ void Con_DrawNotify (void)
 	{
 		if (chat_team)
 		{
-			SCR_DrawBigString (8, v, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString (8, v, "say_team:", 1.0f, false );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString (8, v, "say:", 1.0f, qfalse );
+			SCR_DrawBigString (8, v, "say:", 1.0f, false );
 			skip = 5;
 		}
 
 		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v,
-			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
+			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, true, true );
 
 		v += BIGCHAR_HEIGHT;
 	}

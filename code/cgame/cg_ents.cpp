@@ -305,7 +305,7 @@ static void CG_Item( centity_t *cent ) {
 	VectorCopy( cent->lerpOrigin, ent.origin);
 	VectorCopy( cent->lerpOrigin, ent.oldorigin);
 
-	ent.nonNormalizedAxes = qfalse;
+	ent.nonNormalizedAxes = false;
 
 	// if just respawned, slowly scale up
 	msec = cg.time - cent->miscTime;
@@ -314,7 +314,7 @@ static void CG_Item( centity_t *cent ) {
 		VectorScale( ent.axis[0], frac, ent.axis[0] );
 		VectorScale( ent.axis[1], frac, ent.axis[1] );
 		VectorScale( ent.axis[2], frac, ent.axis[2] );
-		ent.nonNormalizedAxes = qtrue;
+		ent.nonNormalizedAxes = true;
 	} else {
 		frac = 1.0;
 	}
@@ -331,7 +331,7 @@ static void CG_Item( centity_t *cent ) {
 		VectorScale( ent.axis[0], 1.5, ent.axis[0] );
 		VectorScale( ent.axis[1], 1.5, ent.axis[1] );
 		VectorScale( ent.axis[2], 1.5, ent.axis[2] );
-		ent.nonNormalizedAxes = qtrue;
+		ent.nonNormalizedAxes = true;
 #ifdef MISSIONPACK
 		trap_S_AddLoopingSound( cent->currentState.number, cent->lerpOrigin, vec3_origin, cgs.media.weaponHoverSound );
 #endif
@@ -342,7 +342,7 @@ static void CG_Item( centity_t *cent ) {
 		VectorScale( ent.axis[0], 2, ent.axis[0] );
 		VectorScale( ent.axis[1], 2, ent.axis[1] );
 		VectorScale( ent.axis[2], 2, ent.axis[2] );
-		ent.nonNormalizedAxes = qtrue;
+		ent.nonNormalizedAxes = true;
 	}
 #endif
 
@@ -393,7 +393,7 @@ static void CG_Item( centity_t *cent ) {
 					VectorScale( ent.axis[0], frac, ent.axis[0] );
 					VectorScale( ent.axis[1], frac, ent.axis[1] );
 					VectorScale( ent.axis[2], frac, ent.axis[2] );
-					ent.nonNormalizedAxes = qtrue;
+					ent.nonNormalizedAxes = true;
 				}
 				trap_R_AddRefEntityToScene( &ent );
 			}
@@ -1030,7 +1030,7 @@ void CG_AddPacketEntities( void ) {
 
 	// generate and add the entity from the playerstate
 	ps = &cg.predictedPlayerState;
-	BG_PlayerStateToEntityState( ps, &cg.predictedPlayerEntity.currentState, qfalse );
+	BG_PlayerStateToEntityState( ps, &cg.predictedPlayerEntity.currentState, false );
 	CG_AddCEntity( &cg.predictedPlayerEntity );
 
 	// lerp the non-predicted value for lightning gun origins

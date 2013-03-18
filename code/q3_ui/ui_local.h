@@ -158,9 +158,9 @@ typedef struct _tag_menuframework
 	void (*draw) (void);
 	sfxHandle_t (*key) (int key);
 
-	qboolean	wrapAround;
-	qboolean	fullscreen;
-	qboolean	showlogo;
+	bool	wrapAround;
+	bool	fullscreen;
+	bool	showlogo;
 } menuframework_s;
 
 typedef struct
@@ -334,8 +334,8 @@ extern void UI_InGameMenu(void);
 // ui_confirm.c
 //
 extern void ConfirmMenu_Cache( void );
-extern void UI_ConfirmMenu( const char *question, void (*draw)( void ), void (*action)( qboolean result ) );
-extern void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void ), void (*action)( qboolean result ) );
+extern void UI_ConfirmMenu( const char *question, void (*draw)( void ), void (*action)( bool result ) );
+extern void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void ), void (*action)( bool result ) );
 extern void UI_Message( const char **lines );
 
 //
@@ -353,7 +353,7 @@ extern void TeamMain_Cache( void );
 //
 // ui_connect.c
 //
-extern void UI_DrawConnectScreen( qboolean overlay );
+extern void UI_DrawConnectScreen( bool overlay );
 
 //
 // ui_controls2.c
@@ -428,7 +428,7 @@ extern void ArenaServers_Cache( void );
 //
 // ui_startserver.c
 //
-extern void UI_StartServerMenu( qboolean multiplayer );
+extern void UI_StartServerMenu( bool multiplayer );
 extern void StartServer_Cache( void );
 extern void ServerOptions_Cache( void );
 extern void UI_BotSelectMenu( char *bot );
@@ -462,9 +462,9 @@ typedef struct {
 	float		backlerp;
 
 	float		yawAngle;
-	qboolean	yawing;
+	bool	yawing;
 	float		pitchAngle;
-	qboolean	pitching;
+	bool	pitching;
 
 	int			animationNumber;	// may include ANIM_TOGGLEBIT
 	animation_t	*animation;
@@ -513,10 +513,10 @@ typedef struct {
 	int				pendingTorsoAnim;
 	int				legsAnimationTimer;
 
-	qboolean		chat;
-	qboolean		newModel;
+	bool		chat;
+	bool		newModel;
 
-	qboolean		barrelSpinning;
+	bool		barrelSpinning;
 	float			barrelAngle;
 	int				barrelTime;
 
@@ -525,8 +525,8 @@ typedef struct {
 
 void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time );
 void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model );
-void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_t viewAngles, vec3_t moveAngles, weapon_t weaponNum, qboolean chat );
-qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName );
+void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_t viewAngles, vec3_t moveAngles, weapon_t weaponNum, bool chat );
+bool UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName );
 
 //
 // ui_atoms.c
@@ -540,7 +540,7 @@ typedef struct {
 	menuframework_s*	activemenu;
 	menuframework_s*	stack[MAX_MENUDEPTH];
 	glconfig_t			glconfig;
-	qboolean			debug;
+	bool			debug;
 	qhandle_t			whiteShader;
 	qhandle_t			menuBackShader;
 	qhandle_t			menuBackNoLogoShader;
@@ -554,8 +554,8 @@ typedef struct {
 	float				xscale;
 	float				yscale;
 	float				bias;
-	qboolean			demoversion;
-	qboolean			firstdraw;
+	bool			demoversion;
+	bool			firstdraw;
 } uiStatic_t;
 
 extern void			UI_Init( void );
@@ -563,7 +563,7 @@ extern void			UI_Shutdown( void );
 extern void			UI_KeyEvent( int key, int down );
 extern void			UI_MouseEvent( int dx, int dy );
 extern void			UI_Refresh( int realtime );
-extern qboolean		UI_ConsoleCommand( int realTime );
+extern bool		UI_ConsoleCommand( int realTime );
 extern float		UI_ClampCvar( float min, float max, float value );
 extern void			UI_DrawNamedPic( float x, float y, float width, float height, const char *picname );
 extern void			UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader ); 
@@ -579,10 +579,10 @@ extern void			UI_DrawProportionalString_AutoWrapped( int x, int ystart, int xmax
 extern int			UI_ProportionalStringWidth( const char* str );
 extern void			UI_DrawString( int x, int y, const char* str, int style, vec4_t color );
 extern void			UI_DrawChar( int x, int y, int ch, int style, vec4_t color );
-extern qboolean 	UI_CursorInRect (int x, int y, int width, int height);
+extern bool 	UI_CursorInRect (int x, int y, int width, int height);
 extern void			UI_AdjustFrom640( float *x, float *y, float *w, float *h );
 extern void			UI_DrawTextBox (int x, int y, int width, int lines);
-extern qboolean		UI_IsFullscreen( void );
+extern bool		UI_IsFullscreen( void );
 extern void			UI_SetActiveMenu( uiMenuCommand_t menu );
 extern void			UI_PushMenu ( menuframework_s *menu );
 extern void			UI_PopMenu (void);
@@ -591,7 +591,7 @@ extern char			*UI_Argv( int arg );
 extern char			*UI_Cvar_VariableString( const char *var_name );
 extern void			UI_Refresh( int time );
 extern void			UI_StartDemoLoop( void );
-extern qboolean		m_entersound;
+extern bool		m_entersound;
 extern uiStatic_t	uis;
 
 //
@@ -656,13 +656,13 @@ void			trap_R_DrawStretchPic( float x, float y, float w, float h, float s1, floa
 void			trap_UpdateScreen( void );
 int				trap_CM_LerpTag( orientation_t *tag, clipHandle_t mod, int startFrame, int endFrame, float frac, const char *tagName );
 void			trap_S_StartLocalSound( sfxHandle_t sfx, int channelNum );
-sfxHandle_t	trap_S_RegisterSound( const char *sample, qboolean compressed );
+sfxHandle_t	trap_S_RegisterSound( const char *sample, bool compressed );
 void			trap_Key_KeynumToStringBuf( int keynum, char *buf, int buflen );
 void			trap_Key_GetBindingBuf( int keynum, char *buf, int buflen );
 void			trap_Key_SetBinding( int keynum, const char *binding );
-qboolean		trap_Key_IsDown( int keynum );
-qboolean		trap_Key_GetOverstrikeMode( void );
-void			trap_Key_SetOverstrikeMode( qboolean state );
+bool		trap_Key_IsDown( int keynum );
+bool		trap_Key_GetOverstrikeMode( void );
+void			trap_Key_SetOverstrikeMode( bool state );
 void			trap_Key_ClearStates( void );
 int				trap_Key_GetCatcher( void );
 void			trap_Key_SetCatcher( int catcher );
@@ -682,7 +682,7 @@ int				trap_MemoryRemaining( void );
 void			trap_GetCDKey( char *buf, int buflen );
 void			trap_SetCDKey( char *buf );
 
-qboolean               trap_VerifyCDKey( const char *key, const char *chksum);
+bool               trap_VerifyCDKey( const char *key, const char *chksum);
 
 void			trap_SetPbClStatus( int status );
 
@@ -761,8 +761,8 @@ int UI_GetNumBots( void );
 void UI_GetBestScore( int level, int *score, int *skill );
 void UI_SetBestScore( int level, int score );
 int UI_TierCompleted( int levelWon );
-qboolean UI_ShowTierVideo( int tier );
-qboolean UI_CanShowTierVideo( int tier );
+bool UI_ShowTierVideo( int tier );
+bool UI_CanShowTierVideo( int tier );
 int  UI_GetCurrentGame( void );
 void UI_NewGame( void );
 void UI_LogAwardData( int award, int data );

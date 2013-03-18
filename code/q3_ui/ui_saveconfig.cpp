@@ -127,8 +127,8 @@ static void UI_SaveConfigMenu_Init( void ) {
 	memset( &saveConfig, 0, sizeof(saveConfig) );
 
 	UI_SaveConfigMenu_Cache();
-	saveConfig.menu.wrapAround = qtrue;
-	saveConfig.menu.fullscreen = qtrue;
+	saveConfig.menu.wrapAround = true;
+	saveConfig.menu.fullscreen = true;
 
 	saveConfig.banner.generic.type		= MTYPE_BTEXT;
 	saveConfig.banner.generic.x			= 320;

@@ -79,9 +79,9 @@ typedef struct {
 
 	float		axisLength;		// compensate for non-normalized axis
 
-	qboolean	needDlights;	// true for bmodels that touch a dlight
-	qboolean	lightingCalculated;
-	qboolean	mirrored;		// mirrored matrix, needs reversed culling
+	bool	needDlights;	// true for bmodels that touch a dlight
+	bool	lightingCalculated;
+	bool	mirrored;		// mirrored matrix, needs reversed culling
 	vec3_t		lightDir;		// normalized direction towards light
 	vec3_t		ambientLight;	// color normalized to 0-255
 	int			ambientLightInt;	// 32 bit rgba packed
@@ -351,9 +351,9 @@ typedef struct {
 	texModInfo_t	*texMods;
 
 	int				videoMapHandle;
-	qboolean		isLightmap;
-	qboolean		vertexLightmap;
-	qboolean		isVideoMap;
+	bool		isLightmap;
+	bool		vertexLightmap;
+	bool		isVideoMap;
 } textureBundle_t;
 
 enum
@@ -383,7 +383,7 @@ typedef enum
 } stageType_t;
 
 typedef struct {
-	qboolean		active;
+	bool		active;
 	
 	textureBundle_t	bundle[NUM_TEXTURE_BUNDLES];
 
@@ -399,7 +399,7 @@ typedef struct {
 
 	acff_t			adjustColorsForFog;
 
-	qboolean		isDetail;
+	bool		isDetail;
 
 	stageType_t     type;
 	struct shaderProgram_s *glslShaderGroup;
@@ -441,32 +441,32 @@ typedef struct shader_s {
 
 	float		sort;					// lower numbered shaders draw before higher numbered
 
-	qboolean	defaultShader;			// we want to return index 0 if the shader failed to
+	bool	defaultShader;			// we want to return index 0 if the shader failed to
 										// load for some reason, but R_FindShader should
 										// still keep a name allocated for it, so if
 										// something calls RE_RegisterShader again with
 										// the same name, we don't try looking for it again
 
-	qboolean	explicitlyDefined;		// found in a .shader file
+	bool	explicitlyDefined;		// found in a .shader file
 
 	int			surfaceFlags;			// if explicitlyDefined, this will have SURF_* flags
 	int			contentFlags;
 
-	qboolean	entityMergable;			// merge across entites optimizable (smoke, blood)
+	bool	entityMergable;			// merge across entites optimizable (smoke, blood)
 
-	qboolean	isSky;
+	bool	isSky;
 	skyParms_t	sky;
 	fogParms_t	fogParms;
 
 	float		portalRange;			// distance to fog out at
-	qboolean	isPortal;
+	bool	isPortal;
 
 	int			multitextureEnv;		// 0, GL_MODULATE, GL_ADD (FIXME: put in stage)
 
 	cullType_t	cullType;				// CT_FRONT_SIDED, CT_BACK_SIDED, or CT_TWO_SIDED
-	qboolean	polygonOffset;			// set for decals and other items that must be offset 
-	qboolean	noMipMaps;				// for console fonts, 2D elements, etc.
-	qboolean	noPicMip;				// for images that must always be full resolution
+	bool	polygonOffset;			// set for decals and other items that must be offset 
+	bool	noMipMaps;				// for console fonts, 2D elements, etc.
+	bool	noPicMip;				// for images that must always be full resolution
 
 	fogPass_t	fogPass;				// draw a blended pass, possibly with depth test equals
 
@@ -496,27 +496,27 @@ typedef struct shader_s {
 	struct	shader_s	*next;
 } shader_t;
 
-static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
+static ID_INLINE bool ShaderRequiresCPUDeforms(const shader_t * shader)
 {
 	if(shader->numDeforms)
 	{
 		const deformStage_t *ds = &shader->deforms[0];
 
 		if (shader->numDeforms > 1)
-			return qtrue;
+			return true;
 
 		switch (ds->deformation)
 		{
 			case DEFORM_WAVE:
 			case DEFORM_BULGE:
-				return qfalse;
+				return false;
 
 			default:
-				return qtrue;
+				return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 typedef struct shaderState_s {
@@ -885,7 +885,7 @@ typedef struct {
 
 	// 1 bits will prevent the associated area from rendering at all
 	byte		areamask[MAX_MAP_AREA_BYTES];
-	qboolean	areamaskModified;	// qtrue if areamask changed since last scene
+	bool	areamaskModified;	// true if areamask changed since last scene
 
 	float		floatTime;			// tr.refdef.time / 1000.0
 
@@ -945,7 +945,7 @@ typedef struct {
 	fogParms_t	parms;
 
 	// for clipping distance in fog when outside
-	qboolean	hasSurface;
+	bool	hasSurface;
 	float		surface[4];
 } fog_t;
 
@@ -963,8 +963,8 @@ typedef struct {
 	orientationr_t	or;
 	orientationr_t	world;
 	vec3_t		pvsOrigin;			// may be different than or.origin for portals
-	qboolean	isPortal;			// true if this view is through a portal
-	qboolean	isMirror;			// the portal is a mirror, invert the face culling
+	bool	isPortal;			// true if this view is through a portal
+	bool	isMirror;			// the portal is a mirror, invert the face culling
 	viewParmFlags_t flags;
 	int			frameSceneNum;		// copied from tr.frameSceneNum
 	int			frameCount;			// copied from tr.frameCount
@@ -1074,8 +1074,8 @@ typedef struct
 	int             indexes[3];
 	int             neighbors[3];
 	vec4_t          plane;
-	qboolean        facingLight;
-	qboolean        degenerated;
+	bool        facingLight;
+	bool        degenerated;
 } srfTriangle_t;
 
 
@@ -1600,7 +1600,7 @@ typedef struct {
 typedef struct {
 	int			currenttextures[NUM_TEXTURE_BUNDLES];
 	int			currenttmu;
-	qboolean	finishCalled;
+	bool	finishCalled;
 	int			texEnv[2];
 	int			faceCulling;
 	unsigned long	glStateBits;
@@ -1633,31 +1633,31 @@ typedef enum {
 // We can't change glConfig_t without breaking DLL/vms compatibility, so
 // store extensions we have here.
 typedef struct {
-	qboolean    drawRangeElements;
-	qboolean    multiDrawArrays;
-	qboolean	occlusionQuery;
+	bool    drawRangeElements;
+	bool    multiDrawArrays;
+	bool	occlusionQuery;
 
 	int glslMajorVersion;
 	int glslMinorVersion;
 
 	memInfo_t   memInfo;
 
-	qboolean framebufferObject;
+	bool framebufferObject;
 	int maxRenderbufferSize;
 	int maxColorAttachments;
 
-	qboolean textureNonPowerOfTwo;
-	qboolean textureFloat;
-	qboolean halfFloatPixel;
-	qboolean packedDepthStencil;
+	bool textureNonPowerOfTwo;
+	bool textureFloat;
+	bool halfFloatPixel;
+	bool packedDepthStencil;
 	textureCompressionRef_t textureCompression;
 	
-	qboolean framebufferMultisample;
-	qboolean framebufferBlit;
+	bool framebufferMultisample;
+	bool framebufferBlit;
 
-	qboolean texture_srgb;
+	bool texture_srgb;
 
-	qboolean depthClamp;
+	bool depthClamp;
 } glRefConfig_t;
 
 
@@ -1700,19 +1700,19 @@ typedef struct {
 	viewParms_t	viewParms;
 	orientationr_t	or;
 	backEndCounters_t	pc;
-	qboolean	isHyperspace;
+	bool	isHyperspace;
 	trRefEntity_t	*currentEntity;
-	qboolean	skyRenderedThisView;	// flag for drawing sun
+	bool	skyRenderedThisView;	// flag for drawing sun
 
-	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
+	bool	projection2D;	// if true, drawstretchpic doesn't need to change modes
 	byte		color2D[4];
-	qboolean	vertexes2D;		// shader needs to be finished
+	bool	vertexes2D;		// shader needs to be finished
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
 	FBO_t *last2DFBO;
-	qboolean    colorMask[4];
-	qboolean    framePostProcessed;
-	qboolean    depthFill;
+	bool    colorMask[4];
+	bool    framePostProcessed;
+	bool    depthFill;
 } backEndState_t;
 
 /*
@@ -1724,7 +1724,7 @@ typedef struct {
 ** by the frontend.
 */
 typedef struct {
-	qboolean				registered;		// cleared at shutdown, set at beginRegistration
+	bool				registered;		// cleared at shutdown, set at beginRegistration
 
 	int						visIndex;
 	int						visClusters[MAX_VISCOUNTS];
@@ -1737,8 +1737,8 @@ typedef struct {
 
 	int						frameSceneNum;	// zeroed at RE_BeginFrame
 
-	qboolean				worldMapLoaded;
-	qboolean				worldDeluxeMapping;
+	bool				worldMapLoaded;
+	bool				worldDeluxeMapping;
 	vec2_t                  autoExposureMinMax;
 	vec3_t                  toneMinAvgMaxLevel;
 	world_t					*world;
@@ -1845,7 +1845,7 @@ typedef struct {
 
 	float                   mapLightScale;
 
-	qboolean                sunShadows;
+	bool                sunShadows;
 	vec3_t					sunLight;			// from the sky shader for this level
 	vec3_t					sunAmbient;
 	vec3_t					sunDirection;
@@ -1884,7 +1884,7 @@ typedef struct {
 
 	GLuint					sunFlareQuery[2];
 	int						sunFlareQueryIndex;
-	qboolean				sunFlareQueryActive[2];
+	bool				sunFlareQueryActive[2];
 
 	float					sinTable[FUNCTABLE_SIZE];
 	float					squareTable[FUNCTABLE_SIZE];
@@ -2066,7 +2066,7 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level);
 void R_AddMD3Surfaces( trRefEntity_t *e );
 void R_AddNullModelSurfaces( trRefEntity_t *e );
 void R_AddBeamSurfaces( trRefEntity_t *e );
-void R_AddRailSurfaces( trRefEntity_t *e, qboolean isUnderwater );
+void R_AddRailSurfaces( trRefEntity_t *e, bool isUnderwater );
 void R_AddLightningBoltSurfaces( trRefEntity_t *e );
 
 void R_AddPolygonSurfaces( void );
@@ -2079,7 +2079,7 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 
 void R_CalcTangentSpace(vec3_t tangent, vec3_t bitangent, vec3_t normal,
                         const vec3_t v0, const vec3_t v1, const vec3_t v2, const vec2_t t0, const vec2_t t1, const vec2_t t2);
-qboolean R_CalcTangentVectors(srfVert_t * dv[3]);
+bool R_CalcTangentVectors(srfVert_t * dv[3]);
 void R_CalcSurfaceTriangleNeighbors(int numTriangles, srfTriangle_t * triangles);
 void R_CalcSurfaceTrianglePlanes(int numTriangles, srfTriangle_t * triangles, srfVert_t * verts);
 
@@ -2094,7 +2094,7 @@ int R_CullPointAndRadiusEx( const vec3_t origin, float radius, const cplane_t* f
 int R_CullPointAndRadius( const vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( const vec3_t origin, float radius );
 
-void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, qboolean computeFrustum);
+void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, bool computeFrustum);
 void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, orientationr_t *or );
 
 /*
@@ -2151,8 +2151,8 @@ void	GL_Cull( int cullType );
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
-void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
-void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
+void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, bool dirty);
+void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, bool dirty);
 
 void		RE_BeginFrame( stereoFrame_t stereoFrame );
 void		RE_BeginRegistration( glconfig_t *glconfig );
@@ -2160,9 +2160,9 @@ void		RE_LoadWorldMap( const char *mapname );
 void		RE_SetWorldVisData( const byte *vis );
 qhandle_t	RE_RegisterModel( const char *name );
 qhandle_t	RE_RegisterSkin( const char *name );
-void		RE_Shutdown( qboolean destroyWindow );
+void		RE_Shutdown( bool destroyWindow );
 
-qboolean	R_GetEntityToken( char *buffer, int size );
+bool	R_GetEntityToken( char *buffer, int size );
 
 model_t		*R_AllocModel( void );
 
@@ -2193,7 +2193,7 @@ const void *RB_TakeVideoFrameCmd( const void *data );
 //
 // tr_shader.c
 //
-shader_t	*R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImage );
+shader_t	*R_FindShader( const char *name, int lightmapIndex, bool mipRawImage );
 shader_t	*R_GetShaderByHandle( qhandle_t hShader );
 shader_t	*R_GetShaderByState( int index, long *cycleTime );
 shader_t *R_FindShaderByName( const char *name );
@@ -2243,7 +2243,7 @@ typedef struct shaderCommands_s
 
 	VBO_t       *vbo;
 	IBO_t       *ibo;
-	qboolean    useInternalVBO;
+	bool    useInternalVBO;
 
 	stageVars_t	svars QALIGN(16);
 
@@ -2307,7 +2307,7 @@ WORLD MAP
 
 void R_AddBrushModelSurfaces( trRefEntity_t *e );
 void R_AddWorldSurfaces( void );
-qboolean R_inPVS( const vec3_t p1, const vec3_t p2 );
+bool R_inPVS( const vec3_t p1, const vec3_t p2 );
 
 
 /*
@@ -2495,7 +2495,7 @@ void R_AddAnimSurfaces( trRefEntity_t *ent );
 void RB_SurfaceAnim( md4Surface_t *surfType );
 void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
 void RB_MDRSurfaceAnim( md4Surface_t *surface );
-qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
+bool R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
 void RB_IQMSurfaceAnim( surfaceType_t *surface );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
@@ -2632,7 +2632,7 @@ typedef struct {
 	int width;
 	int height;
 	char *fileName;
-	qboolean jpeg;
+	bool jpeg;
 } screenshotCommand_t;
 
 typedef struct {
@@ -2641,7 +2641,7 @@ typedef struct {
 	int						height;
 	byte					*captureBuffer;
 	byte					*encodeBuffer;
-	qboolean			motionJpeg;
+	bool			motionJpeg;
 } videoFrameCommand_t;
 
 typedef struct
@@ -2729,7 +2729,7 @@ void RE_SaveJPG(char * filename, int quality, int image_width, int image_height,
 size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 		          int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height,
-		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
+		byte *captureBuffer, byte *encodeBuffer, bool motionJpeg );
 
 
 #endif //TR_LOCAL_H

@@ -188,7 +188,7 @@ typedef struct servernode_s {
 	int		nettype;
 	int		minPing;
 	int		maxPing;
-	qboolean bPB;
+	bool bPB;
 
 } servernode_t; 
 
@@ -230,7 +230,7 @@ typedef struct {
 	int					*numservers;
 	servernode_t		*serverlist;	
 	int					currentping;
-	qboolean			refreshservers;
+	bool			refreshservers;
 	int					nextpingtime;
 	int					maxservers;
 	int					refreshtime;
@@ -765,9 +765,9 @@ void ArenaServers_LoadFavorites( void )
 	int				numtempitems;
 	char			adrstr[MAX_ADDRESSLENGTH];
 	servernode_t	templist[MAX_FAVORITESERVERS];
-	qboolean		found;
+	bool		found;
 
-	found        = qfalse;
+	found        = false;
 
 	// copy the old
 	memcpy( templist, g_favoriteserverlist, sizeof(servernode_t)*MAX_FAVORITESERVERS );
@@ -798,7 +798,7 @@ void ArenaServers_LoadFavorites( void )
 		{
 			// found server - add exisiting results
 			memcpy( &g_favoriteserverlist[g_numfavoriteservers], &templist[j], sizeof(servernode_t) );
-			found = qtrue;
+			found = true;
 		}
 		else
 		{
@@ -832,7 +832,7 @@ static void ArenaServers_StopRefresh( void )
 		// not currently refreshing
 		return;
 
-	g_arenaservers.refreshservers = qfalse;
+	g_arenaservers.refreshservers = false;
 
 	if (g_servertype == UIAS_FAVORITES)
 	{
@@ -1020,7 +1020,7 @@ static void ArenaServers_StartRefresh( void )
 		trap_LAN_ClearPing( i );
 	}
 
-	g_arenaservers.refreshservers    = qtrue;
+	g_arenaservers.refreshservers    = true;
 	g_arenaservers.currentping       = 0;
 	g_arenaservers.nextpingtime      = 0;
 	*g_arenaservers.numservers       = 0;
@@ -1186,7 +1186,7 @@ int ArenaServers_SetType( int type )
 PunkBuster_Confirm
 =================
 */
-static void Punkbuster_ConfirmEnable( qboolean result ) {
+static void Punkbuster_ConfirmEnable( bool result ) {
 	if (result)
 	{		
 		trap_SetPbClStatus(1);
@@ -1194,7 +1194,7 @@ static void Punkbuster_ConfirmEnable( qboolean result ) {
 	g_arenaservers.punkbuster.curvalue = Com_Clamp( 0, 1, trap_Cvar_VariableValue( "cl_punkbuster" ) );
 }
 
-static void Punkbuster_ConfirmDisable( qboolean result ) {
+static void Punkbuster_ConfirmDisable( bool result ) {
 	if (result)
 	{
 		trap_SetPbClStatus(0);
@@ -1276,7 +1276,7 @@ static void ArenaServers_Event( void* ptr, int event ) {
 		break;
 
 	case ID_CREATE:
-		UI_StartServerMenu( qtrue );
+		UI_StartServerMenu( true );
 		break;
 
 	case ID_CONNECT:
@@ -1359,8 +1359,8 @@ static void ArenaServers_MenuInit( void ) {
 
 	ArenaServers_Cache();
 
-	g_arenaservers.menu.fullscreen = qtrue;
-	g_arenaservers.menu.wrapAround = qtrue;
+	g_arenaservers.menu.fullscreen = true;
+	g_arenaservers.menu.wrapAround = true;
 	g_arenaservers.menu.draw       = ArenaServers_MenuDraw;
 	g_arenaservers.menu.key        = ArenaServers_MenuKey;
 

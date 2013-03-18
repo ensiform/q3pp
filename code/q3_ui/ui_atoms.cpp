@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "ui_local.h"
 
 uiStatic_t		uis;
-qboolean		m_entersound;		// after a frame, so caching won't disrupt the sound
+bool		m_entersound;		// after a frame, so caching won't disrupt the sound
 
 void QDECL Com_Error( int level, const char *error, ... ) {
 	va_list		argptr;
@@ -107,7 +107,7 @@ void UI_PushMenu( menuframework_s *menu )
 	menu->cursor      = 0;
 	menu->cursor_prev = 0;
 
-	m_entersound = qtrue;
+	m_entersound = true;
 
 	trap_Key_SetCatcher( KEYCATCH_UI );
 
@@ -123,7 +123,7 @@ void UI_PushMenu( menuframework_s *menu )
 		}
 	}
 
-	uis.firstdraw = qtrue;
+	uis.firstdraw = true;
 }
 
 /*
@@ -142,7 +142,7 @@ void UI_PopMenu (void)
 
 	if (uis.menusp) {
 		uis.activemenu = uis.stack[uis.menusp-1];
-		uis.firstdraw = qtrue;
+		uis.firstdraw = true;
 	}
 	else {
 		UI_ForceMenuOff ();
@@ -636,7 +636,7 @@ static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int cha
 {
 	const char* s;
 	char	ch;
-	int forceColor = qfalse; //APSFIXME;
+	int forceColor = false; //APSFIXME;
 	vec4_t	tempcolor;
 	float	ax;
 	float	ay;
@@ -781,21 +781,21 @@ void UI_DrawChar( int x, int y, int ch, int style, vec4_t color )
 	UI_DrawString( x, y, buff, style, color );
 }
 
-qboolean UI_IsFullscreen( void ) {
+bool UI_IsFullscreen( void ) {
 	if ( uis.activemenu && ( trap_Key_GetCatcher() & KEYCATCH_UI ) ) {
 		return uis.activemenu->fullscreen;
 	}
 
-	return qfalse;
+	return false;
 }
 
-static void NeedCDAction( qboolean result ) {
+static void NeedCDAction( bool result ) {
 	if ( !result ) {
 		trap_Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
 	}
 }
 
-static void NeedCDKeyAction( qboolean result ) {
+static void NeedCDKeyAction( bool result ) {
 	if ( !result ) {
 		trap_Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
 	}
@@ -992,7 +992,7 @@ void UI_Cache_f( void ) {
 UI_ConsoleCommand
 =================
 */
-qboolean UI_ConsoleCommand( int realTime ) {
+bool UI_ConsoleCommand( int realTime ) {
 	char	*cmd;
 
 	uis.frametime = realTime - uis.realtime;
@@ -1005,45 +1005,45 @@ qboolean UI_ConsoleCommand( int realTime ) {
 
 	if ( Q_stricmp (cmd, "levelselect") == 0 ) {
 		UI_SPLevelMenu_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "postgame") == 0 ) {
 		UI_SPPostgameMenu_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "ui_cache") == 0 ) {
 		UI_Cache_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "ui_cinematics") == 0 ) {
 		UI_CinematicsMenu_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "ui_teamOrders") == 0 ) {
 		UI_TeamOrdersMenu_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "iamacheater") == 0 ) {
 		UI_SPUnlock_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "iamamonkey") == 0 ) {
 		UI_SPUnlockMedals_f();
-		return qtrue;
+		return true;
 	}
 
 	if ( Q_stricmp (cmd, "ui_cdkey") == 0 ) {
 		UI_CDKeyMenu_f();
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 /*
@@ -1220,7 +1220,7 @@ void UI_Refresh( int realtime )
 
 		if( uis.firstdraw ) {
 			UI_MouseEvent( 0, 0 );
-			uis.firstdraw = qfalse;
+			uis.firstdraw = false;
 		}
 	}
 
@@ -1242,7 +1242,7 @@ void UI_Refresh( int realtime )
 	if (m_entersound)
 	{
 		trap_S_StartLocalSound( menu_in_sound, CHAN_LOCAL_SOUND );
-		m_entersound = qfalse;
+		m_entersound = false;
 	}
 }
 
@@ -1252,13 +1252,13 @@ void UI_DrawTextBox (int x, int y, int width, int lines)
 	UI_DrawRect( x + BIGCHAR_WIDTH/2, y + BIGCHAR_HEIGHT/2, ( width + 1 ) * BIGCHAR_WIDTH, ( lines + 1 ) * BIGCHAR_HEIGHT, colorWhite );
 }
 
-qboolean UI_CursorInRect (int x, int y, int width, int height)
+bool UI_CursorInRect (int x, int y, int width, int height)
 {
 	if (uis.cursorx < x ||
 		uis.cursory < y ||
 		uis.cursorx > x+width ||
 		uis.cursory > y+height)
-		return qfalse;
+		return false;
 
-	return qtrue;
+	return true;
 }

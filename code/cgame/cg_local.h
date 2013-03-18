@@ -134,9 +134,9 @@ typedef struct {
 	float		backlerp;
 
 	float		yawAngle;
-	qboolean	yawing;
+	bool	yawing;
 	float		pitchAngle;
-	qboolean	pitching;
+	bool	pitching;
 
 	int			animationNumber;	// may include ANIM_TOGGLEBIT
 	animation_t	*animation;
@@ -155,7 +155,7 @@ typedef struct {
 	// machinegun spinning
 	float			barrelAngle;
 	int				barrelTime;
-	qboolean		barrelSpinning;
+	bool		barrelSpinning;
 } playerEntity_t;
 
 //=================================================
@@ -167,8 +167,8 @@ typedef struct {
 typedef struct centity_s {
 	entityState_t	currentState;	// from cg.frame
 	entityState_t	nextState;		// from cg.nextFrame, if available
-	qboolean		interpolate;	// true if next is valid to interpolate to
-	qboolean		currentValid;	// true if cg.frame holds this entity
+	bool		interpolate;	// true if next is valid to interpolate to
+	bool		currentValid;	// true if cg.frame holds this entity
 
 	int				muzzleFlashTime;	// move to playerEntity?
 	int				previousEvent;
@@ -186,7 +186,7 @@ typedef struct centity_s {
 	vec3_t			errorOrigin;
 	vec3_t			errorAngles;
 	
-	qboolean		extrapolated;	// false if origin / angles is an interpolation
+	bool		extrapolated;	// false if origin / angles is an interpolation
 	vec3_t			rawOrigin;
 	vec3_t			rawAngles;
 
@@ -207,7 +207,7 @@ typedef struct markPoly_s {
 	struct markPoly_s	*prevMark, *nextMark;
 	int			time;
 	qhandle_t	markShader;
-	qboolean	alphaFade;		// fade alpha instead of rgb
+	bool	alphaFade;		// fade alpha instead of rgb
 	float		color[4];
 	poly_t		poly;
 	polyVert_t	verts[MAX_VERTS_ON_POLY];
@@ -297,7 +297,7 @@ typedef struct {
 	int				defendCount;
 	int				assistCount;
 	int				captures;
-	qboolean	perfect;
+	bool	perfect;
 	int				team;
 } score_t;
 
@@ -309,7 +309,7 @@ typedef struct {
 #define	MAX_CUSTOM_SOUNDS	32
 
 typedef struct {
-	qboolean		infoValid;
+	bool		infoValid;
 
 	char			name[MAX_QPATH];
 	team_t			team;
@@ -332,7 +332,7 @@ typedef struct {
 	int				wins, losses;	// in tourney mode
 
 	int				teamTask;		// task in teamplay (offence/defence)
-	qboolean		teamLeader;		// true when this is a team leader
+	bool		teamLeader;		// true when this is a team leader
 
 	int				powerups;		// so can display quad/flag status
 
@@ -351,11 +351,11 @@ typedef struct {
 	char			headSkinName[MAX_QPATH];
 	char			redTeam[MAX_TEAMNAME];
 	char			blueTeam[MAX_TEAMNAME];
-	qboolean		deferred;
+	bool		deferred;
 
-	qboolean		newAnims;		// true if using the new mission pack animations
-	qboolean		fixedlegs;		// true if legs yaw is always the same as torso yaw
-	qboolean		fixedtorso;		// true if torso never changes yaw
+	bool		newAnims;		// true if using the new mission pack animations
+	bool		fixedlegs;		// true if legs yaw is always the same as torso yaw
+	bool		fixedtorso;		// true if torso never changes yaw
 
 	vec3_t			headOffset;		// move head in icon views
 	footstep_t		footsteps;
@@ -382,7 +382,7 @@ typedef struct {
 // that contains media references necessary to present the
 // weapon and its effects
 typedef struct weaponInfo_s {
-	qboolean		registered;
+	bool		registered;
 	gitem_t			*item;
 
 	qhandle_t		handsModel;			// the hands don't actually draw, they just position the weapon
@@ -422,7 +422,7 @@ typedef struct weaponInfo_s {
 // that constains media references necessary to present the
 // item and its effects
 typedef struct {
-	qboolean		registered;
+	bool		registered;
 	qhandle_t		models[MAX_ITEM_MODELS];
 	qhandle_t		icon;
 } itemInfo_t;
@@ -456,11 +456,11 @@ typedef struct {
 
 	int			clientNum;
 	
-	qboolean	demoPlayback;
-	qboolean	levelShot;			// taking a level menu screenshot
+	bool	demoPlayback;
+	bool	levelShot;			// taking a level menu screenshot
 	int			deferredPlayerLoading;
-	qboolean	loading;			// don't defer players at initial startup
-	qboolean	intermissionStarted;	// don't play voice rewards, because game will end shortly
+	bool	loading;			// don't defer players at initial startup
+	bool	intermissionStarted;	// don't play voice rewards, because game will end shortly
 
 	// there are only one or two snapshot_t that are relevent at a time
 	int			latestSnapshotNum;	// the number of snapshots the client system has received
@@ -472,8 +472,8 @@ typedef struct {
 
 	float		frameInterpolation;	// (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
 
-	qboolean	thisFrameTeleport;
-	qboolean	nextFrameTeleport;
+	bool	thisFrameTeleport;
+	bool	nextFrameTeleport;
 
 	int			frametime;		// cg.time - cg.oldTime
 
@@ -486,15 +486,15 @@ typedef struct {
 	int			timelimitWarnings;	// 5 min, 1 min, overtime
 	int			fraglimitWarnings;
 
-	qboolean	mapRestart;			// set on a map restart to set back the weapon
+	bool	mapRestart;			// set on a map restart to set back the weapon
 
-	qboolean	renderingThirdPerson;		// during deaths, chasecams, etc
+	bool	renderingThirdPerson;		// during deaths, chasecams, etc
 
 	// prediction state
-	qboolean	hyperspace;				// true if prediction has hit a trigger_teleport
+	bool	hyperspace;				// true if prediction has hit a trigger_teleport
 	playerState_t	predictedPlayerState;
 	centity_t		predictedPlayerEntity;
-	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
+	bool	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
 
@@ -524,7 +524,7 @@ typedef struct {
 	vec3_t		refdefViewAngles;		// will be converted to refdef.viewaxis
 
 	// zoom key
-	qboolean	zoomed;
+	bool	zoomed;
 	int			zoomTime;
 	float		zoomSensitivity;
 
@@ -537,8 +537,8 @@ typedef struct {
 	int			selectedScore;
 	int			teamScores[2];
 	score_t		scores[MAX_CLIENTS];
-	qboolean	showScores;
-	qboolean	scoreBoardShowing;
+	bool	showScores;
+	bool	scoreBoardShowing;
 	int			scoreFadeTime;
 	char		killerName[MAX_NAME_LENGTH];
 	char			spectatorList[MAX_STRING_CHARS];		// list of names
@@ -635,13 +635,13 @@ typedef struct {
 	float		xyspeed;
 	int     nextOrbitTime;
 
-	//qboolean cameraMode;		// if rendering from a loaded camera
+	//bool cameraMode;		// if rendering from a loaded camera
 
 
 	// development tool
 	refEntity_t		testModelEntity;
 	char			testModelName[MAX_QPATH];
-	qboolean		testGun;
+	bool		testGun;
 
 } cg_t;
 
@@ -1003,7 +1003,7 @@ typedef struct {
 	int				serverCommandSequence;	// reliable command stream counter
 	int				processedSnapshotNum;// the number of snapshots cgame has requested
 
-	qboolean		localServer;		// detected on startup by checking sv_running
+	bool		localServer;		// detected on startup by checking sv_running
 
 	// parsed from serverinfo
 	gametype_t		gametype;
@@ -1020,13 +1020,13 @@ typedef struct {
 	int				voteTime;
 	int				voteYes;
 	int				voteNo;
-	qboolean		voteModified;			// beep whenever changed
+	bool		voteModified;			// beep whenever changed
 	char			voteString[MAX_STRING_TOKENS];
 
 	int				teamVoteTime[2];
 	int				teamVoteYes[2];
 	int				teamVoteNo[2];
-	qboolean		teamVoteModified[2];	// beep whenever changed
+	bool		teamVoteModified[2];	// beep whenever changed
 	char			teamVoteString[2][MAX_STRING_TOKENS];
 
 	int				levelStartTime;
@@ -1035,7 +1035,7 @@ typedef struct {
 	int				redflag, blueflag;		// flag status from configstrings
 	int				flagStatus;
 
-	qboolean  newHud;
+	bool  newHud;
 
 	//
 	// locally derived information from gamestate
@@ -1057,15 +1057,15 @@ typedef struct {
 
 	int cursorX;
 	int cursorY;
-	qboolean eventHandling;
-	qboolean mouseCaptured;
-	qboolean sizingHud;
+	bool eventHandling;
+	bool mouseCaptured;
+	bool sizingHud;
 	void *capturedItem;
 	qhandle_t activeCursor;
 
 	// orders
 	int currentOrder;
-	qboolean orderPending;
+	bool orderPending;
 	int orderTime;
 	int currentVoiceClient;
 	int acceptOrderTime;
@@ -1209,7 +1209,7 @@ void CG_UpdateCvars( void );
 int CG_CrosshairPlayer( void );
 int CG_LastAttacker( void );
 void CG_LoadMenus(const char *menuFile);
-void CG_KeyEvent(int key, qboolean down);
+void CG_KeyEvent(int key, bool down);
 void CG_MouseEvent(int x, int y);
 void CG_EventHandling(int type);
 void CG_RankRunFrame( void );
@@ -1231,7 +1231,7 @@ void CG_ZoomDown_f( void );
 void CG_ZoomUp_f( void );
 void CG_AddBufferedSound( sfxHandle_t sfx);
 
-void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
+void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, bool demoPlayback );
 
 
 //
@@ -1245,7 +1245,7 @@ void CG_DrawString( float x, float y, const char *string,
 
 
 void CG_DrawStringExt( int x, int y, const char *string, const float *setColor, 
-		qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars );
+		bool forceColor, bool shadow, int charWidth, int charHeight, int maxChars );
 void CG_DrawBigString( int x, int y, const char *s, float alpha );
 void CG_DrawBigStringColor( int x, int y, const char *s, vec4_t color );
 void CG_DrawSmallString( int x, int y, const char *s, float alpha );
@@ -1280,7 +1280,7 @@ void CG_AddLagometerSnapshotInfo( snapshot_t *snap );
 void CG_CenterPrint( const char *str, int y, int charWidth );
 void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles );
 void CG_DrawActive( stereoFrame_t stereoView );
-void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean force2D );
+void CG_DrawFlagModel( float x, float y, float w, float h, int team, bool force2D );
 void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team );
 void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle);
 void CG_Text_Paint(float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int style);
@@ -1289,7 +1289,7 @@ int CG_Text_Height(const char *text, float scale, int limit);
 void CG_SelectPrevPlayer( void );
 void CG_SelectNextPlayer( void );
 float CG_GetValue(int ownerDraw);
-qboolean CG_OwnerDrawVisible(int flags);
+bool CG_OwnerDrawVisible(int flags);
 void CG_RunMenuScript(char **args);
 void CG_ShowResponseHead( void );
 void CG_SetPrintString(int type, const char *p);
@@ -1301,8 +1301,8 @@ void CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle
 void CG_Text_PaintChar(float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader);
 void CG_CheckOrderPending( void );
 const char *CG_GameTypeString( void );
-qboolean CG_YourTeamHasFlag( void );
-qboolean CG_OtherTeamHasFlag( void );
+bool CG_YourTeamHasFlag( void );
+bool CG_OtherTeamHasFlag( void );
 qhandle_t CG_StatusHandle(int task);
 
 
@@ -1365,7 +1365,7 @@ void CG_FireWeapon( centity_t *cent );
 void CG_MissileHitWall( int weapon, int clientNum, vec3_t origin, vec3_t dir, impactSound_t soundType );
 void CG_MissileHitPlayer( int weapon, vec3_t origin, vec3_t dir, int entityNum );
 void CG_ShotgunFire( entityState_t *es );
-void CG_Bullet( vec3_t origin, int sourceEntityNum, vec3_t normal, qboolean flesh, int fleshEntityNum );
+void CG_Bullet( vec3_t origin, int sourceEntityNum, vec3_t normal, bool flesh, int fleshEntityNum );
 
 void CG_RailTrail( clientInfo_t *ci, vec3_t start, vec3_t end );
 void CG_GrappleTrail( centity_t *ent, const weaponInfo_t *wi );
@@ -1384,8 +1384,8 @@ void	CG_ImpactMark( qhandle_t markShader,
 				    const vec3_t origin, const vec3_t dir, 
 					float orientation, 
 				    float r, float g, float b, float a, 
-					qboolean alphaFade, 
-					float radius, qboolean temporary );
+					bool alphaFade, 
+					float radius, bool temporary );
 
 //
 // cg_localents.c
@@ -1425,7 +1425,7 @@ void CG_Bleed( vec3_t origin, int entityNum );
 
 localEntity_t *CG_MakeExplosion( vec3_t origin, vec3_t dir,
 								qhandle_t hModel, qhandle_t shader, int msec,
-								qboolean isSprite );
+								bool isSprite );
 
 //
 // cg_snapshot.c
@@ -1443,13 +1443,13 @@ void CG_DrawInformation( void );
 //
 // cg_scoreboard.c
 //
-qboolean CG_DrawOldScoreboard( void );
+bool CG_DrawOldScoreboard( void );
 void CG_DrawOldTourneyScoreboard( void );
 
 //
 // cg_consolecmds.c
 //
-qboolean CG_ConsoleCommand( void );
+bool CG_ConsoleCommand( void );
 void CG_InitConsoleCommands( void );
 
 //
@@ -1461,7 +1461,7 @@ void CG_SetConfigValues( void );
 void CG_ShaderStateChanged(void);
 #ifdef MISSIONPACK
 void CG_LoadVoiceChats( void );
-void CG_VoiceChatLocal( int mode, qboolean voiceOnly, int clientNum, int color, const char *cmd );
+void CG_VoiceChatLocal( int mode, bool voiceOnly, int clientNum, int color, const char *cmd );
 void CG_PlayBufferedVoiceChats( void );
 #endif
 
@@ -1561,7 +1561,7 @@ void		trap_S_StopLoopingSound(int entnum);
 
 // a local sound is always played full volume
 void		trap_S_StartLocalSound( sfxHandle_t sfx, int channelNum );
-void		trap_S_ClearLoopingSounds( qboolean killall );
+void		trap_S_ClearLoopingSounds( bool killall );
 void		trap_S_AddLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx );
 void		trap_S_AddRealLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx );
 void		trap_S_UpdateEntityPosition( int entityNum, const vec3_t origin );
@@ -1569,7 +1569,7 @@ void		trap_S_UpdateEntityPosition( int entityNum, const vec3_t origin );
 // respatialize recalculates the volumes of sound as they should be heard by the
 // given entityNum and position
 void		trap_S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater );
-sfxHandle_t	trap_S_RegisterSound( const char *sample, qboolean compressed );		// returns buzz if not found
+sfxHandle_t	trap_S_RegisterSound( const char *sample, bool compressed );		// returns buzz if not found
 void		trap_S_StartBackgroundTrack( const char *intro, const char *loop );	// empty name stops music
 void	trap_S_StopBackgroundTrack( void );
 
@@ -1603,7 +1603,7 @@ void		trap_R_ModelBounds( clipHandle_t model, vec3_t mins, vec3_t maxs );
 int			trap_R_LerpTag( orientation_t *tag, clipHandle_t mod, int startFrame, int endFrame, 
 					   float frac, const char *tagName );
 void		trap_R_RemapShader( const char *oldShader, const char *newShader, const char *timeOffset );
-qboolean	trap_R_inPVS( const vec3_t p1, const vec3_t p2 );
+bool	trap_R_inPVS( const vec3_t p1, const vec3_t p2 );
 
 // The glconfig_t will not change during the life of a cgame.
 // If it needs to change, the entire cgame will be restarted, because
@@ -1621,13 +1621,13 @@ void		trap_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime );
 
 // a snapshot get can fail if the snapshot (or the entties it holds) is so
 // old that it has fallen out of the client system queue
-qboolean	trap_GetSnapshot( int snapshotNumber, snapshot_t *snapshot );
+bool	trap_GetSnapshot( int snapshotNumber, snapshot_t *snapshot );
 
 // retrieve a text command from the server stream
 // the current snapshot will hold the number of the most recent command
-// qfalse can be returned if the client system handled the command
+// false can be returned if the client system handled the command
 // argc() / argv() can be used to examine the parameters of the command
-qboolean	trap_GetServerCommand( int serverCommandNumber );
+bool	trap_GetServerCommand( int serverCommandNumber );
 
 // returns the most recent command number that can be passed to GetUserCmd
 // this will always be at least one higher than the number in the current
@@ -1635,7 +1635,7 @@ qboolean	trap_GetServerCommand( int serverCommandNumber );
 // a lagged connection
 int			trap_GetCurrentCmdNumber( void );	
 
-qboolean	trap_GetUserCmd( int cmdNumber, usercmd_t *ucmd );
+bool	trap_GetUserCmd( int cmdNumber, usercmd_t *ucmd );
 
 // used for the weapon select and zoom
 void		trap_SetUserCmdValue( int stateValue, float sensitivityScale );
@@ -1646,7 +1646,7 @@ void		testPrintFloat( char *string, float f );
 
 int			trap_MemoryRemaining( void );
 void		trap_R_RegisterFont(const char *fontName, int pointSize, fontInfo_t *font);
-qboolean	trap_Key_IsDown( int keynum );
+bool	trap_Key_IsDown( int keynum );
 int			trap_Key_GetCatcher( void );
 void		trap_Key_SetCatcher( int catcher );
 int			trap_Key_GetKey( const char *binding );
@@ -1668,11 +1668,11 @@ void trap_CIN_SetExtents (int handle, int x, int y, int w, int h);
 int			trap_RealTime(qtime_t *qtime);
 void		trap_SnapVector( float *v );
 
-qboolean	trap_loadCamera(const char *name);
+bool	trap_loadCamera(const char *name);
 void		trap_startCamera(int time);
-qboolean	trap_getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
+bool	trap_getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
 
-qboolean	trap_GetEntityToken( char *buffer, int bufferSize );
+bool	trap_GetEntityToken( char *buffer, int bufferSize );
 
 void	CG_ClearParticles (void);
 void	CG_AddParticles (void);
@@ -1685,7 +1685,7 @@ void	CG_ParticleSparks (vec3_t org, vec3_t vel, int duration, float x, float y, 
 void	CG_ParticleDust (centity_t *cent, vec3_t origin, vec3_t dir);
 void	CG_ParticleMisc (qhandle_t pshader, vec3_t origin, int size, int duration, float alpha);
 void	CG_ParticleExplosion (char *animStr, vec3_t origin, vec3_t vel, int duration, int sizeStart, int sizeEnd);
-extern qboolean		initparticles;
+extern bool		initparticles;
 int CG_NewParticleArea ( int num );
 
 

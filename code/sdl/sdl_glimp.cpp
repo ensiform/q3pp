@@ -190,7 +190,7 @@ static void GLimp_DetectAvailableModes(void)
 GLimp_SetMode
 ===============
 */
-static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder)
+static int GLimp_SetMode(int mode, bool fullscreen, bool noborder)
 {
 	const char*   glstring;
 	int sdlcolorbits;
@@ -266,14 +266,14 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder)
 	if (fullscreen)
 	{
 		flags |= SDL_FULLSCREEN;
-		glConfig.isFullscreen = qtrue;
+		glConfig.isFullscreen = true;
 	}
 	else
 	{
 		if (noborder)
 			flags |= SDL_NOFRAME;
 
-		glConfig.isFullscreen = qfalse;
+		glConfig.isFullscreen = false;
 	}
 
 	colorbits = r_colorbits->value;
@@ -366,12 +366,12 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder)
 
 		if(r_stereoEnabled->integer)
 		{
-			glConfig.stereoEnabled = qtrue;
+			glConfig.stereoEnabled = true;
 			SDL_GL_SetAttribute(SDL_GL_STEREO, 1);
 		}
 		else
 		{
-			glConfig.stereoEnabled = qfalse;
+			glConfig.stereoEnabled = false;
 			SDL_GL_SetAttribute(SDL_GL_STEREO, 0);
 		}
 		
@@ -453,7 +453,7 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder)
 GLimp_StartDriverAndSetMode
 ===============
 */
-static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qboolean noborder)
+static bool GLimp_StartDriverAndSetMode(int mode, bool fullscreen, bool noborder)
 {
 	rserr_t err;
 
@@ -465,7 +465,7 @@ static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qbool
 		{
 			ri.Printf( PRINT_ALL, "SDL_Init( SDL_INIT_VIDEO ) FAILED (%s)\n",
 					SDL_GetError());
-			return qfalse;
+			return false;
 		}
 
 		SDL_VideoDriverName( driverName, sizeof( driverName ) - 1 );
@@ -477,8 +477,8 @@ static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qbool
 	{
 		ri.Printf( PRINT_ALL, "Fullscreen not allowed with in_nograb 1\n");
 		ri.Cvar_Set( "r_fullscreen", "0" );
-		r_fullscreen->modified = qfalse;
-		fullscreen = qfalse;
+		r_fullscreen->modified = false;
+		fullscreen = false;
 	}
 	
 	err = GLimp_SetMode(mode, fullscreen, noborder);
@@ -487,22 +487,22 @@ static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qbool
 	{
 		case RSERR_INVALID_FULLSCREEN:
 			ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
-			return qfalse;
+			return false;
 		case RSERR_INVALID_MODE:
 			ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
-			return qfalse;
+			return false;
 		default:
 			break;
 	}
 
-	return qtrue;
+	return true;
 }
 
-static qboolean GLimp_HaveExtension(const char *ext)
+static bool GLimp_HaveExtension(const char *ext)
 {
 	const char *ptr = Q_stristr( glConfig.extensions_string, ext );
 	if (ptr == NULL)
-		return qfalse;
+		return false;
 	ptr += strlen(ext);
 	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
 }
@@ -567,17 +567,17 @@ static void GLimp_InitExtensions( void )
 
 
 	// GL_EXT_texture_env_add
-	glConfig.textureEnvAddAvailable = qfalse;
+	glConfig.textureEnvAddAvailable = false;
 	if ( GLimp_HaveExtension( "EXT_texture_env_add" ) )
 	{
 		if ( r_ext_texture_env_add->integer )
 		{
-			glConfig.textureEnvAddAvailable = qtrue;
+			glConfig.textureEnvAddAvailable = true;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
 		}
 		else
 		{
-			glConfig.textureEnvAddAvailable = qfalse;
+			glConfig.textureEnvAddAvailable = false;
 			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_env_add\n" );
 		}
 	}
@@ -649,7 +649,7 @@ static void GLimp_InitExtensions( void )
 		ri.Printf( PRINT_ALL, "...GL_EXT_compiled_vertex_array not found\n" );
 	}
 
-	textureFilterAnisotropic = qfalse;
+	textureFilterAnisotropic = false;
 	if ( GLimp_HaveExtension( "GL_EXT_texture_filter_anisotropic" ) )
 	{
 		if ( r_ext_texture_filter_anisotropic->integer ) {
@@ -661,7 +661,7 @@ static void GLimp_InitExtensions( void )
 			else
 			{
 				ri.Printf( PRINT_ALL, "...using GL_EXT_texture_filter_anisotropic (max: %i)\n", maxAnisotropy );
-				textureFilterAnisotropic = qtrue;
+				textureFilterAnisotropic = true;
 			}
 		}
 		else
@@ -711,7 +711,7 @@ void GLimp_Init( void )
 	// Try again, this time in a platform specific "safe mode"
 	ri.Sys_GLimpSafeInit( );
 
-	if(GLimp_StartDriverAndSetMode(r_mode->integer, r_fullscreen->integer, qfalse))
+	if(GLimp_StartDriverAndSetMode(r_mode->integer, r_fullscreen->integer, false))
 		goto success;
 
 	// Finally, try the default screen resolution
@@ -720,7 +720,7 @@ void GLimp_Init( void )
 		ri.Printf( PRINT_ALL, "Setting r_mode %d failed, falling back on r_mode %d\n",
 				r_mode->integer, R_MODE_FALLBACK );
 
-		if(GLimp_StartDriverAndSetMode(R_MODE_FALLBACK, qfalse, qfalse))
+		if(GLimp_StartDriverAndSetMode(R_MODE_FALLBACK, false, false))
 			goto success;
 	}
 
@@ -780,9 +780,9 @@ void GLimp_EndFrame( void )
 
 	if( r_fullscreen->modified )
 	{
-		qboolean    fullscreen;
-		qboolean    needToToggle = qtrue;
-		qboolean    sdlToggled = qfalse;
+		bool    fullscreen;
+		bool    needToToggle = true;
+		bool    sdlToggled = false;
 		SDL_Surface *s = SDL_GetVideoSurface( );
 
 		if( s )
@@ -794,7 +794,7 @@ void GLimp_EndFrame( void )
 			{
 				ri.Printf( PRINT_ALL, "Fullscreen not allowed with in_nograb 1\n");
 				ri.Cvar_Set( "r_fullscreen", "0" );
-				r_fullscreen->modified = qfalse;
+				r_fullscreen->modified = false;
 			}
 
 			// Is the state we want different from the current state?
@@ -813,6 +813,6 @@ void GLimp_EndFrame( void )
 			ri.IN_Restart( );
 		}
 
-		r_fullscreen->modified = qfalse;
+		r_fullscreen->modified = false;
 	}
 }

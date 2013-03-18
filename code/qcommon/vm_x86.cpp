@@ -721,7 +721,7 @@ instead of opStack operations, which will save expensive operations on memory
 =================
 */
 
-qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
+bool ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 {
 	int v;
 	int op1;
@@ -731,7 +731,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 	if (vm->jumpTableTargets && !jused[instruction])
 		op1 = code[pc+4];
 	else
-		return qfalse;
+		return false;
 
 	switch ( op1 ) {
 
@@ -749,7 +749,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_LOAD4
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_LOAD2:
 		EmitPushStack(vm);
@@ -765,7 +765,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_LOAD2
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_LOAD1:
 		EmitPushStack(vm);
@@ -781,7 +781,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_LOAD1
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_STORE4:
 		EmitMovEAXStack(vm, (vm->dataMask & ~3));
@@ -796,7 +796,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		EmitCommand(LAST_COMMAND_SUB_BL_1);		// sub bl, 1
 		pc++;						// OP_STORE4
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_STORE2:
 		EmitMovEAXStack(vm, (vm->dataMask & ~1));
@@ -813,7 +813,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_STORE2
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_STORE1:
 		EmitMovEAXStack(vm, vm->dataMask);
@@ -829,7 +829,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_STORE1
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_ADD:
 		v = Constant4();
@@ -849,7 +849,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_ADD
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_SUB:
 		v = Constant4();
@@ -869,7 +869,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc++;						// OP_SUB
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_MULI:
 		v = Constant4();
@@ -889,7 +889,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		pc++;						// OP_MULI
 		instruction += 1;
 
-		return qtrue;
+		return true;
 
 	case OP_LSH:
 		v = NextConstant4();
@@ -903,7 +903,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc += 5;					// CONST + OP_LSH
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_RSHI:
 		v = NextConstant4();
@@ -917,7 +917,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc += 5;					// CONST + OP_RSHI
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_RSHU:
 		v = NextConstant4();
@@ -931,7 +931,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc += 5;					// CONST + OP_RSHU
 		instruction += 1;
-		return qtrue;
+		return true;
 	
 	case OP_BAND:
 		v = Constant4();
@@ -951,7 +951,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		
 		pc += 1;					// OP_BAND
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_BOR:
 		v = Constant4();
@@ -971,7 +971,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		
 		pc += 1;				 	// OP_BOR
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_BXOR:
 		v = Constant4();
@@ -991,7 +991,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		
 		pc += 1;					// OP_BXOR
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_EQ:
 	case OP_NE:
@@ -1012,7 +1012,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 		EmitBranchConditions(vm, op1);
 		instruction++;
 
-		return qtrue;
+		return true;
 
 	case OP_EQF:
 	case OP_NEF:
@@ -1031,7 +1031,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 			EmitJumpIns(vm, "0F 85", Constant4());	// jnz 0x12345678
 		
 		instruction += 1;
-		return qtrue;
+		return true;
 
 
 	case OP_JUMP:
@@ -1039,7 +1039,7 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc += 1;                  // OP_JUMP
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	case OP_CALL:
 		v = Constant4();
@@ -1047,13 +1047,13 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 
 		pc += 1;                  // OP_CALL
 		instruction += 1;
-		return qtrue;
+		return true;
 
 	default:
 		break;
 	}
 
-	return qfalse;
+	return false;
 }
 
 /*
@@ -1719,7 +1719,7 @@ int VM_CallCompiled(vm_t *vm, int *args)
 	currentVM = vm;
 
 	// interpret the code
-	vm->currentlyInterpreting = qtrue;
+	vm->currentlyInterpreting = true;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = stackOnEntry = vm->programStack;

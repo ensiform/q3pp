@@ -32,7 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "../client/snd_local.h"
 
-qboolean snd_inited = qfalse;
+bool snd_inited = false;
 
 cvar_t *s_sdlBits;
 cvar_t *s_sdlSpeed;
@@ -135,7 +135,7 @@ static void SNDDMA_PrintAudiospec(const char *str, const SDL_AudioSpec *spec)
 SNDDMA_Init
 ===============
 */
-qboolean SNDDMA_Init(void)
+bool SNDDMA_Init(void)
 {
 	char drivername[128];
 	SDL_AudioSpec desired;
@@ -143,7 +143,7 @@ qboolean SNDDMA_Init(void)
 	int tmp;
 
 	if (snd_inited)
-		return qtrue;
+		return true;
 
 	if (!s_sdlBits) {
 		s_sdlBits = Cvar_Get("s_sdlBits", "16", CVAR_ARCHIVE);
@@ -160,7 +160,7 @@ qboolean SNDDMA_Init(void)
 		if (SDL_Init(SDL_INIT_AUDIO) == -1)
 		{
 			Com_Printf( "FAILED (%s)\n", SDL_GetError( ) );
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -205,7 +205,7 @@ qboolean SNDDMA_Init(void)
 	{
 		Com_Printf("SDL_OpenAudio() failed: %s\n", SDL_GetError());
 		SDL_QuitSubSystem(SDL_INIT_AUDIO);
-		return qfalse;
+		return false;
 	}
 
 	SNDDMA_PrintAudiospec("SDL_AudioSpec", &obtained);
@@ -243,8 +243,8 @@ qboolean SNDDMA_Init(void)
 	SDL_PauseAudio(0);  // start callback.
 
 	Com_Printf("SDL audio initialized.\n");
-	snd_inited = qtrue;
-	return qtrue;
+	snd_inited = true;
+	return true;
 }
 
 /*
@@ -271,7 +271,7 @@ void SNDDMA_Shutdown(void)
 	free(dma.buffer);
 	dma.buffer = NULL;
 	dmapos = dmasize = 0;
-	snd_inited = qfalse;
+	snd_inited = false;
 	Com_Printf("SDL audio device shut down.\n");
 }
 

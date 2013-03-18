@@ -30,7 +30,7 @@ CONNECTION SCREEN
 ===============================================================================
 */
 
-qboolean	passwordNeeded = qtrue;
+bool	passwordNeeded = true;
 menufield_s passwordField;
 
 static connstate_t	lastConnState;
@@ -159,7 +159,7 @@ This will also be overlaid on the cgame info screen during loading
 to prevent it from blinking away too rapidly on local or lan games.
 ========================
 */
-void UI_DrawConnectScreen( qboolean overlay ) {
+void UI_DrawConnectScreen( bool overlay ) {
 	char			*s;
 	uiClientState_t	cstate;
 	char			info[MAX_INFO_VALUE];
@@ -197,7 +197,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	if ( passwordNeeded ) {
 		s_ingame_menu.x = SCREEN_WIDTH * 0.50 - 128;
 		s_ingame_menu.nitems = 0;
-		s_ingame_menu.wrapAround = qtrue;
+		s_ingame_menu.wrapAround = true;
 
 		passwordField.generic.type = MTYPE_FIELD;
 		passwordField.generic.name = "Password:";

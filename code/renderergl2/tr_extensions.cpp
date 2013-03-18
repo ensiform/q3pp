@@ -178,11 +178,11 @@ void (APIENTRY * qglRenderbufferStorageMultisampleEXT)(GLenum target, GLsizei sa
 // GL_ARB_draw_buffers
 void (APIENTRY * qglDrawBuffersARB)(GLsizei n, const GLenum *bufs);
 
-static qboolean GLimp_HaveExtension(const char *ext)
+static bool GLimp_HaveExtension(const char *ext)
 {
 	const char *ptr = Q_stristr( glConfig.extensions_string, ext );
 	if (ptr == NULL)
-		return qfalse;
+		return false;
 	ptr += strlen(ext);
 	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
 }
@@ -194,7 +194,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_draw_range_elements
 	extension = "GL_EXT_draw_range_elements";
-	glRefConfig.drawRangeElements = qfalse;
+	glRefConfig.drawRangeElements = false;
 	qglMultiDrawArraysEXT = NULL;
 	qglMultiDrawElementsEXT = NULL;
 	if( GLimp_HaveExtension( extension ) )
@@ -202,7 +202,7 @@ void GLimp_InitExtraExtensions()
 		qglDrawRangeElementsEXT = (void *) SDL_GL_GetProcAddress("glDrawRangeElementsEXT");
 
 		if ( r_ext_draw_range_elements->integer)
-			glRefConfig.drawRangeElements = qtrue;
+			glRefConfig.drawRangeElements = true;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.drawRangeElements], extension);
 	}
@@ -213,7 +213,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_multi_draw_arrays
 	extension = "GL_EXT_multi_draw_arrays";
-	glRefConfig.multiDrawArrays = qfalse;
+	glRefConfig.multiDrawArrays = false;
 	qglMultiDrawArraysEXT = NULL;
 	qglMultiDrawElementsEXT = NULL;
 	if( GLimp_HaveExtension( extension ) )
@@ -222,7 +222,7 @@ void GLimp_InitExtraExtensions()
 		qglMultiDrawElementsEXT = (PFNGLMULTIDRAWELEMENTSEXTPROC) SDL_GL_GetProcAddress("glMultiDrawElementsEXT");
 
 		if ( r_ext_multi_draw_arrays->integer )
-			glRefConfig.multiDrawArrays = qtrue;
+			glRefConfig.multiDrawArrays = true;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.multiDrawArrays], extension);
 	}
@@ -232,7 +232,7 @@ void GLimp_InitExtraExtensions()
 	}
 
 	// GL_ARB_vertex_program
-	//glRefConfig.vertexProgram = qfalse;
+	//glRefConfig.vertexProgram = false;
 	extension = "GL_ARB_vertex_program";
 	qglVertexAttrib4fARB = NULL;
 	qglVertexAttrib4fvARB = NULL;
@@ -250,7 +250,7 @@ void GLimp_InitExtraExtensions()
 			(PFNGLDISABLEVERTEXATTRIBARRAYARBPROC) SDL_GL_GetProcAddress("glDisableVertexAttribArrayARB");
 
 		ri.Printf(PRINT_ALL, result[1], extension);
-		//glRefConfig.vertexProgram = qtrue;
+		//glRefConfig.vertexProgram = true;
 	}
 	else
 	{
@@ -258,7 +258,7 @@ void GLimp_InitExtraExtensions()
 	}
 	
 	// GL_ARB_vertex_buffer_object
-	//glRefConfig.vertexBufferObject = qfalse;
+	//glRefConfig.vertexBufferObject = false;
 	extension = "GL_ARB_vertex_buffer_object";
 	qglBindBufferARB = NULL;
 	qglDeleteBuffersARB = NULL;
@@ -281,7 +281,7 @@ void GLimp_InitExtraExtensions()
 		qglGetBufferParameterivARB = (PFNGLGETBUFFERPARAMETERIVARBPROC) SDL_GL_GetProcAddress("glGetBufferParameterivARB");
 		qglGetBufferPointervARB = (PFNGLGETBUFFERPOINTERVARBPROC) SDL_GL_GetProcAddress("glGetBufferPointervARB");
 		ri.Printf(PRINT_ALL, result[1], extension);
-		//glRefConfig.vertexBufferObject = qtrue;
+		//glRefConfig.vertexBufferObject = true;
 	}
 	else
 	{
@@ -290,7 +290,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_shader_objects
 	extension = "GL_ARB_shader_objects";
-	//glRefConfig.shaderObjects = qfalse;
+	//glRefConfig.shaderObjects = false;
 	qglDeleteObjectARB = NULL;
 	qglGetHandleARB = NULL;
 	qglDetachObjectARB = NULL;
@@ -370,7 +370,7 @@ void GLimp_InitExtraExtensions()
 		qglGetUniformivARB = (PFNGLGETUNIFORMIVARBPROC) SDL_GL_GetProcAddress("glGetUniformivARB");
 		qglGetShaderSourceARB = (PFNGLGETSHADERSOURCEARBPROC) SDL_GL_GetProcAddress("glGetShaderSourceARB");
 		ri.Printf(PRINT_ALL, result[1], extension);
-		//glRefConfig.shaderObjects = qtrue;
+		//glRefConfig.shaderObjects = true;
 	}
 	else
 	{
@@ -378,7 +378,7 @@ void GLimp_InitExtraExtensions()
 	}
 
 	// GL_ARB_vertex_shader
-	//glRefConfig.vertexShader = qfalse;
+	//glRefConfig.vertexShader = false;
 	extension = "GL_ARB_vertex_shader";
 	qglBindAttribLocationARB = NULL;
 	qglGetActiveAttribARB = NULL;
@@ -405,13 +405,13 @@ void GLimp_InitExtraExtensions()
 #endif
 
 		//glConfig.maxVertexSkinningBones = (int) Q_bound(0.0, (Q_max(glConfig.maxVertexUniforms - reservedComponents, 0) / 16), MAX_BONES);
-		//glConfig.vboVertexSkinningAvailable = r_vboVertexSkinning->integer && ((glConfig.maxVertexSkinningBones >= 12) ? qtrue : qfalse);
+		//glConfig.vboVertexSkinningAvailable = r_vboVertexSkinning->integer && ((glConfig.maxVertexSkinningBones >= 12) ? true : false);
 
 		qglBindAttribLocationARB = (PFNGLBINDATTRIBLOCATIONARBPROC) SDL_GL_GetProcAddress("glBindAttribLocationARB");
 		qglGetActiveAttribARB = (PFNGLGETACTIVEATTRIBARBPROC) SDL_GL_GetProcAddress("glGetActiveAttribARB");
 		qglGetAttribLocationARB = (PFNGLGETATTRIBLOCATIONARBPROC) SDL_GL_GetProcAddress("glGetAttribLocationARB");
 		ri.Printf(PRINT_ALL, result[1], extension);
-		//glRefConfig.vertexShader = qtrue;
+		//glRefConfig.vertexShader = true;
 	}
 	else
 	{
@@ -420,7 +420,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_shading_language_100
 	extension = "GL_ARB_shading_language_100";
-	glRefConfig.textureFloat = qfalse;
+	glRefConfig.textureFloat = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
 		char version[256];
@@ -448,12 +448,12 @@ void GLimp_InitExtraExtensions()
 	}
 
 	extension = "GL_ARB_texture_non_power_of_two";
-	glRefConfig.textureNonPowerOfTwo = qfalse;
+	glRefConfig.textureNonPowerOfTwo = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
 		if(1) //(r_ext_texture_non_power_of_two->integer)
 		{
-			glRefConfig.textureNonPowerOfTwo = qtrue;
+			glRefConfig.textureNonPowerOfTwo = true;
 		}
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.textureNonPowerOfTwo], extension);
@@ -465,12 +465,12 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_texture_float
 	extension = "GL_ARB_texture_float";
-	glRefConfig.textureFloat = qfalse;
+	glRefConfig.textureFloat = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
 		if( r_ext_texture_float->integer )
 		{
-			glRefConfig.textureFloat = qtrue;
+			glRefConfig.textureFloat = true;
 		}
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.textureFloat], extension);
@@ -482,11 +482,11 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_half_float_pixel
 	extension = "GL_ARB_half_float_pixel";
-	glRefConfig.halfFloatPixel = qfalse;
+	glRefConfig.halfFloatPixel = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
 		if( r_arb_half_float_pixel->integer )
-			glRefConfig.halfFloatPixel = qtrue;
+			glRefConfig.halfFloatPixel = true;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.halfFloatPixel], extension);
 	}
@@ -497,7 +497,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_framebuffer_object
 	extension = "GL_EXT_framebuffer_object";
-	glRefConfig.framebufferObject = qfalse;
+	glRefConfig.framebufferObject = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
 		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &glRefConfig.maxRenderbufferSize);
@@ -522,7 +522,7 @@ void GLimp_InitExtraExtensions()
 		qglGenerateMipmapEXT = (PFNGLGENERATEMIPMAPEXTPROC) SDL_GL_GetProcAddress("glGenerateMipmapEXT");
 
 		if(r_ext_framebuffer_object->value)
-			glRefConfig.framebufferObject = qtrue;
+			glRefConfig.framebufferObject = true;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.framebufferObject], extension);
 	}
@@ -533,10 +533,10 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_packed_depth_stencil
 	extension = "GL_EXT_packed_depth_stencil";
-	glRefConfig.packedDepthStencil = qfalse;
+	glRefConfig.packedDepthStencil = false;
 	if( GLimp_HaveExtension(extension))
 	{
-		glRefConfig.packedDepthStencil = qtrue;
+		glRefConfig.packedDepthStencil = true;
 		ri.Printf(PRINT_ALL, result[glRefConfig.packedDepthStencil], extension);
 	}
 	else
@@ -546,7 +546,7 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_occlusion_query
 	extension = "GL_ARB_occlusion_query";
-	glRefConfig.occlusionQuery = qfalse;
+	glRefConfig.occlusionQuery = false;
 	if (GLimp_HaveExtension(extension))
 	{
 		qglGenQueriesARB = (PFNGLGENQUERIESARBPROC) SDL_GL_GetProcAddress("glGenQueriesARB");
@@ -557,7 +557,7 @@ void GLimp_InitExtraExtensions()
 		qglGetQueryivARB = (PFNGLGETQUERYIVARBPROC) SDL_GL_GetProcAddress("glGetQueryivARB");
 		qglGetQueryObjectivARB = (PFNGLGETQUERYOBJECTIVARBPROC) SDL_GL_GetProcAddress("glGetQueryObjectivARB");
 		qglGetQueryObjectuivARB = (PFNGLGETQUERYOBJECTUIVARBPROC) SDL_GL_GetProcAddress("glGetQueryObjectuivARB");
-		glRefConfig.occlusionQuery = qtrue;
+		glRefConfig.occlusionQuery = true;
 		ri.Printf(PRINT_ALL, result[glRefConfig.occlusionQuery], extension);
 	}
 	else
@@ -567,11 +567,11 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_framebuffer_blit
 	extension = "GL_EXT_framebuffer_blit";
-	glRefConfig.framebufferBlit = qfalse;
+	glRefConfig.framebufferBlit = false;
 	if (GLimp_HaveExtension(extension))
 	{
 		qglBlitFramebufferEXT = (void *)SDL_GL_GetProcAddress("glBlitFramebufferEXT");
-		glRefConfig.framebufferBlit = qtrue;
+		glRefConfig.framebufferBlit = true;
 		ri.Printf(PRINT_ALL, result[glRefConfig.framebufferBlit], extension);
 	}
 	else
@@ -581,11 +581,11 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_framebuffer_multisample
 	extension = "GL_EXT_framebuffer_multisample";
-	glRefConfig.framebufferMultisample = qfalse;
+	glRefConfig.framebufferMultisample = false;
 	if (GLimp_HaveExtension(extension))
 	{
 		qglRenderbufferStorageMultisampleEXT = (void *)SDL_GL_GetProcAddress("glRenderbufferStorageMultisampleEXT");
-		glRefConfig.framebufferMultisample = qtrue;
+		glRefConfig.framebufferMultisample = true;
 		ri.Printf(PRINT_ALL, result[glRefConfig.framebufferMultisample], extension);
 	}
 	else
@@ -595,11 +595,11 @@ void GLimp_InitExtraExtensions()
 
 	// GL_EXT_texture_sRGB
 	extension = "GL_EXT_texture_sRGB";
-	glRefConfig.texture_srgb = qfalse;
+	glRefConfig.texture_srgb = false;
 	if (GLimp_HaveExtension(extension))
 	{
 		if (r_srgb->integer)
-			glRefConfig.texture_srgb = qtrue;
+			glRefConfig.texture_srgb = true;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.texture_srgb], extension);
 	}
@@ -654,10 +654,10 @@ void GLimp_InitExtraExtensions()
 
 	// GL_ARB_depth_clamp
 	extension = "GL_ARB_depth_clamp";
-	glRefConfig.depthClamp = qfalse;
+	glRefConfig.depthClamp = false;
 	if( GLimp_HaveExtension( extension ) )
 	{
-		glRefConfig.depthClamp = qtrue;
+		glRefConfig.depthClamp = true;
 		ri.Printf(PRINT_ALL, result[1], extension);
 	}
 	else

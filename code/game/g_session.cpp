@@ -88,7 +88,7 @@ void G_ReadSessionData( gclient_t *client ) {
 
 	client->sess.sessionTeam = (team_t)sessionTeam;
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
-	client->sess.teamLeader = (qboolean)teamLeader;
+	client->sess.teamLeader = (bool)teamLeader;
 }
 
 
@@ -166,7 +166,7 @@ void G_InitWorldSession( void ) {
 	// if the gametype changed since the last session, don't use any
 	// client sessions
 	if ( g_gametype.integer != gt ) {
-		level.newSession = qtrue;
+		level.newSession = true;
 		G_Printf( "Gametype changed, clearing session data.\n" );
 	}
 }

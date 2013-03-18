@@ -48,7 +48,7 @@ surfaceType_t	entitySurface = SF_ENTITY;
 R_CompareVert
 ================
 */
-qboolean R_CompareVert(srfVert_t * v1, srfVert_t * v2, qboolean checkST)
+bool R_CompareVert(srfVert_t * v1, srfVert_t * v2, bool checkST)
 {
 	int             i;
 
@@ -56,16 +56,16 @@ qboolean R_CompareVert(srfVert_t * v1, srfVert_t * v2, qboolean checkST)
 	{
 		if(floor(v1->xyz[i] + 0.1) != floor(v2->xyz[i] + 0.1))
 		{
-			return qfalse;
+			return false;
 		}
 
 		if(checkST && ((v1->st[0] != v2->st[0]) || (v1->st[1] != v2->st[1])))
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
-	return qtrue;
+	return true;
 }
 
 /*
@@ -439,7 +439,7 @@ void R_CalcTBN2(vec3_t tangent, vec3_t bitangent, vec3_t normal,
 
 
 #ifdef USE_VERT_TANGENT_SPACE
-qboolean R_CalcTangentVectors(srfVert_t * dv[3])
+bool R_CalcTangentVectors(srfVert_t * dv[3])
 {
 	int             i;
 	float           bb, s, t;
@@ -449,7 +449,7 @@ qboolean R_CalcTangentVectors(srfVert_t * dv[3])
 	/* calculate barycentric basis for the triangle */
 	bb = (dv[1]->st[0] - dv[0]->st[0]) * (dv[2]->st[1] - dv[0]->st[1]) - (dv[2]->st[0] - dv[0]->st[0]) * (dv[1]->st[1] - dv[0]->st[1]);
 	if(fabs(bb) < 0.00000001f)
-		return qfalse;
+		return false;
 
 	/* do each vertex */
 	for(i = 0; i < 3; i++)
@@ -487,7 +487,7 @@ qboolean R_CalcTangentVectors(srfVert_t * dv[3])
 		//%     stv[ i ][ 0 ], stv[ i ][ 1 ], stv[ i ][ 2 ], ttv[ i ][ 0 ], ttv[ i ][ 1 ], ttv[ i ][ 2 ] );
 	}
 
-	return qtrue;
+	return true;
 }
 #endif
 
@@ -686,13 +686,13 @@ Returns CULL_IN, CULL_CLIP, or CULL_OUT
 int R_CullBox(vec3_t worldBounds[2]) {
 	int             i;
 	cplane_t       *frust;
-	qboolean        anyClip;
+	bool        anyClip;
 	int             r, numPlanes;
 
 	numPlanes = (tr.viewParms.flags & VPF_FARPLANEFRUSTUM) ? 5 : 4;
 
 	// check against frustum planes
-	anyClip = qfalse;
+	anyClip = false;
 	for(i = 0; i < numPlanes; i++)
 	{
 		frust = &tr.viewParms.frustum[i];
@@ -706,7 +706,7 @@ int R_CullBox(vec3_t worldBounds[2]) {
 		}
 		if(r == 3)
 		{
-			anyClip = qtrue;
+			anyClip = true;
 		}
 	}
 
@@ -740,7 +740,7 @@ int R_CullPointAndRadiusEx( const vec3_t pt, float radius, const cplane_t* frust
 	int		i;
 	float	dist;
 	const cplane_t	*frust;
-	qboolean mightBeClipped = qfalse;
+	bool mightBeClipped = false;
 
 	if ( r_nocull->integer ) {
 		return CULL_CLIP;
@@ -758,7 +758,7 @@ int R_CullPointAndRadiusEx( const vec3_t pt, float radius, const cplane_t* frust
 		}
 		else if ( dist <= radius ) 
 		{
-			mightBeClipped = qtrue;
+			mightBeClipped = true;
 		}
 	}
 
@@ -1145,7 +1145,7 @@ void R_SetupFrustum (viewParms_t *dest, float xmin, float xmax, float ymax, floa
 R_SetupProjection
 ===============
 */
-void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, qboolean computeFrustum)
+void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, bool computeFrustum)
 {
 	float	xmin, xmax, ymin, ymax;
 	float	width, height, stereoSep = r_stereoSeparation->value;
@@ -1408,12 +1408,12 @@ R_GetPortalOrientation
 entityNum is the entity that the portal surface is a part of, which may
 be moving and rotating.
 
-Returns qtrue if it should be mirrored
+Returns true if it should be mirrored
 =================
 */
-qboolean R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum, 
+bool R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum, 
 							 orientation_t *surface, orientation_t *camera,
-							 vec3_t pvsOrigin, qboolean *mirror ) {
+							 vec3_t pvsOrigin, bool *mirror ) {
 	int			i;
 	cplane_t	originalPlane, plane;
 	trRefEntity_t	*e;
@@ -1473,8 +1473,8 @@ qboolean R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum,
 			VectorCopy( surface->axis[1], camera->axis[1] );
 			VectorCopy( surface->axis[2], camera->axis[2] );
 
-			*mirror = qtrue;
-			return qtrue;
+			*mirror = true;
+			return true;
 		}
 
 		// project the origin onto the surface plane to get
@@ -1512,8 +1512,8 @@ qboolean R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum,
 			RotatePointAroundVector( camera->axis[1], camera->axis[0], transformed, d );
 			CrossProduct( camera->axis[0], camera->axis[1], camera->axis[2] );
 		}
-		*mirror = qfalse;
-		return qtrue;
+		*mirror = false;
+		return true;
 	}
 
 	// if we didn't locate a portal entity, don't render anything.
@@ -1527,10 +1527,10 @@ qboolean R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum,
 
 	//ri.Printf( PRINT_ALL, "Portal surface without a portal entity\n" );
 
-	return qfalse;
+	return false;
 }
 
-static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
+static bool IsMirror( const drawSurf_t *drawSurf, int entityNum )
 {
 	int			i;
 	cplane_t	originalPlane, plane;
@@ -1582,12 +1582,12 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 			e->e.oldorigin[1] == e->e.origin[1] && 
 			e->e.oldorigin[2] == e->e.origin[2] ) 
 		{
-			return qtrue;
+			return true;
 		}
 
-		return qfalse;
+		return false;
 	}
-	return qfalse;
+	return false;
 }
 
 /*
@@ -1595,7 +1595,7 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 **
 ** Determines if a surface is completely offscreen.
 */
-static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128] ) {
+static bool SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128] ) {
 	float shortest = 100000000;
 	int entityNum;
 	int numTriangles;
@@ -1641,7 +1641,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	// trivially reject
 	if ( pointAnd )
 	{
-		return qtrue;
+		return true;
 	}
 
 	// determine if this surface is backfaced and also determine the distance
@@ -1671,32 +1671,32 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	}
 	if ( !numTriangles )
 	{
-		return qtrue;
+		return true;
 	}
 
 	// mirrors can early out at this point, since we don't do a fade over distance
 	// with them (although we could)
 	if ( IsMirror( drawSurf, entityNum ) )
 	{
-		return qfalse;
+		return false;
 	}
 
 	if ( shortest > (tess.shader->portalRange*tess.shader->portalRange) )
 	{
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 /*
 ========================
 R_MirrorViewBySurface
 
-Returns qtrue if another view has been rendered
+Returns true if another view has been rendered
 ========================
 */
-qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
+bool R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	vec4_t			clipDest[128];
 	viewParms_t		newParms;
 	viewParms_t		oldParms;
@@ -1705,28 +1705,28 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	// don't recursively mirror
 	if (tr.viewParms.isPortal) {
 		ri.Printf( PRINT_DEVELOPER, "WARNING: recursive mirror/portal found\n" );
-		return qfalse;
+		return false;
 	}
 
 	if ( r_noportals->integer || (r_fastsky->integer == 1) ) {
-		return qfalse;
+		return false;
 	}
 
 	// trivially reject portal/mirror
 	if ( SurfIsOffscreen( drawSurf, clipDest ) ) {
-		return qfalse;
+		return false;
 	}
 
 	// save old viewParms so we can return to it after the mirror view
 	oldParms = tr.viewParms;
 
 	newParms = tr.viewParms;
-	newParms.isPortal = qtrue;
+	newParms.isPortal = true;
 	newParms.zFar = 0.0f;
 	newParms.flags &= ~VPF_FARPLANEFRUSTUM;
 	if ( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera, 
 		newParms.pvsOrigin, &newParms.isMirror ) ) {
-		return qfalse;		// bad portal, no portalentity
+		return false;		// bad portal, no portalentity
 	}
 
 	R_MirrorPoint (oldParms.or.origin, &surface, &camera, newParms.or.origin );
@@ -1745,7 +1745,7 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 
 	tr.viewParms = oldParms;
 
-	return qtrue;
+	return true;
 }
 
 /*
@@ -1952,7 +1952,7 @@ static void R_AddEntitySurface (int entityNum)
 
 	ent = tr.currentEntity = &tr.refdef.entities[tr.currentEntityNum];
 
-	ent->needDlights = qfalse;
+	ent->needDlights = false;
 
 	// preshift the value we are going to OR into the drawsurf sort
 	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
@@ -2154,7 +2154,7 @@ void R_RenderView (viewParms_t *parms) {
 	// set viewParms.world
 	R_RotateForViewer ();
 
-	R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
+	R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, true);
 
 	R_GenerateDrawSurfs();
 
@@ -2184,8 +2184,8 @@ void R_RenderDlightCubemaps(const refdef_t *fd)
 		shadowParms.viewportY = glConfig.vidHeight - ( tr.refdef.y + PSHADOW_MAP_SIZE );
 		shadowParms.viewportWidth = PSHADOW_MAP_SIZE;
 		shadowParms.viewportHeight = PSHADOW_MAP_SIZE;
-		shadowParms.isPortal = qfalse;
-		shadowParms.isMirror = qtrue; // because it is
+		shadowParms.isPortal = false;
+		shadowParms.isMirror = true; // because it is
 
 		shadowParms.fovX = 90;
 		shadowParms.fovY = 90;
@@ -2372,19 +2372,19 @@ void R_RenderPshadowMaps(const refdef_t *fd)
 		{
 			pshadow_t *ps2 = &tr.refdef.pshadows[j];
 			int k;
-			qboolean touch;
+			bool touch;
 
 			if (ps1->numEntities == 8)
 				break;
 
-			touch = qfalse;
+			touch = false;
 			if (SpheresIntersect(ps1->viewOrigin, ps1->viewRadius, ps2->viewOrigin, ps2->viewRadius))
 			{
 				for (k = 0; k < ps1->numEntities; k++)
 				{
 					if (SpheresIntersect(ps1->entityOrigins[k], ps1->entityRadiuses[k], ps2->viewOrigin, ps2->viewRadius))
 					{
-						touch = qtrue;
+						touch = true;
 						break;
 					}
 				}
@@ -2485,8 +2485,8 @@ void R_RenderPshadowMaps(const refdef_t *fd)
 		}
 		shadowParms.viewportWidth = PSHADOW_MAP_SIZE;
 		shadowParms.viewportHeight = PSHADOW_MAP_SIZE;
-		shadowParms.isPortal = qfalse;
-		shadowParms.isMirror = qfalse;
+		shadowParms.isPortal = false;
+		shadowParms.isMirror = false;
 
 		shadowParms.fovX = 90;
 		shadowParms.fovY = 90;
@@ -2604,7 +2604,7 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level)
 	float splitZNear, splitZFar, splitBias;
 	float viewZNear, viewZFar;
 	vec3_t lightviewBounds[2];
-	qboolean lightViewIndependentOfCameraView = qfalse;
+	bool lightViewIndependentOfCameraView = false;
 
 	if (r_forceSun->integer == 2)
 	{
@@ -2830,8 +2830,8 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level)
 		}
 		shadowParms.viewportWidth  = tr.sunShadowFbo[level]->width;
 		shadowParms.viewportHeight = tr.sunShadowFbo[level]->height;
-		shadowParms.isPortal = qfalse;
-		shadowParms.isMirror = qfalse;
+		shadowParms.isPortal = false;
+		shadowParms.isMirror = false;
 
 		shadowParms.fovX = 90;
 		shadowParms.fovY = 90;

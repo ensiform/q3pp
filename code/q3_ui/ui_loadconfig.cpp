@@ -120,8 +120,8 @@ static void LoadConfig_MenuInit( void ) {
 	UI_LoadConfig_Cache();
 
 	memset( &s_configs, 0 ,sizeof(configs_t) );
-	s_configs.menu.wrapAround = qtrue;
-	s_configs.menu.fullscreen = qtrue;
+	s_configs.menu.wrapAround = true;
+	s_configs.menu.fullscreen = true;
 
 	s_configs.banner.generic.type	= MTYPE_BTEXT;
 	s_configs.banner.generic.x		= 320;

@@ -182,7 +182,7 @@ static void PlayerModel_UpdateModel( void )
 	VectorClear( moveangles );
 
 	UI_PlayerInfo_SetModel( &s_playermodel.playerinfo, s_playermodel.modelskin );
-	UI_PlayerInfo_SetInfo( &s_playermodel.playerinfo, LEGS_IDLE, TORSO_STAND, viewangles, moveangles, WP_MACHINEGUN, qfalse );
+	UI_PlayerInfo_SetInfo( &s_playermodel.playerinfo, LEGS_IDLE, TORSO_STAND, viewangles, moveangles, WP_MACHINEGUN, false );
 }
 
 /*
@@ -398,7 +398,7 @@ static void PlayerModel_BuildList( void )
 	int		j;
 	int		dirlen;
 	int		filelen;
-	qboolean precache;
+	bool precache;
 
 	precache = trap_Cvar_VariableValue("com_buildscript");
 
@@ -437,7 +437,7 @@ static void PlayerModel_BuildList( void )
 			}
 
 			if( precache ) {
-				trap_S_RegisterSound( va( "sound/player/announce/%s_wins.wav", skinname), qfalse );
+				trap_S_RegisterSound( va( "sound/player/announce/%s_wins.wav", skinname), false );
 			}
 		}
 	}	
@@ -534,8 +534,8 @@ static void PlayerModel_MenuInit( void )
 	PlayerModel_Cache();
 
 	s_playermodel.menu.key        = PlayerModel_MenuKey;
-	s_playermodel.menu.wrapAround = qtrue;
-	s_playermodel.menu.fullscreen = qtrue;
+	s_playermodel.menu.wrapAround = true;
+	s_playermodel.menu.fullscreen = true;
 
 	s_playermodel.banner.generic.type  = MTYPE_BTEXT;
 	s_playermodel.banner.generic.x     = 320;

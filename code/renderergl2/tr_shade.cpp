@@ -201,7 +201,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.xstages = state->stages;
 	tess.numPasses = state->numUnfoggedPasses;
 	tess.currentStageIteratorFunc = state->optimalStageIteratorFunc;
-	tess.useInternalVBO = qtrue;
+	tess.useInternalVBO = true;
 
 	tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 	if (tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime) {
@@ -884,7 +884,7 @@ static void ForwardSunlight( void ) {
 	//float	scale;
 	int stage;
 	int stageGlState[2];
-	qboolean alphaOverride = qfalse;
+	bool alphaOverride = false;
 
 	int deformGen;
 	vec5_t deformParams;
@@ -910,13 +910,13 @@ static void ForwardSunlight( void ) {
 
 			if (stageGlState[1] == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA))
 			{
-				alphaOverride = qtrue;
+				alphaOverride = true;
 				stageGlState[0] = GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 				stageGlState[1] = GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 			}
 			else if (stageGlState[1] == (GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_SRC_ALPHA))
 			{
-				alphaOverride = qtrue;
+				alphaOverride = true;
 				stageGlState[0] = GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 				stageGlState[1] = GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 			}
@@ -1373,7 +1373,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		{
 			vec4_t baseColor;
 			vec4_t vertColor;
-			qboolean tint = qtrue;
+			bool tint = true;
 			int stage2;
 
 			ComputeShaderColors(pStage, baseColor, vertColor);
@@ -1394,7 +1394,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 				if (srcBlendBits == GLS_SRCBLEND_DST_COLOR)
 				{
-					tint = qfalse;
+					tint = false;
 					break;
 				}
 			}
@@ -1402,7 +1402,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			if (!((tr.sunShadows || r_forceSun->integer) && tess.shader->sort <= SS_OPAQUE 
 				&& !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) && tess.xstages[0]->glslShaderGroup == tr.lightallShader))
 			{
-				tint = qfalse;
+				tint = false;
 			}
 
 			if (tint)

@@ -348,7 +348,7 @@ Scale up the pixel values in a texture to increase the
 lighting range
 ================
 */
-void R_LightScaleTexture (unsigned *in, int inwidth, int inheight, qboolean only_gamma )
+void R_LightScaleTexture (unsigned *in, int inwidth, int inheight, bool only_gamma )
 {
 	if ( only_gamma )
 	{
@@ -553,12 +553,12 @@ Upload32
 
 ===============
 */
-extern qboolean charSet;
+extern bool charSet;
 static void Upload32( unsigned *data, 
 						  int width, int height, 
-						  qboolean mipmap, 
-						  qboolean picmip, 
-							qboolean lightMap,
+						  bool mipmap, 
+						  bool picmip, 
+							bool lightMap,
 						  int *format, 
 						  int *pUploadWidth, int *pUploadHeight )
 {
@@ -846,7 +846,7 @@ This is the only way any image_t are created
 image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 		imgType_t type, imgFlags_t flags, int internalFormat ) {
 	image_t		*image;
-	qboolean	isLightmap = qfalse;
+	bool	isLightmap = false;
 	long		hash;
 	int         glWrapClampMode;
 
@@ -854,7 +854,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 		ri.Error (ERR_DROP, "R_CreateImage: \"%s\" is too long", name);
 	}
 	if ( !strncmp( name, "*lightmap", 9 ) ) {
-		isLightmap = qtrue;
+		isLightmap = true;
 	}
 
 	if ( tr.numImages == MAX_DRAWIMAGES ) {
@@ -946,7 +946,7 @@ Loads any of the supported image types into a cannonical
 */
 void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 {
-	qboolean orgNameFailed = qfalse;
+	bool orgNameFailed = false;
 	int orgLoader = -1;
 	int i;
 	char localName[ MAX_QPATH ];
@@ -981,7 +981,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
-				orgNameFailed = qtrue;
+				orgNameFailed = true;
 				orgLoader = i;
 				COM_StripExtension( name, localName, MAX_QPATH );
 			}
@@ -1570,7 +1570,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	if ( strcmp( name + strlen( name ) - 5, ".skin" ) ) {
 		skin->numSurfaces = 1;
 		skin->surfaces[0] = ri.Hunk_Alloc( sizeof(skin->surfaces[0]), h_low );
-		skin->surfaces[0]->shader = R_FindShader( name, LIGHTMAP_NONE, qtrue );
+		skin->surfaces[0]->shader = R_FindShader( name, LIGHTMAP_NONE, true );
 		return hSkin;
 	}
 
@@ -1605,7 +1605,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 
 		surf = skin->surfaces[ skin->numSurfaces ] = ri.Hunk_Alloc( sizeof( *skin->surfaces[0] ), h_low );
 		Q_strncpyz( surf->name, surfName, sizeof( surf->name ) );
-		surf->shader = R_FindShader( token, LIGHTMAP_NONE, qtrue );
+		surf->shader = R_FindShader( token, LIGHTMAP_NONE, true );
 		skin->numSurfaces++;
 	}
 

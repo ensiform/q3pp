@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "client.h"
 
-qboolean	scr_initialized;		// ready to draw
+bool	scr_initialized;		// ready to draw
 
 cvar_t		*cl_timegraph;
 cvar_t		*cl_debuggraph;
@@ -196,8 +196,8 @@ to a fixed color.
 Coordinates are at 640 by 480 virtual resolution
 ==================
 */
-void SCR_DrawStringExt( int x, int y, float size, const char *string, float *setColor, qboolean forceColor,
-		qboolean noColorEscape ) {
+void SCR_DrawStringExt( int x, int y, float size, const char *string, float *setColor, bool forceColor,
+		bool noColorEscape ) {
 	vec4_t		color;
 	const char	*s;
 	int			xx;
@@ -243,16 +243,16 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, float *set
 }
 
 
-void SCR_DrawBigString( int x, int y, const char *s, float alpha, qboolean noColorEscape ) {
+void SCR_DrawBigString( int x, int y, const char *s, float alpha, bool noColorEscape ) {
 	float	color[4];
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = alpha;
-	SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, s, color, qfalse, noColorEscape );
+	SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, s, color, false, noColorEscape );
 }
 
-void SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color, qboolean noColorEscape ) {
-	SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, s, color, qtrue, noColorEscape );
+void SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color, bool noColorEscape ) {
+	SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, s, color, true, noColorEscape );
 }
 
 
@@ -264,8 +264,8 @@ Draws a multi-colored string with a drop shadow, optionally forcing
 to a fixed color.
 ==================
 */
-void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor,
-		qboolean noColorEscape ) {
+void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, bool forceColor,
+		bool noColorEscape ) {
 	vec4_t		color;
 	const char	*s;
 	int			xx;
@@ -343,7 +343,7 @@ void SCR_DrawDemoRecording( void ) {
 	pos = FS_FTell( clc.demofile );
 	sprintf( string, "RECORDING %s: %ik", clc.demoName, pos / 1024 );
 
-	SCR_DrawStringExt( 320 - strlen( string ) * 4, 20, 8, string, g_color_table[7], qtrue, qfalse );
+	SCR_DrawStringExt( 320 - strlen( string ) * 4, 20, 8, string, g_color_table[7], true, false );
 }
 
 
@@ -382,7 +382,7 @@ void SCR_DrawVoipMeter( void ) {
 	buffer[i] = '\0';
 
 	sprintf( string, "VoIP: [%s]", buffer );
-	SCR_DrawStringExt( 320 - strlen( string ) * 4, 10, 8, string, g_color_table[7], qtrue, qfalse );
+	SCR_DrawStringExt( 320 - strlen( string ) * 4, 10, 8, string, g_color_table[7], true, false );
 }
 #endif
 
@@ -459,7 +459,7 @@ void SCR_Init( void ) {
 	cl_graphscale = Cvar_Get ("graphscale", "1", CVAR_CHEAT);
 	cl_graphshift = Cvar_Get ("graphshift", "0", CVAR_CHEAT);
 
-	scr_initialized = qtrue;
+	scr_initialized = true;
 }
 
 
@@ -473,7 +473,7 @@ This will be called twice if rendering in stereo mode
 ==================
 */
 void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
-	qboolean uiFullscreen;
+	bool uiFullscreen;
 
 	re.BeginFrame( stereoFrame );
 
@@ -510,7 +510,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// connecting clients will only show the connection dialog
 			// refresh to update the time
 			VM_Call( uivm, UI_REFRESH, cls.realtime );
-			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, qfalse );
+			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, false );
 			break;
 		case CA_LOADING:
 		case CA_PRIMED:
@@ -521,7 +521,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// flash away too briefly on local or lan games
 			// refresh to update the time
 			VM_Call( uivm, UI_REFRESH, cls.realtime );
-			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, qtrue );
+			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, true );
 			break;
 		case CA_ACTIVE:
 			// always supply STEREO_CENTER as vieworg offset is now done by the engine.

@@ -127,8 +127,8 @@ void Signup_MenuInit( void ) {
 
 	Signup_Cache();
 
-	s_signup.menu.wrapAround = qtrue;
-	s_signup.menu.fullscreen = qfalse;
+	s_signup.menu.wrapAround = true;
+	s_signup.menu.fullscreen = false;
 
 	s_signup.frame.generic.type				= MTYPE_BITMAP;
 	s_signup.frame.generic.flags			= QMF_INACTIVE;

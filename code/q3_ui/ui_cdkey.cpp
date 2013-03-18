@@ -130,7 +130,7 @@ UI_CDKeyMenu_DrawKey
 */
 static void UI_CDKeyMenu_DrawKey( void *self ) {
 	menufield_s		*f;
-	qboolean		focus;
+	bool		focus;
 	int				style;
 	char			c;
 	float			*color;
@@ -192,8 +192,8 @@ static void UI_CDKeyMenu_Init( void ) {
 	UI_CDKeyMenu_Cache();
 
 	memset( &cdkeyMenuInfo, 0, sizeof(cdkeyMenuInfo) );
-	cdkeyMenuInfo.menu.wrapAround = qtrue;
-	cdkeyMenuInfo.menu.fullscreen = qtrue;
+	cdkeyMenuInfo.menu.wrapAround = true;
+	cdkeyMenuInfo.menu.fullscreen = true;
 
 	cdkeyMenuInfo.banner.generic.type				= MTYPE_BTEXT;
 	cdkeyMenuInfo.banner.generic.x					= 320;
@@ -250,7 +250,7 @@ static void UI_CDKeyMenu_Init( void ) {
 	}
 
 	trap_GetCDKey( cdkeyMenuInfo.cdkey.field.buffer, cdkeyMenuInfo.cdkey.field.maxchars + 1 );
-	if( trap_VerifyCDKey( cdkeyMenuInfo.cdkey.field.buffer, NULL ) == qfalse ) {
+	if( trap_VerifyCDKey( cdkeyMenuInfo.cdkey.field.buffer, NULL ) == false ) {
 		cdkeyMenuInfo.cdkey.field.buffer[0] = 0;
 	}
 }

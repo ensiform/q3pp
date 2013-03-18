@@ -255,15 +255,15 @@ static void RB_RadialBlur(FBO_t *srcFbo, FBO_t *dstFbo, int passes, float stretc
 }
 
 
-static qboolean RB_UpdateSunFlareVis(void)
+static bool RB_UpdateSunFlareVis(void)
 {
 	GLuint sampleCount = 0;
 	if (!glRefConfig.occlusionQuery)
-		return qtrue;
+		return true;
 
 	tr.sunFlareQueryIndex ^= 1;
 	if (!tr.sunFlareQueryActive[tr.sunFlareQueryIndex])
-		return qtrue;
+		return true;
 
 	/* debug code */
 	if (0)
@@ -290,7 +290,7 @@ void RB_SunRays(void)
 	vec4_t color;
 	float dot;
 	const float cutoff = 0.25f;
-	qboolean colorize = qtrue;
+	bool colorize = true;
 
 //	float w, h, w2, h2;
 	matrix_t mvp;
@@ -377,7 +377,7 @@ void RB_SunRays(void)
 	}
 }
 
-static void RB_BlurAxis(FBO_t *srcFbo, FBO_t *dstFbo, float strength, qboolean horizontal)
+static void RB_BlurAxis(FBO_t *srcFbo, FBO_t *dstFbo, float strength, bool horizontal)
 {
 	float dx, dy;
 	float xmul, ymul;
@@ -431,12 +431,12 @@ static void RB_BlurAxis(FBO_t *srcFbo, FBO_t *dstFbo, float strength, qboolean h
 
 static void RB_HBlur(FBO_t *srcFbo, FBO_t *dstFbo, float strength)
 {
-	RB_BlurAxis(srcFbo, dstFbo, strength, qtrue);
+	RB_BlurAxis(srcFbo, dstFbo, strength, true);
 }
 
 static void RB_VBlur(FBO_t *srcFbo, FBO_t *dstFbo, float strength)
 {
-	RB_BlurAxis(srcFbo, dstFbo, strength, qfalse);
+	RB_BlurAxis(srcFbo, dstFbo, strength, false);
 }
 
 void RB_GaussianBlur(float blur)

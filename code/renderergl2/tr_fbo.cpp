@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 R_CheckFBO
 =============
 */
-qboolean R_CheckFBO(const FBO_t * fbo)
+bool R_CheckFBO(const FBO_t * fbo)
 {
 	int             code;
 	int             id;
@@ -41,7 +41,7 @@ qboolean R_CheckFBO(const FBO_t * fbo)
 	if(code == GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, id);
-		return qtrue;
+		return true;
 	}
 
 	// an error occured
@@ -93,7 +93,7 @@ qboolean R_CheckFBO(const FBO_t * fbo)
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, id);
 
-	return qfalse;
+	return false;
 }
 
 /*
@@ -140,7 +140,7 @@ void FBO_CreateBuffer(FBO_t *fbo, int format, int index, int multisample)
 {
 	uint32_t *pRenderBuffer;
 	GLenum attachment;
-	qboolean absent;
+	bool absent;
 
 	switch(format)
 	{

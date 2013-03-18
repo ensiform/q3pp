@@ -68,7 +68,7 @@ Rankings_DrawText
 void Rankings_DrawText( void* self )
 {
 	menufield_s		*f;
-	qboolean		focus;
+	bool		focus;
 	int				style;
 	char			*txt;
 	char			c;
@@ -287,8 +287,8 @@ void Rankings_MenuInit( void ) {
 
 	Rankings_Cache();
 
-	s_rankings.menu.wrapAround = qtrue;
-	s_rankings.menu.fullscreen = qfalse;
+	s_rankings.menu.wrapAround = true;
+	s_rankings.menu.fullscreen = false;
 
 	s_rankings.frame.generic.type		= MTYPE_BITMAP;
 	s_rankings.frame.generic.flags		= QMF_INACTIVE;

@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 glconfig_t  glConfig;
 glRefConfig_t glRefConfig;
-qboolean    textureFilterAnisotropic = qfalse;
+bool    textureFilterAnisotropic = false;
 int         maxAnisotropy = 0;
 float       displayAspect = 0.0f;
 
@@ -342,15 +342,15 @@ vidmode_t r_vidModes[] =
 };
 static int	s_numVidModes = ARRAY_LEN( r_vidModes );
 
-qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode ) {
+bool R_GetModeInfo( int *width, int *height, float *windowAspect, int mode ) {
 	vidmode_t	*vm;
 	float			pixelAspect;
 
 	if ( mode < -1 ) {
-		return qfalse;
+		return false;
 	}
 	if ( mode >= s_numVidModes ) {
-		return qfalse;
+		return false;
 	}
 
 	if ( mode == -1 ) {
@@ -367,7 +367,7 @@ qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode )
 
 	*windowAspect = (float)*width / ( *height * pixelAspect );
 
-	return qtrue;
+	return true;
 }
 
 /*
@@ -556,7 +556,7 @@ const void *RB_TakeScreenshotCmd( const void *data ) {
 R_TakeScreenshot
 ==================
 */
-void R_TakeScreenshot( int x, int y, int width, int height, char *name, qboolean jpeg ) {
+void R_TakeScreenshot( int x, int y, int width, int height, char *name, bool jpeg ) {
 	static char	fileName[MAX_OSPATH]; // bad things if two screenshots per frame?
 	screenshotCommand_t	*cmd;
 
@@ -707,7 +707,7 @@ Doesn't print the pacifier message if there is a second arg
 void R_ScreenShot_f (void) {
 	char	checkname[MAX_OSPATH];
 	static	int	lastNumber = -1;
-	qboolean	silent;
+	bool	silent;
 
 	if ( !strcmp( ri.Cmd_Argv(1), "levelshot" ) ) {
 		R_LevelShot();
@@ -715,9 +715,9 @@ void R_ScreenShot_f (void) {
 	}
 
 	if ( !strcmp( ri.Cmd_Argv(1), "silent" ) ) {
-		silent = qtrue;
+		silent = true;
 	} else {
-		silent = qfalse;
+		silent = false;
 	}
 
 	if ( ri.Cmd_Argc() == 2 && !silent ) {
@@ -750,7 +750,7 @@ void R_ScreenShot_f (void) {
 		lastNumber++;
 	}
 
-	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname, qfalse );
+	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname, false );
 
 	if ( !silent ) {
 		ri.Printf (PRINT_ALL, "Wrote %s\n", checkname);
@@ -760,7 +760,7 @@ void R_ScreenShot_f (void) {
 void R_ScreenShotJPEG_f (void) {
 	char		checkname[MAX_OSPATH];
 	static	int	lastNumber = -1;
-	qboolean	silent;
+	bool	silent;
 
 	if ( !strcmp( ri.Cmd_Argv(1), "levelshot" ) ) {
 		R_LevelShot();
@@ -768,9 +768,9 @@ void R_ScreenShotJPEG_f (void) {
 	}
 
 	if ( !strcmp( ri.Cmd_Argv(1), "silent" ) ) {
-		silent = qtrue;
+		silent = true;
 	} else {
-		silent = qfalse;
+		silent = false;
 	}
 
 	if ( ri.Cmd_Argc() == 2 && !silent ) {
@@ -803,7 +803,7 @@ void R_ScreenShotJPEG_f (void) {
 		lastNumber++;
 	}
 
-	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname, qtrue );
+	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname, true );
 
 	if ( !silent ) {
 		ri.Printf (PRINT_ALL, "Wrote %s\n", checkname);
@@ -1133,14 +1133,14 @@ void R_Register( void )
 	r_picmip = ri.Cvar_Get ("r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_roundImagesDown = ri.Cvar_Get ("r_roundImagesDown", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_colorMipLevels = ri.Cvar_Get ("r_colorMipLevels", "0", CVAR_LATCH );
-	ri.Cvar_CheckRange( r_picmip, 0, 16, qtrue );
+	ri.Cvar_CheckRange( r_picmip, 0, 16, true );
 	r_detailTextures = ri.Cvar_Get( "r_detailtextures", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_texturebits = ri.Cvar_Get( "r_texturebits", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_colorbits = ri.Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE | CVAR_LATCH );
 	r_depthbits = ri.Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_ext_multisample, 0, 4, qtrue );
+	ri.Cvar_CheckRange( r_ext_multisample, 0, 4, true );
 	r_overBrightBits = ri.Cvar_Get ("r_overBrightBits", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_mode = ri.Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1155,7 +1155,7 @@ void R_Register( void )
 	r_subdivisions = ri.Cvar_Get ("r_subdivisions", "4", CVAR_ARCHIVE | CVAR_LATCH);
 	r_stereoEnabled = ri.Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_greyscale = ri.Cvar_Get("r_greyscale", "0", CVAR_ARCHIVE | CVAR_LATCH);
-	ri.Cvar_CheckRange(r_greyscale, 0, 1, qfalse);
+	ri.Cvar_CheckRange(r_greyscale, 0, 1, false);
 
 	r_softOverbright = ri.Cvar_Get( "r_softOverbright", "1", CVAR_ARCHIVE | CVAR_LATCH );
 
@@ -1222,7 +1222,7 @@ void R_Register( void )
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE );
 	r_flares = ri.Cvar_Get ("r_flares", "0", CVAR_ARCHIVE );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
-	ri.Cvar_CheckRange( r_znear, 0.001f, 200, qfalse );
+	ri.Cvar_CheckRange( r_znear, 0.001f, 200, false );
 	r_zproj = ri.Cvar_Get( "r_zproj", "64", CVAR_ARCHIVE );
 	r_stereoSeparation = ri.Cvar_Get( "r_stereoSeparation", "64", CVAR_ARCHIVE );
 	r_ignoreGLErrors = ri.Cvar_Get( "r_ignoreGLErrors", "1", CVAR_ARCHIVE );
@@ -1444,7 +1444,7 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-void RE_Shutdown( qboolean destroyWindow ) {	
+void RE_Shutdown( bool destroyWindow ) {	
 
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
 
@@ -1481,7 +1481,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		Com_Memset( &glState, 0, sizeof( glState ) );
 	}
 
-	tr.registered = qfalse;
+	tr.registered = false;
 }
 
 

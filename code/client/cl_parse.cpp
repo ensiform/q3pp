@@ -61,7 +61,7 @@ to the current frame
 ==================
 */
 void CL_DeltaEntity (msg_t *msg, clSnapshot_t *frame, int newnum, entityState_t *old, 
-					 qboolean unchanged) {
+					 bool unchanged) {
 	entityState_t	*state;
 
 	// save the parsed entity state into the big circular buffer so
@@ -127,7 +127,7 @@ void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *n
 			if ( cl_shownet->integer == 3 ) {
 				Com_Printf ("%3i:  unchanged: %i\n", msg->readcount, oldnum);
 			}
-			CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
+			CL_DeltaEntity( msg, newframe, oldnum, oldstate, true );
 			
 			oldindex++;
 
@@ -144,7 +144,7 @@ void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *n
 			if ( cl_shownet->integer == 3 ) {
 				Com_Printf ("%3i:  delta: %i\n", msg->readcount, newnum);
 			}
-			CL_DeltaEntity( msg, newframe, newnum, oldstate, qfalse );
+			CL_DeltaEntity( msg, newframe, newnum, oldstate, false );
 
 			oldindex++;
 
@@ -163,7 +163,7 @@ void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *n
 			if ( cl_shownet->integer == 3 ) {
 				Com_Printf ("%3i:  baseline: %i\n", msg->readcount, newnum);
 			}
-			CL_DeltaEntity( msg, newframe, newnum, &cl.entityBaselines[newnum], qfalse );
+			CL_DeltaEntity( msg, newframe, newnum, &cl.entityBaselines[newnum], false );
 			continue;
 		}
 
@@ -175,7 +175,7 @@ void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *n
 		if ( cl_shownet->integer == 3 ) {
 			Com_Printf ("%3i:  unchanged: %i\n", msg->readcount, oldnum);
 		}
-		CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
+		CL_DeltaEntity( msg, newframe, oldnum, oldstate, true );
 		
 		oldindex++;
 
@@ -240,9 +240,9 @@ void CL_ParseSnapshot( msg_t *msg ) {
 	// the frame, but not use it, then ask for a non-compressed
 	// message 
 	if ( newSnap.deltaNum <= 0 ) {
-		newSnap.valid = qtrue;		// uncompressed frame
+		newSnap.valid = true;		// uncompressed frame
 		old = NULL;
-		clc.demowaiting = qfalse;	// we can start recording now
+		clc.demowaiting = false;	// we can start recording now
 	} else {
 		old = &cl.snapshots[newSnap.deltaNum & PACKET_MASK];
 		if ( !old->valid ) {
@@ -255,7 +255,7 @@ void CL_ParseSnapshot( msg_t *msg ) {
 		} else if ( cl.parseEntitiesNum - old->parseEntitiesNum > MAX_PARSE_ENTITIES - MAX_SNAPSHOT_ENTITIES ) {
 			Com_Printf ("Delta parseEntitiesNum too old.\n");
 		} else {
-			newSnap.valid = qtrue;	// valid delta parse
+			newSnap.valid = true;	// valid delta parse
 		}
 	}
 
@@ -298,7 +298,7 @@ void CL_ParseSnapshot( msg_t *msg ) {
 		oldMessageNum = newSnap.messageNum - ( PACKET_BACKUP - 1 );
 	}
 	for ( ; oldMessageNum < newSnap.messageNum ; oldMessageNum++ ) {
-		cl.snapshots[oldMessageNum & PACKET_MASK].valid = qfalse;
+		cl.snapshots[oldMessageNum & PACKET_MASK].valid = false;
 	}
 
 	// copy to the current good spot
@@ -320,7 +320,7 @@ void CL_ParseSnapshot( msg_t *msg ) {
 		cl.snap.deltaNum, cl.snap.ping );
 	}
 
-	cl.newSnapshots = qtrue;
+	cl.newSnapshots = true;
 }
 
 
@@ -343,7 +343,7 @@ void CL_SystemInfoChanged( void ) {
 	const char		*s, *t;
 	char			key[BIG_INFO_KEY];
 	char			value[BIG_INFO_VALUE];
-	qboolean		gameSet;
+	bool		gameSet;
 
 	systemInfo = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SYSTEMINFO ];
 	// NOTE TTimo:
@@ -360,13 +360,13 @@ void CL_SystemInfoChanged( void ) {
 #ifdef USE_VOIP
 #ifdef LEGACY_PROTOCOL
 	if(clc.compat)
-		clc.voipEnabled = qfalse;
+		clc.voipEnabled = false;
 	else
 #endif
 	{
 		s = Info_ValueForKey( systemInfo, "sv_voip" );
 		if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableValue("ui_singlePlayerActive"))
-			clc.voipEnabled = qfalse;
+			clc.voipEnabled = false;
 		else
 			clc.voipEnabled = atoi(s);
 	}
@@ -387,7 +387,7 @@ void CL_SystemInfoChanged( void ) {
 	t = Info_ValueForKey( systemInfo, "sv_referencedPakNames" );
 	FS_PureServerSetReferencedPaks( s, t );
 
-	gameSet = qfalse;
+	gameSet = false;
 	// scan through all the variables in the systeminfo and locally set cvars to match
 	s = systemInfo;
 	while ( s ) {
@@ -407,7 +407,7 @@ void CL_SystemInfoChanged( void ) {
 				continue;
 			}
 				
-			gameSet = qtrue;
+			gameSet = true;
 		}
 
 		if((cvar_flags = Cvar_Flags(key)) == CVAR_NONEXISTENT)
@@ -540,11 +540,11 @@ void CL_ParseGamestate( msg_t *msg ) {
 	// reinitialize the filesystem if the game directory has changed
 	if(!cl_oldGameSet && (Cvar_Flags("fs_game") & CVAR_MODIFIED))
 	{
-		cl_oldGameSet = qtrue;
+		cl_oldGameSet = true;
 		Q_strncpyz(cl_oldGame, oldGame, sizeof(cl_oldGame));
 	}
 
-	FS_ConditionalRestart(clc.checksumFeed, qfalse);
+	FS_ConditionalRestart(clc.checksumFeed, false);
 
 	// This used to call CL_StartHunkUsers, but now we enter the download state before loading the
 	// cgame
@@ -571,7 +571,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 
 	if (!*clc.downloadTempName) {
 		Com_Printf("Server sending download, but no download was requested\n");
-		CL_AddReliableCommand("stopdl", qfalse);
+		CL_AddReliableCommand("stopdl", false);
 		return;
 	}
 
@@ -614,7 +614,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 
 		if (!clc.download) {
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
-			CL_AddReliableCommand("stopdl", qfalse);
+			CL_AddReliableCommand("stopdl", false);
 			CL_NextDownload();
 			return;
 		}
@@ -623,7 +623,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 	if (size)
 		FS_Write( data, size, clc.download );
 
-	CL_AddReliableCommand(va("nextdl %d", clc.downloadBlock), qfalse);
+	CL_AddReliableCommand(va("nextdl %d", clc.downloadBlock), false);
 	clc.downloadBlock++;
 
 	clc.downloadCount += size;
@@ -655,20 +655,20 @@ void CL_ParseDownload ( msg_t *msg ) {
 
 #ifdef USE_VOIP
 static
-qboolean CL_ShouldIgnoreVoipSender(int sender)
+bool CL_ShouldIgnoreVoipSender(int sender)
 {
 	if (!cl_voip->integer)
-		return qtrue;  // VoIP is disabled.
+		return true;  // VoIP is disabled.
 	else if ((sender == clc.clientNum) && (!clc.demoplaying))
-		return qtrue;  // ignore own voice (unless playing back a demo).
+		return true;  // ignore own voice (unless playing back a demo).
 	else if (clc.voipMuteAll)
-		return qtrue;  // all channels are muted with extreme prejudice.
+		return true;  // all channels are muted with extreme prejudice.
 	else if (clc.voipIgnore[sender])
-		return qtrue;  // just ignoring this guy.
+		return true;  // just ignoring this guy.
 	else if (clc.voipGain[sender] == 0.0f)
-		return qtrue;  // too quiet to play.
+		return true;  // too quiet to play.
 
-	return qfalse;
+	return false;
 }
 
 /*

@@ -395,7 +395,7 @@ static void YCoCgAtoRGBA(const byte *in, byte *out, int width, int height)
 
 
 // uses a sobel filter to change a texture to a normal map
-static void RGBAtoNormal(const byte *in, byte *out, int width, int height, qboolean clampToEdge)
+static void RGBAtoNormal(const byte *in, byte *out, int width, int height, bool clampToEdge)
 {
 	int x, y, max;
 
@@ -1100,7 +1100,7 @@ static void FillInNormalizedZ(const byte *in, byte *out, int width, int height)
 #define WORKBLOCK_REALSIZE (WORKBLOCK_SIZE + WORKBLOCK_BORDER * 2)
 
 // assumes that data has already been expanded into a 2x2 grid
-static void FCBIByBlock(byte *data, int width, int height, qboolean clampToEdge, qboolean normalized)
+static void FCBIByBlock(byte *data, int width, int height, bool clampToEdge, bool normalized)
 {
 	byte workdata[WORKBLOCK_REALSIZE * WORKBLOCK_REALSIZE * 4];
 	byte outdata[WORKBLOCK_REALSIZE * WORKBLOCK_REALSIZE * 4];
@@ -1221,7 +1221,7 @@ Scale up the pixel values in a texture to increase the
 lighting range
 ================
 */
-void R_LightScaleTexture (byte *in, int inwidth, int inheight, qboolean only_gamma )
+void R_LightScaleTexture (byte *in, int inwidth, int inheight, bool only_gamma )
 {
 	if ( only_gamma )
 	{
@@ -1453,7 +1453,7 @@ static void R_MipMapLuminanceAlpha (const byte *in, byte *out, int width, int he
 }
 
 
-static void R_MipMapNormalHeight (const byte *in, byte *out, int width, int height, qboolean swizzle)
+static void R_MipMapNormalHeight (const byte *in, byte *out, int width, int height, bool swizzle)
 {
 	int		i, j;
 	int		row;
@@ -1574,9 +1574,9 @@ static void RawImage_ScaleToPower2( byte **data, int *inout_width, int *inout_he
 	int height =        *inout_height;
 	int scaled_width =  *inout_scaled_width;
 	int scaled_height = *inout_scaled_height;
-	qboolean picmip = flags & IMGFLAG_PICMIP;
-	qboolean mipmap = flags & IMGFLAG_MIPMAP;
-	qboolean clampToEdge = flags & IMGFLAG_CLAMPTOEDGE;
+	bool picmip = flags & IMGFLAG_PICMIP;
+	bool mipmap = flags & IMGFLAG_MIPMAP;
+	bool clampToEdge = flags & IMGFLAG_CLAMPTOEDGE;
 
 	//
 	// convert to exact power of 2 sizes
@@ -1716,30 +1716,30 @@ static void RawImage_ScaleToPower2( byte **data, int *inout_width, int *inout_he
 }
 
 
-static qboolean RawImage_HasAlpha(const byte *scan, int numPixels)
+static bool RawImage_HasAlpha(const byte *scan, int numPixels)
 {
 	int i;
 
 	if (!scan)
-		return qtrue;
+		return true;
 
 	for ( i = 0; i < numPixels; i++ )
 	{
 		if ( scan[i*4 + 3] != 255 ) 
 		{
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
-static GLenum RawImage_GetFormat(const byte *data, int numPixels, qboolean lightMap, imgType_t type, imgFlags_t flags)
+static GLenum RawImage_GetFormat(const byte *data, int numPixels, bool lightMap, imgType_t type, imgFlags_t flags)
 {
 	int samples = 3;
 	GLenum internalFormat = GL_RGB;
-	qboolean forceNoCompression = (flags & IMGFLAG_NO_COMPRESSION);
-	qboolean normalmap = (type == IMGTYPE_NORMAL || type == IMGTYPE_NORMALHEIGHT);
+	bool forceNoCompression = (flags & IMGFLAG_NO_COMPRESSION);
+	bool normalmap = (type == IMGTYPE_NORMAL || type == IMGTYPE_NORMALHEIGHT);
 
 	if(normalmap)
 	{
@@ -1918,7 +1918,7 @@ static GLenum RawImage_GetFormat(const byte *data, int numPixels, qboolean light
 }
 
 
-static void RawImage_UploadTexture( byte *data, int x, int y, int width, int height, GLenum internalFormat, imgType_t type, imgFlags_t flags, qboolean subtexture )
+static void RawImage_UploadTexture( byte *data, int x, int y, int width, int height, GLenum internalFormat, imgType_t type, imgFlags_t flags, bool subtexture )
 {
 	int dataFormat, dataType;
 
@@ -1963,7 +1963,7 @@ static void RawImage_UploadTexture( byte *data, int x, int y, int width, int hei
 					}
 					else
 					{
-						R_MipMapNormalHeight( data, data, width, height, qtrue);
+						R_MipMapNormalHeight( data, data, width, height, true);
 					}
 				}
 				else if (flags & IMGFLAG_SRGB)
@@ -2008,9 +2008,9 @@ Upload32
 
 ===============
 */
-extern qboolean charSet;
+extern bool charSet;
 static void Upload32( byte *data, int width, int height, imgType_t type, imgFlags_t flags,
-	qboolean lightMap, GLenum internalFormat, int *pUploadWidth, int *pUploadHeight)
+	bool lightMap, GLenum internalFormat, int *pUploadWidth, int *pUploadHeight)
 {
 	byte		*scaledBuffer = NULL;
 	byte		*resampledBuffer = NULL;
@@ -2094,7 +2094,7 @@ static void Upload32( byte *data, int width, int height, imgType_t type, imgFlag
 		( scaled_height == height ) ) {
 		if (!(flags & IMGFLAG_MIPMAP))
 		{
-			RawImage_UploadTexture( data, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, qfalse );
+			RawImage_UploadTexture( data, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, false );
 			//qglTexImage2D (GL_TEXTURE_2D, 0, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			*pUploadWidth = scaled_width;
 			*pUploadHeight = scaled_height;
@@ -2135,7 +2135,7 @@ static void Upload32( byte *data, int width, int height, imgType_t type, imgFlag
 	*pUploadWidth = scaled_width;
 	*pUploadHeight = scaled_height;
 
-	RawImage_UploadTexture(scaledBuffer, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, qfalse);
+	RawImage_UploadTexture(scaledBuffer, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, false);
 
 done:
 
@@ -2167,7 +2167,7 @@ done:
 
 
 static void EmptyTexture( int width, int height, imgType_t type, imgFlags_t flags,
-	qboolean lightMap, GLenum internalFormat, int *pUploadWidth, int *pUploadHeight )
+	bool lightMap, GLenum internalFormat, int *pUploadWidth, int *pUploadHeight )
 {
 	int			scaled_width, scaled_height;
 
@@ -2176,7 +2176,7 @@ static void EmptyTexture( int width, int height, imgType_t type, imgFlags_t flag
 	*pUploadWidth = scaled_width;
 	*pUploadHeight = scaled_height;
 
-	RawImage_UploadTexture(NULL, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, qfalse);
+	RawImage_UploadTexture(NULL, 0, 0, scaled_width, scaled_height, internalFormat, type, flags, false);
 
 	if (flags & IMGFLAG_MIPMAP)
 	{
@@ -2225,7 +2225,7 @@ This is the only way any image_t are created
 */
 image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgType_t type, imgFlags_t flags, int internalFormat ) {
 	image_t		*image;
-	qboolean	isLightmap = qfalse;
+	bool	isLightmap = false;
 	long		hash;
 	int         glWrapClampMode;
 
@@ -2233,7 +2233,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgT
 		ri.Error (ERR_DROP, "R_CreateImage: \"%s\" is too long", name);
 	}
 	if ( !strncmp( name, "*lightmap", 9 ) ) {
-		isLightmap = qtrue;
+		isLightmap = true;
 	}
 
 	if ( tr.numImages == MAX_DRAWIMAGES ) {
@@ -2371,7 +2371,7 @@ void R_UpdateSubImage( image_t *image, byte *pic, int x, int y, int width, int h
 		{
 			scaled_x = x * scaled_width / width;
 			scaled_y = y * scaled_height / height;
-			RawImage_UploadTexture( data, scaled_x, scaled_y, scaled_width, scaled_height, image->internalFormat, image->type, image->flags, qtrue );
+			RawImage_UploadTexture( data, scaled_x, scaled_y, scaled_width, scaled_height, image->internalFormat, image->type, image->flags, true );
 			//qglTexSubImage2D( GL_TEXTURE_2D, 0, scaled_x, scaled_y, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
 			GL_CheckErrors();
@@ -2412,7 +2412,7 @@ void R_UpdateSubImage( image_t *image, byte *pic, int x, int y, int width, int h
 
 	scaled_x = x * scaled_width / width;
 	scaled_y = y * scaled_height / height;
-	RawImage_UploadTexture( (byte *)data, scaled_x, scaled_y, scaled_width, scaled_height, image->internalFormat, image->type, image->flags, qtrue );
+	RawImage_UploadTexture( (byte *)data, scaled_x, scaled_y, scaled_width, scaled_height, image->internalFormat, image->type, image->flags, true );
 
 done:
 	
@@ -2458,7 +2458,7 @@ Loads any of the supported image types into a cannonical
 */
 void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 {
-	qboolean orgNameFailed = qfalse;
+	bool orgNameFailed = false;
 	int orgLoader = -1;
 	int i;
 	char localName[ MAX_QPATH ];
@@ -2493,7 +2493,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
-				orgNameFailed = qtrue;
+				orgNameFailed = true;
 				orgLoader = i;
 				COM_StripExtension( name, localName, MAX_QPATH );
 			}
@@ -3253,7 +3253,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	if ( strcmp( name + strlen( name ) - 5, ".skin" ) ) {
 		skin->numSurfaces = 1;
 		skin->surfaces[0] = ri.Hunk_Alloc( sizeof(skin->surfaces[0]), h_low );
-		skin->surfaces[0]->shader = R_FindShader( name, LIGHTMAP_NONE, qtrue );
+		skin->surfaces[0]->shader = R_FindShader( name, LIGHTMAP_NONE, true );
 		return hSkin;
 	}
 
@@ -3288,7 +3288,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 
 		surf = skin->surfaces[ skin->numSurfaces ] = ri.Hunk_Alloc( sizeof( *skin->surfaces[0] ), h_low );
 		Q_strncpyz( surf->name, surfName, sizeof( surf->name ) );
-		surf->shader = R_FindShader( token, LIGHTMAP_NONE, qtrue );
+		surf->shader = R_FindShader( token, LIGHTMAP_NONE, true );
 		skin->numSurfaces++;
 	}
 

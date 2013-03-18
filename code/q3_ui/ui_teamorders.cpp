@@ -219,7 +219,7 @@ static void UI_TeamOrdersMenu_ListDraw( void *self ) {
 	int			y;
 	int			i;
 	float		*color;
-	qboolean	hasfocus;
+	bool	hasfocus;
 	int			style;
 
 	l = (menulist_s *)self;
@@ -346,7 +346,7 @@ static void UI_TeamOrdersMenu_Init( void ) {
 	UI_TeamOrdersMenu_Cache();
 
 	memset( &teamOrdersMenuInfo, 0, sizeof(teamOrdersMenuInfo) );
-	teamOrdersMenuInfo.menu.fullscreen = qfalse;
+	teamOrdersMenuInfo.menu.fullscreen = false;
 	teamOrdersMenuInfo.menu.key = UI_TeamOrdersMenu_Key;
 
 	UI_TeamOrdersMenu_BuildBotList();

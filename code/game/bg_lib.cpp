@@ -973,7 +973,7 @@ in the nptr string that was not used in the conversion
 double strtod( const char *nptr, char **endptr )
 {
 	double res;
-	qboolean neg = qfalse;
+	bool neg = false;
 
 	// skip whitespace
 	while( isspace( *nptr ) )
@@ -1025,7 +1025,7 @@ double strtod( const char *nptr, char **endptr )
 	if( *nptr == '-' )
 	{
 		nptr++;
-		neg = qtrue;
+		neg = true;
 	}
 	else if( *nptr == '+' )
 		nptr++;
@@ -1036,7 +1036,7 @@ double strtod( const char *nptr, char **endptr )
 		const char *s = &nptr[1], *end = s;
 		nptr += 2;
 		res = 0;
-		while( qtrue )
+		while( true )
 		{
 			if( isdigit( *nptr ) )
 				res = 16 * res + ( *nptr++ - '0' );
@@ -1249,7 +1249,7 @@ Will not overflow - returns LONG_MIN or LONG_MAX as appropriate
 long strtol( const char *nptr, char **endptr, int base )
 {
 	long res;
-	qboolean pos = qtrue;
+	bool pos = true;
 
 	if( endptr )
 		*endptr = (char *)nptr;
@@ -1264,7 +1264,7 @@ long strtol( const char *nptr, char **endptr, int base )
 	if( *nptr == '-' )
 	{
 		nptr++;
-		pos = qfalse;
+		pos = false;
 	}
 	else if( *nptr == '+' )
 		nptr++;
@@ -1293,7 +1293,7 @@ long strtol( const char *nptr, char **endptr, int base )
 	else if( base == 0 )
 		base = 10;
 	res = 0;
-	while( qtrue )
+	while( true )
 	{
 		int val;
 		if( isdigit( *nptr ) )

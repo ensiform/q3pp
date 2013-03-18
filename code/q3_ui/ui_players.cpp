@@ -467,7 +467,7 @@ UI_SwingAngles
 ==================
 */
 static void UI_SwingAngles( float destination, float swingTolerance, float clampTolerance,
-					float speed, float *angle, qboolean *swinging ) {
+					float speed, float *angle, bool *swinging ) {
 	float	swing;
 	float	move;
 	float	scale;
@@ -476,7 +476,7 @@ static void UI_SwingAngles( float destination, float swingTolerance, float clamp
 		// see if a swing should be started
 		swing = AngleSubtract( *angle, destination );
 		if ( swing > swingTolerance || swing < -swingTolerance ) {
-			*swinging = qtrue;
+			*swinging = true;
 		}
 	}
 
@@ -501,14 +501,14 @@ static void UI_SwingAngles( float destination, float swingTolerance, float clamp
 		move = uis.frametime * scale * speed;
 		if ( move >= swing ) {
 			move = swing;
-			*swinging = qfalse;
+			*swinging = false;
 		}
 		*angle = AngleMod( *angle + move );
 	} else if ( swing < 0 ) {
 		move = uis.frametime * scale * -speed;
 		if ( move <= swing ) {
 			move = swing;
-			*swinging = qfalse;
+			*swinging = false;
 		}
 		*angle = AngleMod( *angle + move );
 	}
@@ -588,9 +588,9 @@ static void UI_PlayerAngles( playerInfo_t *pi, vec3_t legs[3], vec3_t torso[3], 
 	if ( ( pi->legsAnim & ~ANIM_TOGGLEBIT ) != LEGS_IDLE 
 		|| ( pi->torsoAnim & ~ANIM_TOGGLEBIT ) != TORSO_STAND  ) {
 		// if not standing still, always point all in the same direction
-		pi->torso.yawing = qtrue;	// always center
-		pi->torso.pitching = qtrue;	// always center
-		pi->legs.yawing = qtrue;	// always center
+		pi->torso.yawing = true;	// always center
+		pi->torso.pitching = true;	// always center
+		pi->legs.yawing = true;	// always center
 	}
 
 	// adjust legs for movement dir
@@ -911,7 +911,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 UI_RegisterClientSkin
 ==========================
 */
-static qboolean UI_RegisterClientSkin( playerInfo_t *pi, const char *modelName, const char *skinName ) {
+static bool UI_RegisterClientSkin( playerInfo_t *pi, const char *modelName, const char *skinName ) {
 	char		filename[MAX_QPATH];
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/lower_%s.skin", modelName, skinName );
@@ -924,10 +924,10 @@ static qboolean UI_RegisterClientSkin( playerInfo_t *pi, const char *modelName, 
 	pi->headSkin = trap_R_RegisterSkin( filename );
 
 	if ( !pi->legsSkin || !pi->torsoSkin || !pi->headSkin ) {
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -936,7 +936,7 @@ static qboolean UI_RegisterClientSkin( playerInfo_t *pi, const char *modelName, 
 UI_ParseAnimationFile
 ======================
 */
-static qboolean UI_ParseAnimationFile( const char *filename, animation_t *animations ) {
+static bool UI_ParseAnimationFile( const char *filename, animation_t *animations ) {
 	char		*text_p, *prev;
 	int			len;
 	int			i;
@@ -951,12 +951,12 @@ static qboolean UI_ParseAnimationFile( const char *filename, animation_t *animat
 	// load the file
 	len = trap_FS_FOpenFile( filename, &f, FS_READ );
 	if ( len <= 0 ) {
-		return qfalse;
+		return false;
 	}
 	if ( len >= ( sizeof( text ) - 1 ) ) {
 		Com_Printf( "File %s too long\n", filename );
 		trap_FS_FCloseFile( f );
-		return qfalse;
+		return false;
 	}
 	trap_FS_Read( text, len, f );
 	text[len] = 0;
@@ -1046,10 +1046,10 @@ static qboolean UI_ParseAnimationFile( const char *filename, animation_t *animat
 
 	if ( i != MAX_ANIMATIONS ) {
 		Com_Printf( "Error parsing animation file: %s\n", filename );
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1058,7 +1058,7 @@ static qboolean UI_ParseAnimationFile( const char *filename, animation_t *animat
 UI_RegisterClientModelname
 ==========================
 */
-qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName ) {
+bool UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName ) {
 	char		modelName[MAX_QPATH];
 	char		skinName[MAX_QPATH];
 	char		filename[MAX_QPATH];
@@ -1068,7 +1068,7 @@ qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName
 	pi->headModel = 0;
 
 	if ( !modelSkinName[0] ) {
-		return qfalse;
+		return false;
 	}
 
 	Q_strncpyz( modelName, modelSkinName, sizeof( modelName ) );
@@ -1089,28 +1089,28 @@ qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName
 	pi->legsModel = trap_R_RegisterModel( filename );
 	if ( !pi->legsModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
-		return qfalse;
+		return false;
 	}
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/upper.md3", modelName );
 	pi->torsoModel = trap_R_RegisterModel( filename );
 	if ( !pi->torsoModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
-		return qfalse;
+		return false;
 	}
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/head.md3", modelName );
 	pi->headModel = trap_R_RegisterModel( filename );
 	if ( !pi->headModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
-		return qfalse;
+		return false;
 	}
 
 	// if any skins failed to load, fall back to default
 	if ( !UI_RegisterClientSkin( pi, modelName, skinName ) ) {
 		if ( !UI_RegisterClientSkin( pi, modelName, "default" ) ) {
 			Com_Printf( "Failed to load skin file: %s : %s\n", modelName, skinName );
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -1118,10 +1118,10 @@ qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/animation.cfg", modelName );
 	if ( !UI_ParseAnimationFile( filename, pi->animations ) ) {
 		Com_Printf( "Failed to load animation file %s\n", filename );
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1138,8 +1138,8 @@ void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model ) {
 	pi->lastWeapon = pi->weapon;
 	pi->pendingWeapon = -1;
 	pi->weaponTimer = 0;
-	pi->chat = qfalse;
-	pi->newModel = qtrue;
+	pi->chat = false;
+	pi->newModel = true;
 	UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 }
 
@@ -1149,7 +1149,7 @@ void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model ) {
 UI_PlayerInfo_SetInfo
 ===============
 */
-void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_t viewAngles, vec3_t moveAngles, weapon_t weaponNumber, qboolean chat ) {
+void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_t viewAngles, vec3_t moveAngles, weapon_t weaponNumber, bool chat ) {
 	int			currentAnim;
 	weapon_t	weaponNum;
 	int			c;
@@ -1189,18 +1189,18 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 	VectorCopy( moveAngles, pi->moveAngles );
 
 	if ( pi->newModel ) {
-		pi->newModel = qfalse;
+		pi->newModel = false;
 
 		jumpHeight = 0;
 		pi->pendingLegsAnim = 0;
 		UI_ForceLegsAnim( pi, legsAnim );
 		pi->legs.yawAngle = viewAngles[YAW];
-		pi->legs.yawing = qfalse;
+		pi->legs.yawing = false;
 
 		pi->pendingTorsoAnim = 0;
 		UI_ForceTorsoAnim( pi, torsoAnim );
 		pi->torso.yawAngle = viewAngles[YAW];
-		pi->torso.yawing = qfalse;
+		pi->torso.yawing = false;
 
 		if ( weaponNumber != -1 ) {
 			pi->weapon = weaponNumber;

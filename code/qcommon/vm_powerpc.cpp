@@ -1988,7 +1988,7 @@ VM_Compile( vm_t *vm, vmHeader_t *header )
 	struct timeval tvstart = {0, 0};
 	source_instruction_t *i_first /* dummy */, *i_last = NULL, *i_now;
 
-	vm->compiled = qfalse;
+	vm->compiled = false;
 
 	gettimeofday(&tvstart, NULL);
 
@@ -2074,7 +2074,7 @@ VM_Compile( vm_t *vm, vmHeader_t *header )
 	}
 
 	vm->destroy = VM_Destroy_Compiled;
-	vm->compiled = qtrue;
+	vm->compiled = true;
 
 	{
 		struct timeval tvdone = {0, 0};
@@ -2103,7 +2103,7 @@ VM_CallCompiled( vm_t *vm, int *args )
 
 	currentVM = vm;
 
-	vm->currentlyInterpreting = qtrue;
+	vm->currentlyInterpreting = true;
 
 	programStack -= ( 8 + 4 * MAX_VMMAIN_ARGS );
 	argPointer = (int *)&image[ programStack + 8 ];
@@ -2147,7 +2147,7 @@ VM_CallCompiled( vm_t *vm, int *args )
 #endif
 
 	vm->programStack = stackOnEntry;
-	vm->currentlyInterpreting = qfalse;
+	vm->currentlyInterpreting = false;
 
 	return retVal;
 }

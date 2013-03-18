@@ -118,14 +118,14 @@ void Options_MenuInit( void ) {
 	memset( &s_options, 0, sizeof(optionsmenu_t) );
 
 	SystemConfig_Cache();
-	s_options.menu.wrapAround = qtrue;
+	s_options.menu.wrapAround = true;
 
 	trap_GetClientState( &cstate );
 	if ( cstate.connState >= CA_CONNECTED ) {
-		s_options.menu.fullscreen = qfalse;
+		s_options.menu.fullscreen = false;
 	}
 	else {
-		s_options.menu.fullscreen = qtrue;
+		s_options.menu.fullscreen = true;
 	}
 
 	s_options.banner.generic.type	= MTYPE_BTEXT;
