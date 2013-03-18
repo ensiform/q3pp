@@ -1,0 +1,3 @@
+[submodule "oglibs"]
+	path = oglibs
+	url = git://github.com/ensiform/open-game-libraries.git
