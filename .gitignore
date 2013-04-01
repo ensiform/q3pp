@@ -1,4 +1,5 @@
-build
+[Bb]uild
+[Bb]inaries/
 Makefile.local
 *.swp
 *tags
