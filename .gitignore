@@ -2,3 +2,4 @@ build
 Makefile.local
 *.swp
 *tags
+code/renderergl2/dynamic

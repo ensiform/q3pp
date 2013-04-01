@@ -204,7 +204,7 @@ void S_ChannelSetup( void ) {
 	// clear all the sounds so they don't
 	Com_Memset( s_channels, 0, sizeof( s_channels ) );
 
-	p = s_channels;;
+	p = s_channels;
 	q = p + MAX_CHANNELS;
 	while (--q > p) {
 		*(channel_t **)q = q-1;
@@ -258,7 +258,7 @@ static sfx_t *S_FindName( const char *name ) {
 	sfx_t	*sfx;
 
 	if (!name) {
-		Com_Error(ERR_FATAL, "Sound name is NULL");
+		Com_Error(ERR_FATAL, "S_FindName: Sound name is NULL");
 	}
 
 	if (!name[0]) {
@@ -1559,7 +1559,7 @@ bool S_Base_Init( soundInterface_t *si ) {
 
 	if ( r ) {
 		s_soundStarted = 1;
-		s_soundMuted = 1;
+		s_soundMuted = true;
 //		s_numSfx = 0;
 
 		Com_Memset(sfxHash, 0, sizeof(sfx_t *)*LOOP_HASH);

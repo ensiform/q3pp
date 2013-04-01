@@ -68,14 +68,14 @@ void Favorites_Add( void )
 	int		i;
 	int		best;
 
-	trap_Cvar_VariableStringBuffer( "cl_currentServerAddress", serverbuff, sizeof(serverbuff) );
+	cvarSystem->VariableStringBuffer( "cl_currentServerAddress", serverbuff, sizeof(serverbuff) );
 	if (!serverbuff[0])
 		return;
 
 	best = 0;
 	for (i=0; i<MAX_FAVORITESERVERS; i++)
 	{
-		trap_Cvar_VariableStringBuffer( va("server%d",i+1), adrstr, sizeof(adrstr) );
+		cvarSystem->VariableStringBuffer( va("server%d",i+1), adrstr, sizeof(adrstr) );
 		if (!Q_stricmp(serverbuff,adrstr))
 		{
 			// already in list
@@ -88,7 +88,7 @@ void Favorites_Add( void )
 	}
 
 	if (best)
-		trap_Cvar_Set( va("server%d",best), serverbuff);
+		cvarSystem->Set( va("server%d",best), serverbuff);
 }
 
 
@@ -174,7 +174,7 @@ void ServerInfo_Cache( void )
 	{
 		if (!serverinfo_artlist[i])
 			break;
-		trap_R_RegisterShaderNoMip(serverinfo_artlist[i]);
+		trap->re->RegisterShaderNoMip(serverinfo_artlist[i]);
 	}
 }
 
@@ -231,7 +231,7 @@ void UI_ServerInfoMenu( void )
 	s_serverinfo.add.string  		  = "ADD TO FAVORITES";
 	s_serverinfo.add.style  		  = UI_CENTER|UI_SMALLFONT;
 	s_serverinfo.add.color			  =	color_red;
-	if( trap_Cvar_VariableValue( "sv_running" ) ) {
+	if( cvarSystem->VariableValue( "sv_running" ) ) {
 		s_serverinfo.add.generic.flags |= QMF_GRAYED;
 	}
 
@@ -246,7 +246,7 @@ void UI_ServerInfoMenu( void )
 	s_serverinfo.back.height  		   = 64;
 	s_serverinfo.back.focuspic         = SERVERINFO_BACK1;
 
-	trap_GetConfigString( CS_SERVERINFO, s_serverinfo.info, MAX_INFO_STRING );
+	trap->GetConfigString( CS_SERVERINFO, s_serverinfo.info, MAX_INFO_STRING );
 
 	s_serverinfo.numlines = 0;
 	s = s_serverinfo.info;

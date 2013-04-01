@@ -52,7 +52,7 @@ gitem_t	bg_itemlist[] =
 /* icon */		NULL,
 /* pickup */	NULL,
 		0,
-		0,
+		IT_BAD,
 		0,
 /* precache */ "",
 /* sounds */ ""
@@ -1392,14 +1392,13 @@ Handles the sequence numbers
 ===============
 */
 
-void	trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 
 void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps ) {
 
 #ifdef _DEBUG
 	{
 		char buf[256];
-		trap_Cvar_VariableStringBuffer("showevents", buf, sizeof(buf));
+		cvarSystem->VariableStringBuffer("showevents", buf, sizeof(buf));
 		if ( atof(buf) != 0 ) {
 #ifdef QAGAME
 			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
@@ -1502,7 +1501,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, bool snap
 	}
 
 	if ( ps->externalEvent ) {
-		s->event = ps->externalEvent;
+		s->_event = ps->externalEvent;
 		s->eventParm = ps->externalEventParm;
 	} else if ( ps->entityEventSequence < ps->eventSequence ) {
 		int		seq;
@@ -1511,7 +1510,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, bool snap
 			ps->entityEventSequence = ps->eventSequence - MAX_PS_EVENTS;
 		}
 		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		s->event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
+		s->_event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
 		s->eventParm = ps->eventParms[ seq ];
 		ps->entityEventSequence++;
 	}
@@ -1582,7 +1581,7 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	}
 
 	if ( ps->externalEvent ) {
-		s->event = ps->externalEvent;
+		s->_event = ps->externalEvent;
 		s->eventParm = ps->externalEventParm;
 	} else if ( ps->entityEventSequence < ps->eventSequence ) {
 		int		seq;
@@ -1591,7 +1590,7 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 			ps->entityEventSequence = ps->eventSequence - MAX_PS_EVENTS;
 		}
 		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		s->event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
+		s->_event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
 		s->eventParm = ps->eventParms[ seq ];
 		ps->entityEventSequence++;
 	}

@@ -161,7 +161,7 @@ ConfirmMenu_Cache
 =================
 */
 void ConfirmMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_CONFIRM_FRAME );
+	trap->re->RegisterShaderNoMip( ART_CONFIRM_FRAME );
 }
 
 
@@ -171,7 +171,7 @@ UI_ConfirmMenu_Stlye
 =================
 */
 void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void ), void (*action)( bool result ) ) {
-	uiClientState_t	cstate;
+	ogClientState	cstate;
 	int	n1, n2, n3;
 	int	l1, l2, l3;
 
@@ -197,7 +197,7 @@ void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void )
 	s_confirm.menu.key        = ConfirmMenu_Key;
 	s_confirm.menu.wrapAround = true;
 
-	trap_GetClientState( &cstate );
+	trap->GetClientState( &cstate );
 	if ( cstate.connState >= CA_CONNECTED ) {
 		s_confirm.menu.fullscreen = false;
 	}
@@ -249,7 +249,7 @@ hacked over from Confirm stuff
 =================
 */
 void UI_Message( const char **lines ) {
-	uiClientState_t	cstate;
+	ogClientState	cstate;
 	int n1, l1;
 	
 	// zero set all our globals
@@ -267,7 +267,7 @@ void UI_Message( const char **lines ) {
 	s_confirm.menu.key        = ConfirmMenu_Key;
 	s_confirm.menu.wrapAround = true;
 	
-	trap_GetClientState( &cstate );
+	trap->GetClientState( &cstate );
 	if ( cstate.connState >= CA_CONNECTED ) {
 		s_confirm.menu.fullscreen = false;
 	}

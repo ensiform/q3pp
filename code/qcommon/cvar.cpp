@@ -184,7 +184,7 @@ int Cvar_Flags(const char *var_name)
 Cvar_CommandCompletion
 ============
 */
-void Cvar_CommandCompletion(void (*callback)(const char *s))
+void Cvar_CommandCompletion(callbackFunc_t callback)
 {
 	cvar_t		*cvar;
 	
@@ -222,7 +222,7 @@ static const char *Cvar_Validate( cvar_t *var,
 			if( !Q_isintegral( valuef ) )
 			{
 				if( warn )
-					Com_Printf( "WARNING: cvar '%s' must be integral", var->name );
+					Com_Printf( S_COLOR_YELLOW "WARNING: cvar '%s' must be integral", var->name );
 
 				valuef = (int)valuef;
 				changed = true;
@@ -232,7 +232,7 @@ static const char *Cvar_Validate( cvar_t *var,
 	else
 	{
 		if( warn )
-			Com_Printf( "WARNING: cvar '%s' must be numeric", var->name );
+			Com_Printf( S_COLOR_YELLOW "WARNING: cvar '%s' must be numeric", var->name );
 
 		valuef = atof( var->resetString );
 		changed = true;
@@ -245,7 +245,7 @@ static const char *Cvar_Validate( cvar_t *var,
 			if( changed )
 				Com_Printf( " and is" );
 			else
-				Com_Printf( "WARNING: cvar '%s'", var->name );
+				Com_Printf( S_COLOR_YELLOW "WARNING: cvar '%s'", var->name );
 
 			if( Q_isintegral( var->min ) )
 				Com_Printf( " out of range (min %d)", (int)var->min );
@@ -263,7 +263,7 @@ static const char *Cvar_Validate( cvar_t *var,
 			if( changed )
 				Com_Printf( " and is" );
 			else
-				Com_Printf( "WARNING: cvar '%s'", var->name );
+				Com_Printf( S_COLOR_YELLOW "WARNING: cvar '%s'", var->name );
 
 			if( Q_isintegral( var->max ) )
 				Com_Printf( " out of range (max %d)", (int)var->max );
@@ -386,7 +386,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 			Z_Free( var->resetString );
 			var->resetString = CopyString( var_value );
 		} else if ( var_value[0] && strcmp( var->resetString, var_value ) ) {
-			Com_DPrintf( "Warning: cvar \"%s\" given initial values: \"%s\" and \"%s\"\n",
+			Com_DPrintf( S_COLOR_YELLOW "Warning: cvar \"%s\" given initial values: \"%s\" and \"%s\"\n",
 				var_name, var->resetString, var_value );
 		}
 		// if we have a latched string, take that value now
@@ -909,7 +909,7 @@ Appends lines containing "set variable value" for all variables
 with the archive flag set to true.
 ============
 */
-void Cvar_WriteVariables(fileHandle_t f)
+void Cvar_WriteVariables(og::File * f)
 {
 	cvar_t	*var;
 	char	buffer[1024];
@@ -936,7 +936,7 @@ void Cvar_WriteVariables(fileHandle_t f)
 				}
 				Com_sprintf (buffer, sizeof(buffer), "seta %s \"%s\"\n", var->name, var->string);
 			}
-			FS_Write( buffer, strlen( buffer ), f );
+			f->Write( buffer, strlen( buffer ) );
 		}
 	}
 }

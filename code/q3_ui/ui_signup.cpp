@@ -86,10 +86,10 @@ static void Signup_MenuEvent( void* ptr, int event ) {
 			break;
 		}
 		// set name
-		//trap_Cvar_Set( "name", s_signup.name_box.field.buffer );
+		//cvarSystem->Set( "name", s_signup.name_box.field.buffer );
 		/*
-		trap_Cvar_Set( "rank_name", s_signup.name_box.field.buffer );
-		trap_Cvar_Set( "rank_pwd", s_signup.password_box.field.buffer );
+		cvarSystem->Set( "rank_name", s_signup.name_box.field.buffer );
+		cvarSystem->Set( "rank_pwd", s_signup.password_box.field.buffer );
 		*/
 
 		// create account
@@ -98,9 +98,9 @@ static void Signup_MenuEvent( void* ptr, int event ) {
 			s_signup.name_box.field.buffer, 
 			s_signup.password_box.field.buffer, 
 			s_signup.email_box.field.buffer );
-		trap_Cmd_ExecuteText( EXEC_APPEND, cmd );
+		trap->Cmd_ExecuteText( EXEC_APPEND, cmd );
 		*/
-		trap_CL_UI_RankUserCreate(
+		trap->CL_UI_RankUserCreate(
 			s_signup.name_box.field.buffer, 
 			s_signup.password_box.field.buffer, 
 			s_signup.email_box.field.buffer );
@@ -237,7 +237,7 @@ void Signup_MenuInit( void ) {
 	s_signup.cancel.color					= colorRed;
 	y += 20;
 
-	status = (grank_status_t)trap_Cvar_VariableValue("client_status");
+	status = (grank_status_t)cvarSystem->VariableValue("client_status");
 	if( (status != QGR_STATUS_NEW) && (status != QGR_STATUS_SPECTATOR) )
 	{
 		s_signup.name_box.generic.flags |= QMF_INACTIVE;	
@@ -269,7 +269,7 @@ Signup_Cache
 ===============
 */
 void Signup_Cache( void ) {
-	trap_R_RegisterShaderNoMip( SIGNUP_FRAME );
+	trap->re->RegisterShaderNoMip( SIGNUP_FRAME );
 }
 
 

@@ -28,14 +28,15 @@ cvar_t *sv_voip;
 
 serverStatic_t	svs;				// persistant server info
 server_t		sv;					// local server
-vm_t			*gvm = NULL;				// game virtual machine
 
 cvar_t	*sv_fps = NULL;			// time rate for running non-clients
 cvar_t	*sv_timeout;			// seconds without any message
 cvar_t	*sv_zombietime;			// seconds to sink messages after disconnect
 cvar_t	*sv_rconPassword;		// password for remote server commands
 cvar_t	*sv_privatePassword;		// password for the privateClient slots
+#ifdef USE_DOWNLOADS
 cvar_t	*sv_allowDownload;
+#endif
 cvar_t	*sv_maxclients;
 
 cvar_t	*sv_privateClients;		// number of clients reserved for password
@@ -1157,7 +1158,7 @@ void SV_Frame( int msec ) {
 		sv.time += frameMsec;
 
 		// let everything in the world think and move
-		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
+		gameExport->RunFrame( sv.time);
 	}
 
 	if ( com_speeds->integer ) {
@@ -1234,18 +1235,24 @@ Return the time in msec until we expect to be called next
 ====================
 */
 
-int SV_SendQueuedPackets()
+int SV_SendQueuedPackets(void)
 {
+#ifdef USE_DOWNLOADS
 	int numBlocks;
 	int dlStart, deltaT, delayT;
 	static int dlNextRound = 0;
 	int timeVal = INT_MAX;
+#else
+	int delayT;
+	int timeVal = INT_MAX;
+#endif
 
 	// Send out fragmented packets now that we're idle
 	delayT = SV_SendQueuedMessages();
 	if(delayT >= 0)
 		timeVal = delayT;
 
+#ifdef USE_DOWNLOADS
 	if(sv_dlRate->integer)
 	{
 		// Rate limiting. This is very imprecise for high
@@ -1300,6 +1307,7 @@ int SV_SendQueuedPackets()
 		if(SV_SendDownloadMessages())
 			timeVal = 0;
 	}
+#endif
 
 	return timeVal;
 }

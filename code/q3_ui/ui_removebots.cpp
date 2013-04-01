@@ -66,7 +66,7 @@ typedef struct {
 
 	menutext_s		bots[7];
 
-	menubitmap_s	delete;
+	menubitmap_s	_delete;
 	menubitmap_s	back;
 
 	int				numBots;
@@ -89,7 +89,7 @@ static void UI_RemoveBotsMenu_SetBotNames( void ) {
 	char	info[MAX_INFO_STRING];
 
 	for ( n = 0; (n < 7) && (removeBotsMenuInfo.baseBotNum + n < removeBotsMenuInfo.numBots); n++ ) {
-		trap_GetConfigString( CS_PLAYERS + removeBotsMenuInfo.botClientNums[removeBotsMenuInfo.baseBotNum + n], info, MAX_INFO_STRING );
+		trap->GetConfigString( CS_PLAYERS + removeBotsMenuInfo.botClientNums[removeBotsMenuInfo.baseBotNum + n], info, MAX_INFO_STRING );
 		Q_strncpyz( removeBotsMenuInfo.botnames[n], Info_ValueForKey( info, "n" ), sizeof(removeBotsMenuInfo.botnames[n]) );
 		Q_CleanStr( removeBotsMenuInfo.botnames[n] );
 	}
@@ -107,7 +107,7 @@ static void UI_RemoveBotsMenu_DeleteEvent( void* ptr, int event ) {
 		return;
 	}
 
-	trap_Cmd_ExecuteText( EXEC_APPEND, va("clientkick %i\n", removeBotsMenuInfo.botClientNums[removeBotsMenuInfo.baseBotNum + removeBotsMenuInfo.selectedBotNum]) );
+	trap->Cmd_ExecuteText( EXEC_APPEND, va("clientkick %i\n", removeBotsMenuInfo.botClientNums[removeBotsMenuInfo.baseBotNum + removeBotsMenuInfo.selectedBotNum]) );
 }
 
 
@@ -185,12 +185,12 @@ static void UI_RemoveBotsMenu_GetBots( void ) {
 	int		n;
 	char	info[MAX_INFO_STRING];
 
-	trap_GetConfigString( CS_SERVERINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) );
 	numPlayers = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 	removeBotsMenuInfo.numBots = 0;
 
 	for( n = 0; n < numPlayers; n++ ) {
-		trap_GetConfigString( CS_PLAYERS + n, info, MAX_INFO_STRING );
+		trap->GetConfigString( CS_PLAYERS + n, info, MAX_INFO_STRING );
 
 		isBot = atoi( Info_ValueForKey( info, "skill" ) );
 		if( !isBot ) {
@@ -209,11 +209,11 @@ UI_RemoveBots_Cache
 =================
 */
 void UI_RemoveBots_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACKGROUND );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_DELETE0 );
-	trap_R_RegisterShaderNoMip( ART_DELETE1 );
+	trap->re->RegisterShaderNoMip( ART_BACKGROUND );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_DELETE0 );
+	trap->re->RegisterShaderNoMip( ART_DELETE1 );
 }
 
 
@@ -292,16 +292,16 @@ static void UI_RemoveBotsMenu_Init( void ) {
 		removeBotsMenuInfo.bots[n].style			= UI_LEFT|UI_SMALLFONT;
 	}
 
-	removeBotsMenuInfo.delete.generic.type		= MTYPE_BITMAP;
-	removeBotsMenuInfo.delete.generic.name		= ART_DELETE0;
-	removeBotsMenuInfo.delete.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
-	removeBotsMenuInfo.delete.generic.id		= ID_DELETE;
-	removeBotsMenuInfo.delete.generic.callback	= UI_RemoveBotsMenu_DeleteEvent;
-	removeBotsMenuInfo.delete.generic.x			= 320+128-128;
-	removeBotsMenuInfo.delete.generic.y			= 256+128-64;
-	removeBotsMenuInfo.delete.width  			= 128;
-	removeBotsMenuInfo.delete.height  			= 64;
-	removeBotsMenuInfo.delete.focuspic			= ART_DELETE1;
+	removeBotsMenuInfo._delete.generic.type		= MTYPE_BITMAP;
+	removeBotsMenuInfo._delete.generic.name		= ART_DELETE0;
+	removeBotsMenuInfo._delete.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
+	removeBotsMenuInfo._delete.generic.id		= ID_DELETE;
+	removeBotsMenuInfo._delete.generic.callback	= UI_RemoveBotsMenu_DeleteEvent;
+	removeBotsMenuInfo._delete.generic.x			= 320+128-128;
+	removeBotsMenuInfo._delete.generic.y			= 256+128-64;
+	removeBotsMenuInfo._delete.width  			= 128;
+	removeBotsMenuInfo._delete.height  			= 64;
+	removeBotsMenuInfo._delete.focuspic			= ART_DELETE1;
 
 	removeBotsMenuInfo.back.generic.type		= MTYPE_BITMAP;
 	removeBotsMenuInfo.back.generic.name		= ART_BACK0;
@@ -322,7 +322,7 @@ static void UI_RemoveBotsMenu_Init( void ) {
 	for( n = 0; n < count; n++ ) {
 		Menu_AddItem( &removeBotsMenuInfo.menu, &removeBotsMenuInfo.bots[n] );
 	}
-	Menu_AddItem( &removeBotsMenuInfo.menu, &removeBotsMenuInfo.delete );
+	Menu_AddItem( &removeBotsMenuInfo.menu, &removeBotsMenuInfo._delete );
 	Menu_AddItem( &removeBotsMenuInfo.menu, &removeBotsMenuInfo.back );
 
 	removeBotsMenuInfo.baseBotNum = 0;

@@ -34,7 +34,7 @@ cvar_t *s_backend;
 cvar_t *s_muteWhenMinimized;
 cvar_t *s_muteWhenUnfocused;
 
-static soundInterface_t si;
+soundInterface_t si;
 
 /*
 =================
@@ -394,6 +394,17 @@ void S_MasterGain( float gain )
 //=============================================================================
 
 /*
+==================
+S_CompleteSoundName
+==================
+*/
+static void S_CompleteSoundName( char *args, int argNum ) {
+	if( argNum >= 2 ) {
+		Field_CompleteFilename( "sound", ".wav", false, false );
+	}
+}
+
+/*
 =================
 S_Play_f
 =================
@@ -420,6 +431,17 @@ void S_Play_f( void ) {
 		if( h ) {
 			si.StartLocalSound( h, CHAN_LOCAL_SOUND );
 		}
+	}
+}
+
+/*
+==================
+S_CompleteMusicName
+==================
+*/
+static void S_CompleteMusicName( char *args, int argNum ) {
+	if( argNum == 2 || argNum == 3 ) {
+		Field_CompleteFilename( "music", ".wav", false, false );
 	}
 }
 
@@ -492,7 +514,9 @@ void S_Init( void )
 		S_CodecInit( );
 
 		Cmd_AddCommand( "play", S_Play_f );
+		Cmd_SetCommandCompletionFunc( "play", S_CompleteSoundName );
 		Cmd_AddCommand( "music", S_Music_f );
+		Cmd_SetCommandCompletionFunc( "music", S_CompleteMusicName );
 		Cmd_AddCommand( "stopmusic", S_StopMusic_f );
 		Cmd_AddCommand( "s_list", S_SoundList );
 		Cmd_AddCommand( "s_stop", S_StopAllSounds );

@@ -92,7 +92,7 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	}
 
 	// unlink to make sure it can't possibly interfere with G_KillBox
-	trap_UnlinkEntity (player);
+	trap->UnlinkEntity (player);
 
 	VectorCopy ( origin, player->client->ps.origin );
 	player->client->ps.origin[2] += 1;
@@ -119,7 +119,7 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	VectorCopy( player->client->ps.origin, player->r.currentOrigin );
 
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		trap_LinkEntity (player);
+		trap->LinkEntity (player);
 	}
 }
 
@@ -144,7 +144,7 @@ void SP_misc_model( gentity_t *ent ) {
 	ent->s.modelindex = G_ModelIndex( ent->model );
 	VectorSet (ent->mins, -16, -16, -16);
 	VectorSet (ent->maxs, 16, 16, 16);
-	trap_LinkEntity (ent);
+	trap->LinkEntity (ent);
 
 	G_SetOrigin( ent, ent->s.origin );
 	VectorCopy( ent->s.angles, ent->s.apos.trBase );
@@ -208,7 +208,7 @@ This must be within 64 world units of the surface!
 void SP_misc_portal_surface(gentity_t *ent) {
 	VectorClear( ent->r.mins );
 	VectorClear( ent->r.maxs );
-	trap_LinkEntity (ent);
+	trap->LinkEntity (ent);
 
 	ent->r.svFlags = SVF_PORTAL;
 	ent->s.eType = ET_PORTAL;
@@ -230,7 +230,7 @@ void SP_misc_portal_camera(gentity_t *ent) {
 
 	VectorClear( ent->r.mins );
 	VectorClear( ent->r.maxs );
-	trap_LinkEntity (ent);
+	trap->LinkEntity (ent);
 
 	G_SpawnFloat( "roll", "0", &roll );
 
@@ -292,7 +292,7 @@ static void InitShooter_Finish( gentity_t *ent ) {
 	ent->nextthink = 0;
 }
 
-void InitShooter( gentity_t *ent, int weapon ) {
+void InitShooter( gentity_t *ent, weapon_t weapon ) {
 	ent->use = Use_Shooter;
 	ent->s.weapon = weapon;
 
@@ -309,7 +309,7 @@ void InitShooter( gentity_t *ent, int weapon ) {
 		ent->think = InitShooter_Finish;
 		ent->nextthink = level.time + 500;
 	}
-	trap_LinkEntity( ent );
+	trap->LinkEntity( ent );
 }
 
 /*QUAKED shooter_rocket (1 0 0) (-16 -16 -16) (16 16 16)
@@ -371,7 +371,7 @@ void DropPortalDestination( gentity_t *player ) {
 	ent->think = G_FreeEntity;
 	ent->nextthink = level.time + 2 * 60 * 1000;
 
-	trap_LinkEntity( ent );
+	trap->LinkEntity( ent );
 
 	player->client->portalID = ++level.portalSequence;
 	ent->count = player->client->portalID;
@@ -459,7 +459,7 @@ void DropPortalSource( gentity_t *player ) {
 	ent->health = 200;
 	ent->die = PortalDie;
 
-	trap_LinkEntity( ent );
+	trap->LinkEntity( ent );
 
 	ent->count = player->client->portalID;
 	player->client->portalID = 0;

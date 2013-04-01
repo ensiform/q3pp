@@ -308,7 +308,7 @@ char *G_NewString( const char *string ) {
 	
 	l = strlen(string) + 1;
 
-	newb = G_Alloc( l );
+	newb = (char *)G_Alloc( l );
 
 	new_p = newb;
 
@@ -382,8 +382,8 @@ void G_ParseField( const char *key, const char *value, gentity_t *ent ) {
 #define ADJUST_AREAPORTAL() \
 	if(ent->s.eType == ET_MOVER) \
 	{ \
-		trap_LinkEntity(ent); \
-		trap_AdjustAreaPortalState(ent, true); \
+		trap->LinkEntity(ent); \
+		trap->AdjustAreaPortalState(ent, true); \
 	}
 
 /*
@@ -514,7 +514,7 @@ bool G_ParseSpawnVars( void ) {
 	level.numSpawnVarChars = 0;
 
 	// parse the opening brace
-	if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) ) {
+	if ( !trap->GetEntityToken( com_token, sizeof( com_token ) ) ) {
 		// end of spawn string
 		return false;
 	}
@@ -525,7 +525,7 @@ bool G_ParseSpawnVars( void ) {
 	// go through all the key / value pairs
 	while ( 1 ) {	
 		// parse key
-		if ( !trap_GetEntityToken( keyname, sizeof( keyname ) ) ) {
+		if ( !trap->GetEntityToken( keyname, sizeof( keyname ) ) ) {
 			G_Error( "G_ParseSpawnVars: EOF without closing brace" );
 		}
 
@@ -534,7 +534,7 @@ bool G_ParseSpawnVars( void ) {
 		}
 		
 		// parse value	
-		if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) ) {
+		if ( !trap->GetEntityToken( com_token, sizeof( com_token ) ) ) {
 			G_Error( "G_ParseSpawnVars: EOF without closing brace" );
 		}
 
@@ -570,26 +570,26 @@ void SP_worldspawn( void ) {
 	}
 
 	// make some data visible to connecting client
-	trap_SetConfigstring( CS_GAME_VERSION, GAME_VERSION );
+	trap->SetConfigstring( CS_GAME_VERSION, GAME_VERSION );
 
-	trap_SetConfigstring( CS_LEVEL_START_TIME, va("%i", level.startTime ) );
+	trap->SetConfigstring( CS_LEVEL_START_TIME, va("%i", level.startTime ) );
 
 	G_SpawnString( "music", "", &s );
-	trap_SetConfigstring( CS_MUSIC, s );
+	trap->SetConfigstring( CS_MUSIC, s );
 
 	G_SpawnString( "message", "", &s );
-	trap_SetConfigstring( CS_MESSAGE, s );				// map specific message
+	trap->SetConfigstring( CS_MESSAGE, s );				// map specific message
 
-	trap_SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
+	trap->SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
 
 	G_SpawnString( "gravity", "800", &s );
-	trap_Cvar_Set( "g_gravity", s );
+	cvarSystem->Set( "g_gravity", s );
 
 	G_SpawnString( "enableDust", "0", &s );
-	trap_Cvar_Set( "g_enableDust", s );
+	cvarSystem->Set( "g_enableDust", s );
 
 	G_SpawnString( "enableBreath", "0", &s );
-	trap_Cvar_Set( "g_enableBreath", s );
+	cvarSystem->Set( "g_enableBreath", s );
 
 	g_entities[ENTITYNUM_WORLD].s.number = ENTITYNUM_WORLD;
 	g_entities[ENTITYNUM_WORLD].r.ownerNum = ENTITYNUM_NONE;
@@ -600,13 +600,13 @@ void SP_worldspawn( void ) {
 	g_entities[ENTITYNUM_NONE].classname = "nothing";
 
 	// see if we want a warmup time
-	trap_SetConfigstring( CS_WARMUP, "" );
+	trap->SetConfigstring( CS_WARMUP, "" );
 	if ( g_restarted.integer ) {
-		trap_Cvar_Set( "g_restarted", "0" );
+		cvarSystem->Set( "g_restarted", "0" );
 		level.warmupTime = 0;
 	} else if ( g_doWarmup.integer ) { // Turn it on
 		level.warmupTime = -1;
-		trap_SetConfigstring( CS_WARMUP, va("%i", level.warmupTime) );
+		trap->SetConfigstring( CS_WARMUP, va("%i", level.warmupTime) );
 		G_LogPrintf( "Warmup:\n" );
 	}
 

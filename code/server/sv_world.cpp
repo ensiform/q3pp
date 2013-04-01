@@ -452,7 +452,7 @@ typedef struct {
 	trace_t		trace;
 	int			passEntityNum;
 	int			contentmask;
-	int			capsule;
+	bool		capsule;
 } moveclip_t;
 
 
@@ -462,7 +462,7 @@ SV_ClipToEntity
 
 ====================
 */
-void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, int capsule ) {
+void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, bool capsule ) {
 	sharedEntity_t	*touch;
 	clipHandle_t	clipHandle;
 	float			*origin, *angles;
@@ -580,7 +580,7 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 
 			trace.entityNum = touch->s.number;
 			clip->trace = trace;
-			clip->trace.startsolid |= oldStart;
+			clip->trace.startsolid = ( (int)clip->trace.startsolid | (int)oldStart ) != 0; //clip->trace.startsolid |= oldStart;
 		}
 	}
 }
@@ -594,7 +594,7 @@ Moves the given mins/maxs volume through the world from start to end.
 passEntityNum and entities owned by passEntityNum are explicitly not checked.
 ==================
 */
-void SV_Trace( trace_t *results, const vec3_t start, vec3_t mins, vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, int capsule ) {
+void SV_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, bool capsule ) {
 	moveclip_t	clip;
 	int			i;
 

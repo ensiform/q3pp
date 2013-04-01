@@ -27,7 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
-#include "../renderercommon/tr_public.h"
+#include "../Public/RendererPublic.h"
+//#include "../renderercommon/tr_public.h"
 #include "../renderercommon/tr_common.h"
 #include "tr_extratypes.h"
 #include "tr_extramath.h"
@@ -965,7 +966,7 @@ typedef struct {
 	vec3_t		pvsOrigin;			// may be different than or.origin for portals
 	bool	isPortal;			// true if this view is through a portal
 	bool	isMirror;			// the portal is a mirror, invert the face culling
-	viewParmFlags_t flags;
+	int		flags;			// Ensiform: enums cannot be flags in C++ (viewParmFlags_t)
 	int			frameSceneNum;		// copied from tr.frameSceneNum
 	int			frameCount;			// copied from tr.frameCount
 	cplane_t	portalPlane;		// clip anything behind this if mirroring
@@ -1650,7 +1651,7 @@ typedef struct {
 	bool textureFloat;
 	bool halfFloatPixel;
 	bool packedDepthStencil;
-	textureCompressionRef_t textureCompression;
+	int textureCompression; // bitflags cannot be of enum type in C++ (textureCompressionRef_t)
 	
 	bool framebufferMultisample;
 	bool framebufferBlit;
@@ -2156,6 +2157,7 @@ void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
 
 void		RE_BeginFrame( stereoFrame_t stereoFrame );
 void		RE_BeginRegistration( glconfig_t *glconfig );
+void		RE_EndRegistration( void );
 void		RE_LoadWorldMap( const char *mapname );
 void		RE_SetWorldVisData( const byte *vis );
 qhandle_t	RE_RegisterModel( const char *name );

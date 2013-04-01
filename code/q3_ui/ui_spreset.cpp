@@ -64,7 +64,7 @@ void Reset_MenuEvent(void* ptr, int event) {
 
 	// reset the game, pop the level menu and restart it so it updates
 	UI_NewGame();
-	trap_Cvar_SetValue( "ui_spSelection", 0 );
+	cvarSystem->SetValue( "ui_spSelection", 0 );
 	UI_PopMenu();
 	UI_SPLevelMenu();
 }
@@ -123,7 +123,7 @@ Reset_Cache
 =================
 */
 void Reset_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAME );
+	trap->re->RegisterShaderNoMip( ART_FRAME );
 }
 
 
@@ -133,7 +133,7 @@ UI_ResetMenu
 =================
 */
 void UI_ResetMenu(void) {
-	uiClientState_t	cstate;
+	ogClientState	cstate;
 	int	n1, n2, n3;
 	int	l1, l2, l3;
 
@@ -154,7 +154,7 @@ void UI_ResetMenu(void) {
 	s_reset.menu.key        = Reset_MenuKey;
 	s_reset.menu.wrapAround = true;
 
-	trap_GetClientState( &cstate );
+	trap->GetClientState( &cstate );
 
 	if ( cstate.connState >= CA_CONNECTED ) {
 		// float on top of running game

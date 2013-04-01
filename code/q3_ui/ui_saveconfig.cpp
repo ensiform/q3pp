@@ -86,7 +86,7 @@ static void UI_SaveConfigMenu_SaveEvent( void *ptr, int event ) {
 	}
 
 	COM_StripExtension(saveConfig.savename.field.buffer, configname, sizeof(configname));
-	trap_Cmd_ExecuteText( EXEC_APPEND, va( "writeconfig %s.cfg\n", configname ) );
+	trap->Cmd_ExecuteText( EXEC_APPEND, va( "writeconfig %s.cfg\n", configname ) );
 	UI_PopMenu();
 }
 
@@ -193,11 +193,11 @@ UI_SaveConfigMenu_Cache
 =================
 */
 void UI_SaveConfigMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_SAVE0 );
-	trap_R_RegisterShaderNoMip( ART_SAVE1 );
-	trap_R_RegisterShaderNoMip( ART_BACKGROUND );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_SAVE0 );
+	trap->re->RegisterShaderNoMip( ART_SAVE1 );
+	trap->re->RegisterShaderNoMip( ART_BACKGROUND );
 }
 
 

@@ -51,7 +51,7 @@ void R_AddAnimSurfaces( trRefEntity_t *ent ) {
 	surface = (md4Surface_t *)( (byte *)lod + lod->ofsSurfaces );
 	for ( i = 0 ; i < lod->numSurfaces ; i++ ) {
 		shader = R_GetShaderByHandle( surface->shaderIndex );
-		R_AddDrawSurf( (void *)surface, shader, 0 /*fogNum*/, false, false );
+		R_AddDrawSurf( (surfaceType_t *)surface, shader, 0 /*fogNum*/, false, false );
 		surface = (md4Surface_t *)( (byte *)surface + surface->ofsEnd );
 	}
 }
@@ -346,7 +346,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 		|| (ent->e.oldframe >= header->numFrames)
 		|| (ent->e.oldframe < 0) )
 	{
-		ri.Printf( PRINT_DEVELOPER, "R_MDRAddAnimSurfaces: no such frame %d to %d for '%s'\n",
+		ri->Printf( PRINT_DEVELOPER, "R_MDRAddAnimSurfaces: no such frame %d to %d for '%s'\n",
 			   ent->e.oldframe, ent->e.frame, tr.currentModel->name );
 		ent->e.frame = 0;
 		ent->e.oldframe = 0;
@@ -419,7 +419,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 			&& !(ent->e.renderfx & ( RF_NOSHADOW | RF_DEPTHHACK ) )
 			&& shader->sort == SS_OPAQUE )
 		{
-			R_AddDrawSurf( (void *)surface, tr.shadowShader, 0, false, false );
+			R_AddDrawSurf( (surfaceType_t *)surface, tr.shadowShader, 0, false, false );
 		}
 
 		// projection shadows work fine with personal models
@@ -428,11 +428,11 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 			&& (ent->e.renderfx & RF_SHADOW_PLANE )
 			&& shader->sort == SS_OPAQUE )
 		{
-			R_AddDrawSurf( (void *)surface, tr.projectionShadowShader, 0, false, false );
+			R_AddDrawSurf( (surfaceType_t *)surface, tr.projectionShadowShader, 0, false, false );
 		}
 
 		if (!personalModel)
-			R_AddDrawSurf( (void *)surface, shader, fogNum, false, false );
+			R_AddDrawSurf( (surfaceType_t *)surface, shader, fogNum, false, false );
 
 		surface = (mdrSurface_t *)( (byte *)surface + surface->ofsEnd );
 	}

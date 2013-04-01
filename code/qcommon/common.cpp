@@ -50,10 +50,12 @@ jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
 
 FILE *debuglogfile;
-static fileHandle_t pipefile;
-static fileHandle_t logfile;
-fileHandle_t	com_journalFile;			// events are written here
-fileHandle_t	com_journalDataFile;		// config files are written here
+#if 0
+static og::File *pipefile;
+#endif
+static og::File *logfile;
+og::File	*com_journalFile;			// events are written here
+og::File	*com_journalDataFile;		// config files are written here
 
 cvar_t	*com_speeds;
 cvar_t	*com_developer;
@@ -67,12 +69,15 @@ cvar_t	*com_timedemo;
 cvar_t	*com_sv_running;
 cvar_t	*com_cl_running;
 cvar_t	*com_logfile;		// 1 = buffer log, 2 = flush after each print
+#if 0
 cvar_t	*com_pipefile;
+#endif
 cvar_t	*com_showtrace;
 cvar_t	*com_version;
 cvar_t	*com_blood;
 cvar_t	*com_buildScript;	// for automated data building scripts
 cvar_t	*com_introPlayed;
+cvar_t *com_bootlogo;
 cvar_t	*cl_paused;
 cvar_t	*sv_paused;
 cvar_t  *cl_packetdelay;
@@ -199,7 +204,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 			time( &aclock );
 			newtime = localtime( &aclock );
 
-			logfile = FS_FOpenFileWrite( "qconsole.log" );
+			logfile = og::FS->OpenWrite( "qconsole.log" );
 			
 			if(logfile)
 			{
@@ -209,7 +214,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 				{
 					// force it to not buffer so we get valid
 					// data even if we are crashing
-					FS_ForceFlush(logfile);
+					logfile->SetAutoFlush(true);
 				}
 			}
 			else
@@ -221,7 +226,16 @@ void QDECL Com_Printf( const char *fmt, ... ) {
       opening_qconsole = false;
 		}
 		if ( logfile && FS_Initialized()) {
-			FS_Write(msg, strlen(msg), logfile);
+			try {
+				logfile->Write(msg, strlen(msg));
+			}
+			catch(og::FileReadWriteError &err) {
+				err; // Shut up
+				logfile->Close();
+				logfile = NULL;
+				Com_Printf( "ERROR: error writing to log file\n" );
+			}
+
 		}
 	}
 }
@@ -285,6 +299,9 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	} else {
 		errorCount = 0;
 	}
+
+	Cvar_Set( "com_errorCode", va( "%i", code ) );
+
 	lastErrorTime = currentTime;
 
 	va_start (argptr,fmt);
@@ -295,47 +312,38 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		Cvar_Set("com_errorMessage", com_errorMessage);
 
 	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
-		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
 		CL_Disconnect( true );
 		CL_FlushMemory( );
-		VM_Forced_Unload_Done();
 		// make sure we can get at our local stuff
-		FS_PureServerSetLoadedPaks("", "");
+//		FS_PureServerSetLoadedPaks("", "");
 		com_errorEntered = false;
 		longjmp (abortframe, -1);
 	} else if (code == ERR_DROP) {
 		Com_Printf ("********************\nERROR: %s\n********************\n", com_errorMessage);
-		VM_Forced_Unload_Start();
 		SV_Shutdown (va("Server crashed: %s",  com_errorMessage));
 		CL_Disconnect( true );
 		CL_FlushMemory( );
-		VM_Forced_Unload_Done();
-		FS_PureServerSetLoadedPaks("", "");
+//		FS_PureServerSetLoadedPaks("", "");
 		com_errorEntered = false;
 		longjmp (abortframe, -1);
 	} else if ( code == ERR_NEED_CD ) {
-		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server didn't have CD" );
 		if ( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( true );
 			CL_FlushMemory( );
-			VM_Forced_Unload_Done();
 			CL_CDDialog();
 		} else {
 			Com_Printf("Server didn't have CD\n" );
-			VM_Forced_Unload_Done();
 		}
 
-		FS_PureServerSetLoadedPaks("", "");
+		//FS_PureServerSetLoadedPaks("", "");
 
 		com_errorEntered = false;
 		longjmp (abortframe, -1);
 	} else {
-		VM_Forced_Unload_Start();
 		CL_Shutdown(va("Client fatal crashed: %s", com_errorMessage), true, true);
 		SV_Shutdown(va("Server fatal crashed: %s", com_errorMessage));
-		VM_Forced_Unload_Done();
 	}
 
 	Com_Shutdown ();
@@ -356,16 +364,10 @@ void Com_Quit_f( void ) {
 	// don't try to shutdown if we are in a recursive error
 	char *p = Cmd_Args( );
 	if ( !com_errorEntered ) {
-		// Some VMs might execute "quit" command directly,
-		// which would trigger an unload of active VM error.
-		// Sys_Quit will kill this process anyways, so
-		// a corrupt call stack makes no difference
-		VM_Forced_Unload_Start();
 		SV_Shutdown(p[0] ? p : "Server quit");
 		CL_Shutdown(p[0] ? p : "Client quit", true, true);
-		VM_Forced_Unload_Done();
 		Com_Shutdown ();
-		FS_Shutdown(true);
+		FS_Shutdown();
 	}
 	Sys_Quit ();
 }
@@ -936,7 +938,7 @@ void *Z_TagMallocDebug( int size, int tag, char *label, char *file, int line ) {
 void *Z_TagMalloc( int size, int tag ) {
 #endif
 	int		extra;
-	memblock_t	*start, *rover, *new, *base;
+	memblock_t	*start, *rover, *_new, *base;
 	memzone_t *zone;
 
 	if (!tag) {
@@ -991,14 +993,14 @@ void *Z_TagMalloc( int size, int tag ) {
 	extra = base->size - size;
 	if (extra > MINFRAGMENT) {
 		// there will be a free fragment after the allocated block
-		new = (memblock_t *) ((byte *)base + size );
-		new->size = extra;
-		new->tag = 0;			// free block
-		new->prev = base;
-		new->id = ZONEID;
-		new->next = base->next;
-		new->next->prev = new;
-		base->next = new;
+		_new = (memblock_t *) ((byte *)base + size );
+		_new->size = extra;
+		_new->tag = 0;			// free block
+		_new->prev = base;
+		_new->id = ZONEID;
+		_new->next = base->next;
+		_new->next->prev = _new;
+		base->next = _new;
 		base->size = size;
 	}
 	
@@ -1095,44 +1097,53 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 
 	if (!logfile || !FS_Initialized())
 		return;
-	size = numBlocks = 0;
+
+	try {
+		size = allocSize = numBlocks = 0;
+		Com_sprintf( buf, sizeof( buf ), "\r\n================\r\n%s log\r\n================\r\n", name );
+		logfile->Write( buf, strlen( buf ) );
+		for( block = zone->blocklist.next; block->next != &zone->blocklist; block = block->next ) {
+			if( block->tag ) {
 #ifdef ZONE_DEBUG
-	allocSize = 0;
+				ptr = ( (char *)block ) + sizeof( memblock_t );
+				j   = 0;
+				for( i = 0; i < 20 && i < block->d.allocSize; i++ ) {
+					if( ptr[i] >= 32 && ptr[i] < 127 ) {
+						dump[j++] = ptr[i];
+					}
+					else {
+						dump[j++] = '_';
+					}
+				}
+
+				dump[j] = '\0';
+				Com_sprintf( buf, sizeof( buf ), "size = %8d: %s, line: %d (%s) [%s]\r\n", block->d.allocSize, block->d.file, block->d.line, block->d.label, dump );
+				logfile->Write( buf, strlen( buf ) );
+				allocSize += block->d.allocSize;
 #endif
-	Com_sprintf(buf, sizeof(buf), "\r\n================\r\n%s log\r\n================\r\n", name);
-	FS_Write(buf, strlen(buf), logfile);
-	for (block = zone->blocklist.next ; block->next != &zone->blocklist; block = block->next) {
-		if (block->tag) {
-#ifdef ZONE_DEBUG
-			ptr = ((char *) block) + sizeof(memblock_t);
-			j = 0;
-			for (i = 0; i < 20 && i < block->d.allocSize; i++) {
-				if (ptr[i] >= 32 && ptr[i] < 127) {
-					dump[j++] = ptr[i];
-				}
-				else {
-					dump[j++] = '_';
-				}
+				size += block->size;
+				numBlocks++;
 			}
-			dump[j] = '\0';
-			Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s) [%s]\r\n", block->d.allocSize, block->d.file, block->d.line, block->d.label, dump);
-			FS_Write(buf, strlen(buf), logfile);
-			allocSize += block->d.allocSize;
-#endif
-			size += block->size;
-			numBlocks++;
 		}
-	}
+
 #ifdef ZONE_DEBUG
-	// subtract debug memory
-	size -= numBlocks * sizeof(zonedebug_t);
+		// subtract debug memory
+		size -= numBlocks * sizeof( zonedebug_t );
 #else
-	allocSize = numBlocks * sizeof(memblock_t); // + 32 bit alignment
+		allocSize = numBlocks * sizeof( memblock_t ); // + 32 bit alignment
 #endif
-	Com_sprintf(buf, sizeof(buf), "%d %s memory in %d blocks\r\n", size, name, numBlocks);
-	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d %s memory overhead\r\n", size - allocSize, name);
-	FS_Write(buf, strlen(buf), logfile);
+		Com_sprintf( buf, sizeof( buf ), "%d %s memory in %d blocks\r\n", size, name, numBlocks );
+		logfile->Write( buf, strlen( buf ) );
+		Com_sprintf( buf, sizeof( buf ), "%d %s memory overhead\r\n", size - allocSize, name );
+		logfile->Write( buf, strlen( buf ) );
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		logfile->Close();
+		logfile = NULL;
+		Com_Printf( "ERROR: error writing to log file\n" );
+	}
+
 }
 
 /*
@@ -1185,7 +1196,7 @@ char *CopyString( const char *in ) {
 			return ((char *)&numberstring[in[0]-'0']) + sizeof(memblock_t);
 		}
 	}
-	out = S_Malloc (strlen(in)+1);
+	out = (char *)S_Malloc (strlen(in)+1);
 	strcpy (out, in);
 	return out;
 }
@@ -1409,7 +1420,7 @@ Com_InitZoneMemory
 */
 void Com_InitSmallZoneMemory( void ) {
 	s_smallZoneTotal = 512 * 1024;
-	smallzone = calloc( s_smallZoneTotal, 1 );
+	smallzone = (memzone_t *)calloc( s_smallZoneTotal, 1 );
 	if ( !smallzone ) {
 		Com_Error( ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (float)s_smallZoneTotal / (1024*1024) );
 	}
@@ -1436,7 +1447,7 @@ void Com_InitZoneMemory( void ) {
 		s_zoneTotal = cv->integer * 1024 * 1024;
 	}
 
-	mainzone = calloc( s_zoneTotal, 1 );
+	mainzone = (memzone_t *)calloc( s_zoneTotal, 1 );
 	if ( !mainzone ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024*1024) );
 	}
@@ -1456,22 +1467,33 @@ void Hunk_Log( void) {
 
 	if (!logfile || !FS_Initialized())
 		return;
-	size = 0;
-	numBlocks = 0;
-	Com_sprintf(buf, sizeof(buf), "\r\n================\r\nHunk log\r\n================\r\n");
-	FS_Write(buf, strlen(buf), logfile);
-	for (block = hunkblocks ; block; block = block->next) {
+
+	try {
+		size      = 0;
+		numBlocks = 0;
+		Com_sprintf( buf, sizeof( buf ), "\r\n================\r\nHunk log\r\n================\r\n" );
+		logfile->Write( buf, strlen( buf ) );
+		for( block = hunkblocks; block; block = block->next ) {
 #ifdef HUNK_DEBUG
-		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", block->size, block->file, block->line, block->label);
-		FS_Write(buf, strlen(buf), logfile);
+			Com_sprintf( buf, sizeof( buf ), "size = %8d: %s, line: %d (%s)\r\n", block->size, block->file, block->line, block->label );
+			logfile->Write( buf, strlen( buf ) );
 #endif
-		size += block->size;
-		numBlocks++;
+			size += block->size;
+			numBlocks++;
+		}
+
+		Com_sprintf( buf, sizeof( buf ), "%d Hunk memory\r\n", size );
+		logfile->Write( buf, strlen( buf ) );
+		Com_sprintf( buf, sizeof( buf ), "%d hunk blocks\r\n", numBlocks );
+		logfile->Write( buf, strlen( buf ) );
 	}
-	Com_sprintf(buf, sizeof(buf), "%d Hunk memory\r\n", size);
-	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
-	FS_Write(buf, strlen(buf), logfile);
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		logfile->Close();
+		logfile = NULL;
+		Com_Printf( "ERROR: error writing to log file\n" );
+	}
+
 }
 
 /*
@@ -1489,37 +1511,52 @@ void Hunk_SmallLog( void) {
 	for (block = hunkblocks ; block; block = block->next) {
 		block->printed = false;
 	}
-	size = 0;
-	numBlocks = 0;
-	Com_sprintf(buf, sizeof(buf), "\r\n================\r\nHunk Small log\r\n================\r\n");
-	FS_Write(buf, strlen(buf), logfile);
-	for (block = hunkblocks; block; block = block->next) {
-		if (block->printed) {
-			continue;
-		}
-		locsize = block->size;
-		for (block2 = block->next; block2; block2 = block2->next) {
-			if (block->line != block2->line) {
+
+	try {
+		size      = 0;
+		numBlocks = 0;
+		Com_sprintf( buf, sizeof( buf ), "\r\n================\r\nHunk Small log\r\n================\r\n" );
+		logfile->Write( buf, strlen( buf ) );
+		for( block = hunkblocks; block; block = block->next ) {
+			if( block->printed ) {
 				continue;
 			}
-			if (Q_stricmp(block->file, block2->file)) {
-				continue;
+
+			locsize = block->size;
+			for( block2 = block->next; block2; block2 = block2->next ) {
+				if( block->line != block2->line ) {
+					continue;
+				}
+
+				if( Q_stricmp( block->file, block2->file ) ) {
+					continue;
+				}
+
+				size           += block2->size;
+				locsize        += block2->size;
+				block2->printed = true;
 			}
-			size += block2->size;
-			locsize += block2->size;
-			block2->printed = true;
-		}
+
 #ifdef HUNK_DEBUG
-		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
-		FS_Write(buf, strlen(buf), logfile);
+			Com_sprintf( buf, sizeof( buf ), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label );
+			logfile->Write( buf, strlen( buf ) );
 #endif
-		size += block->size;
-		numBlocks++;
+			size += block->size;
+			numBlocks++;
+		}
+
+		Com_sprintf( buf, sizeof( buf ), "%d Hunk memory\r\n", size );
+		logfile->Write( buf, strlen( buf ) );
+		Com_sprintf( buf, sizeof( buf ), "%d hunk blocks\r\n", numBlocks );
+		logfile->Write( buf, strlen( buf ) );
 	}
-	Com_sprintf(buf, sizeof(buf), "%d Hunk memory\r\n", size);
-	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
-	FS_Write(buf, strlen(buf), logfile);
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		logfile->Close();
+		logfile = NULL;
+		Com_Printf( "ERROR: error writing to log file\n" );
+	}
+
 }
 
 /*
@@ -1536,9 +1573,9 @@ void Com_InitHunkMemory( void ) {
 	// this allows the config and product id files ( journal files too ) to be loaded
 	// by the file system without redunant routines in the file system utilizing different 
 	// memory systems
-	if (FS_LoadStack() != 0) {
-		Com_Error( ERR_FATAL, "Hunk initialization failed. File system load stack not zero");
-	}
+//	if (FS_LoadStack() != 0) {
+//		Com_Error( ERR_FATAL, "Hunk initialization failed. File system load stack not zero");
+//	}
 
 	// allocate the stack based hunk allocator
 	cv = Cvar_Get( "com_hunkMegs", DEF_COMHUNKMEGS_S, CVAR_LATCH | CVAR_ARCHIVE );
@@ -1560,7 +1597,7 @@ void Com_InitHunkMemory( void ) {
 		s_hunkTotal = cv->integer * 1024 * 1024;
 	}
 
-	s_hunkData = calloc( s_hunkTotal + 31, 1 );
+	s_hunkData = (byte *)calloc( s_hunkTotal + 31, 1 );
 	if ( !s_hunkData ) {
 		Com_Error( ERR_FATAL, "Hunk data failed to allocate %i megs", s_hunkTotal / (1024*1024) );
 	}
@@ -1663,7 +1700,6 @@ void Hunk_Clear( void ) {
 	hunk_temp = &hunk_high;
 
 	Com_Printf( "Hunk_Clear: reset the hunk ok\n" );
-	VM_Clear();
 #ifdef HUNK_DEBUG
 	hunkblocks = NULL;
 #endif
@@ -1905,12 +1941,12 @@ void Com_InitJournaling( void ) {
 
 	if ( com_journal->integer == 1 ) {
 		Com_Printf( "Journaling events\n");
-		com_journalFile = FS_FOpenFileWrite( "journal.dat" );
-		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
+		com_journalFile = og::FS->OpenWrite( "journal.dat" );
+		com_journalDataFile = og::FS->OpenWrite( "journaldata.dat" );
 	} else if ( com_journal->integer == 2 ) {
 		Com_Printf( "Replaying journaled events\n");
-		FS_FOpenFileRead( "journal.dat", &com_journalFile, true );
-		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, true );
+		com_journalFile     = og::FS->OpenRead( "journal.dat" );
+		com_journalDataFile = og::FS->OpenRead( "journaldata.dat" );
 	}
 
 	if ( !com_journalFile || !com_journalDataFile ) {
@@ -2003,7 +2039,7 @@ sysEvent_t Com_GetSystemEvent( void )
 		int   len;
 
 		len = strlen( s ) + 1;
-		b = Z_Malloc( len );
+		b = (char *)Z_Malloc( len );
 		strcpy( b, s );
 		Com_QueueEvent( 0, SE_CONSOLE, 0, 0, len, b );
 	}
@@ -2028,37 +2064,36 @@ Com_GetRealEvent
 =================
 */
 sysEvent_t	Com_GetRealEvent( void ) {
-	int			r;
 	sysEvent_t	ev;
 
 	// either get an event from the system or the journal file
 	if ( com_journal->integer == 2 ) {
-		r = FS_Read( &ev, sizeof(ev), com_journalFile );
-		if ( r != sizeof(ev) ) {
+		try {
+			com_journalFile->Read( &ev, sizeof( ev ) );
+			if( ev.evPtrLength ) {
+				ev.evPtr = Z_Malloc( ev.evPtrLength );
+				com_journalFile->Read( ev.evPtr, ev.evPtrLength );
+			}
+		}
+		catch( og::FileReadWriteError &err ) {
+			err; // Shut up
 			Com_Error( ERR_FATAL, "Error reading from journal file" );
 		}
-		if ( ev.evPtrLength ) {
-			ev.evPtr = Z_Malloc( ev.evPtrLength );
-			r = FS_Read( ev.evPtr, ev.evPtrLength, com_journalFile );
-			if ( r != ev.evPtrLength ) {
-				Com_Error( ERR_FATAL, "Error reading from journal file" );
-			}
-		}
 	} else {
-		ev = Com_GetSystemEvent();
+		try {
+			ev = Com_GetSystemEvent();
 
-		// write the journal value out if needed
-		if ( com_journal->integer == 1 ) {
-			r = FS_Write( &ev, sizeof(ev), com_journalFile );
-			if ( r != sizeof(ev) ) {
-				Com_Error( ERR_FATAL, "Error writing to journal file" );
-			}
-			if ( ev.evPtrLength ) {
-				r = FS_Write( ev.evPtr, ev.evPtrLength, com_journalFile );
-				if ( r != ev.evPtrLength ) {
-					Com_Error( ERR_FATAL, "Error writing to journal file" );
+			// write the journal value out if needed
+			if( com_journal->integer == 1 ) {
+				com_journalFile->Write( &ev, sizeof( ev ) );
+				if( ev.evPtrLength ) {
+					com_journalFile->Write( ev.evPtr, ev.evPtrLength );
 				}
 			}
+		}
+		catch( og::FileReadWriteError &err ) {
+			err; // Shut up
+			Com_Error( ERR_FATAL, "Error writing to journal file" );
 		}
 	}
 
@@ -2190,7 +2225,7 @@ int Com_EventLoop( void ) {
 		switch(ev.evType)
 		{
 			case SE_KEY:
-				CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
+				CL_KeyEvent( ev.evValue, ev.evValue2 != 0, ev.evTime );
 			break;
 			case SE_CHAR:
 				CL_CharEvent( ev.evValue );
@@ -2447,13 +2482,13 @@ Com_ReadCDKey
 */
 bool CL_CDKeyValidate( const char *key, const char *checksum );
 void Com_ReadCDKey( const char *filename ) {
-	fileHandle_t	f;
+	og::File		*f;
 	char			buffer[33];
 	char			fbuffer[MAX_OSPATH];
 
 	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
 
-	FS_SV_FOpenFileRead( fbuffer, &f );
+	f = og::FS->OpenRead( fbuffer );
 	if ( !f ) {
 		Q_strncpyz( cl_cdkey, "                ", 17 );
 		return;
@@ -2461,8 +2496,8 @@ void Com_ReadCDKey( const char *filename ) {
 
 	Com_Memset( buffer, 0, sizeof(buffer) );
 
-	FS_Read( buffer, 16, f );
-	FS_FCloseFile( f );
+	f->Read( buffer, 16 );
+	f->Close();
 
 	if (CL_CDKeyValidate(buffer, NULL)) {
 		Q_strncpyz( cl_cdkey, buffer, 17 );
@@ -2477,13 +2512,13 @@ Com_AppendCDKey
 =================
 */
 void Com_AppendCDKey( const char *filename ) {
-	fileHandle_t	f;
+	og::File		*f;
 	char			buffer[33];
 	char			fbuffer[MAX_OSPATH];
 
 	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
 
-	FS_SV_FOpenFileRead( fbuffer, &f );
+	f = og::FS->OpenRead( fbuffer );
 	if (!f) {
 		Q_strncpyz( &cl_cdkey[16], "                ", 17 );
 		return;
@@ -2491,8 +2526,8 @@ void Com_AppendCDKey( const char *filename ) {
 
 	Com_Memset( buffer, 0, sizeof(buffer) );
 
-	FS_Read( buffer, 16, f );
-	FS_FCloseFile( f );
+	f->Read( buffer, 16 );
+	f->Close();
 
 	if (CL_CDKeyValidate(buffer, NULL)) {
 		strcat( &cl_cdkey[16], buffer );
@@ -2508,16 +2543,14 @@ Com_WriteCDKey
 =================
 */
 static void Com_WriteCDKey( const char *filename, const char *ikey ) {
-	fileHandle_t	f;
+	og::File		*f;
 	char			fbuffer[MAX_OSPATH];
 	char			key[17];
 #ifndef _WIN32
 	mode_t			savedumask;
 #endif
 
-
 	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
-
 
 	Q_strncpyz( key, ikey, 17 );
 
@@ -2528,19 +2561,19 @@ static void Com_WriteCDKey( const char *filename, const char *ikey ) {
 #ifndef _WIN32
 	savedumask = umask(0077);
 #endif
-	f = FS_SV_FOpenFileWrite( fbuffer );
+	f = og::FS->OpenWrite( fbuffer );
 	if ( !f ) {
 		Com_Printf ("Couldn't write CD key to %s.\n", fbuffer );
 		goto out;
 	}
 
-	FS_Write( key, 16, f );
+	f->Write( key, 16 );
 
-	FS_Printf( f, "\n// generated by quake, do not modify\r\n" );
-	FS_Printf( f, "// Do not give this file to ANYONE.\r\n" );
-	FS_Printf( f, "// id Software and Activision will NOT ask you to send this file to them.\r\n");
+	f->WriteCStr( "\n// generated by quake, do not modify\r\n" );
+	f->WriteCStr( "// Do not give this file to ANYONE.\r\n" );
+	f->WriteCStr( "// id Software and Activision will NOT ask you to send this file to them.\r\n");
 
-	FS_FCloseFile( f );
+	f->Close();
 out:
 #ifndef _WIN32
 	umask(savedumask);
@@ -2558,7 +2591,7 @@ static void Com_DetectAltivec(void)
 		static bool altivec = false;
 		static bool detected = false;
 		if (!detected) {
-			altivec = ( Sys_GetProcessorFeatures( ) & CF_ALTIVEC );
+			altivec = ( Sys_GetProcessorFeatures( ) & CF_ALTIVEC ) != 0;
 			detected = true;
 		}
 
@@ -2580,7 +2613,7 @@ Find out whether we have SSE support for Q_ftol function
 static void Com_DetectSSE(void)
 {
 #if !idx64
-	cpuFeatures_t feat;
+	int feat;
 	
 	feat = Sys_GetProcessorFeatures();
 
@@ -2670,6 +2703,9 @@ void Com_Init( char *commandLine ) {
 	// override anything from the config files with command line args
 	Com_StartupVariable( NULL );
 
+	// get the developer cvar set as early as possible
+	Com_StartupVariable( "developer" );
+
 	Com_InitZoneMemory();
 	Cmd_Init ();
 
@@ -2703,6 +2739,7 @@ void Com_Init( char *commandLine ) {
 	Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
 	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteCfgName );
 	Cmd_AddCommand("game_restart", Com_GameRestart_f);
+	Cmd_SetCommandCompletionFunc( "game_restart", Com_CompleteModList );
 
 	Com_ExecuteCfg();
 
@@ -2756,8 +2793,10 @@ void Com_Init( char *commandLine ) {
 	com_abnormalExit = Cvar_Get( "com_abnormalExit", "0", CVAR_ROM );
 	com_busyWait = Cvar_Get("com_busyWait", "0", CVAR_ARCHIVE);
 	Cvar_Get("com_errorMessage", "", CVAR_ROM | CVAR_NORESTART);
+	Cvar_Get("com_errorCode", "", CVAR_ROM | CVAR_NORESTART);
 
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
+	com_bootlogo = Cvar_Get("com_bootlogo", "1", CVAR_ARCHIVE);
 
 	s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
 	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
@@ -2791,7 +2830,6 @@ void Com_Init( char *commandLine ) {
 	Com_RandomBytes( (byte*)&qport, sizeof(int) );
 	Netchan_Init( qport & 0xffff );
 
-	VM_Init();
 	SV_Init();
 
 	com_dedicated->modified = false;
@@ -2808,10 +2846,12 @@ void Com_Init( char *commandLine ) {
 	if ( !Com_AddStartupCommands() ) {
 		// if the user didn't give any commands, run default action
 		if ( !com_dedicated->integer ) {
-			Cbuf_AddText ("cinematic idlogo.RoQ\n");
-			if( !com_introPlayed->integer ) {
-				Cvar_Set( com_introPlayed->name, "1" );
-				Cvar_Set( "nextmap", "cinematic intro.RoQ" );
+			if( com_bootlogo->integer ) {
+				Cbuf_AddText ("cinematic idlogo.RoQ\n");
+				if( !com_introPlayed->integer ) {
+					Cvar_Set( com_introPlayed->name, "1" );
+					Cvar_Set( "nextmap", "cinematic intro.RoQ" );
+				}
 			}
 		}
 	}
@@ -2832,15 +2872,18 @@ void Com_Init( char *commandLine ) {
 	Com_Printf ("Altivec support is %s\n", com_altivec->integer ? "enabled" : "disabled");
 #endif
 
+/*
 	com_pipefile = Cvar_Get( "com_pipefile", "", CVAR_ARCHIVE|CVAR_LATCH );
 	if( com_pipefile->string[0] )
 	{
 		pipefile = FS_FCreateOpenPipeFile( com_pipefile->string );
 	}
+*/
 
 	Com_Printf ("--- Common Initialization Complete ---\n");
 }
 
+#if 0
 /*
 ===============
 Com_ReadFromPipe
@@ -2890,25 +2933,33 @@ void Com_ReadFromPipe( void )
 		}
 	}
 }
+#endif
 
 
 //==================================================================
 
 void Com_WriteConfigToFile( const char *filename ) {
-	fileHandle_t	f;
+	og::File *f;
 
-	f = FS_FOpenFileWrite( filename );
+	f = og::FS->OpenWrite( filename );
 	if ( !f ) {
 		Com_Printf ("Couldn't write %s.\n", filename );
 		return;
 	}
 
-	FS_Printf (f, "// generated by quake, do not modify\n");
-	Key_WriteBindings (f);
-	Cvar_WriteVariables (f);
-	FS_FCloseFile( f );
+	try {
+		f->WriteCStr( "// generated by quake, do not modify\n" );
+		Key_WriteBindings (f);
+		Cvar_WriteVariables (f);
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		f->Close();
+		f = NULL;
+		Com_Printf( "ERROR: error writing config file\n" );
+	}
+	f->Close();
 }
-
 
 /*
 ===============
@@ -3240,7 +3291,9 @@ void Com_Frame( void ) {
 		c_pointcontents = 0;
 	}
 
+#if 0
 	Com_ReadFromPipe( );
+#endif
 
 	com_frameNumber++;
 }
@@ -3251,21 +3304,23 @@ Com_Shutdown
 =================
 */
 void Com_Shutdown (void) {
-	if (logfile) {
-		FS_FCloseFile (logfile);
-		logfile = 0;
+	if ( logfile ) {
+		logfile->Close();
+		logfile = NULL;
 	}
 
 	if ( com_journalFile ) {
-		FS_FCloseFile( com_journalFile );
-		com_journalFile = 0;
+		com_journalFile->Close();
+		com_journalFile = NULL;
 	}
 
+#if 0
 	if( pipefile ) {
-		FS_FCloseFile( pipefile );
+		pipefile->Close();
+		pipefile = NULL;
 		FS_HomeRemove( com_pipefile->string );
 	}
-
+#endif
 }
 
 /*
@@ -3422,15 +3477,41 @@ Field_CompleteFilename
 ===============
 */
 void Field_CompleteFilename( const char *dir,
-		const char *ext, bool stripExt, bool allowNonPureFilesOnDisk )
+		const char *ext, bool stripExt, bool removeDir )
 {
 	matchCount = 0;
 	shortestMatch[ 0 ] = 0;
 
-	FS_FilenameCompletion( dir, ext, stripExt, FindMatches, allowNonPureFilesOnDisk );
+	FS_FilenameCompletion( dir, ext, stripExt, removeDir, FindMatches );
 
 	if( !Field_Complete( ) )
-		FS_FilenameCompletion( dir, ext, stripExt, PrintMatches, allowNonPureFilesOnDisk );
+		FS_FilenameCompletion( dir, ext, stripExt, removeDir, PrintMatches );
+}
+
+/*
+===============
+Field_CompleteModList
+===============
+*/
+void Field_CompleteModList( void ) {
+	matchCount       = 0;
+	shortestMatch[0] = 0;
+
+	FS_ModListCompletion( FindMatches );
+
+	if( !Field_Complete( ) )
+		FS_ModListCompletion( PrintMatches );
+}
+
+/*
+==================
+Com_CompleteModList
+==================
+*/
+void Com_CompleteModList( char *args, int argNum ) {
+	if( argNum == 2 ) {
+		Field_CompleteModList( );
+	}
 }
 
 /*
@@ -3584,7 +3665,7 @@ bool Com_IsVoipTarget(uint8_t *voipTargets, int voipTargetsSize, int clientNum)
 	index = clientNum >> 3;
 	
 	if(index < voipTargetsSize)
-		return (voipTargets[index] & (1 << (clientNum & 0x07)));
+		return (voipTargets[index] & (1 << (clientNum & 0x07))) != 0;
 
 	return false;
 }

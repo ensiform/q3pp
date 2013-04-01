@@ -122,7 +122,7 @@ Con_MessageMode3_f
 ================
 */
 void Con_MessageMode3_f (void) {
-	chat_playerNum = VM_Call( cgvm, CG_CROSSHAIR_PLAYER );
+	chat_playerNum = cgameExport->CrosshairPlayer();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -139,7 +139,7 @@ Con_MessageMode4_f
 ================
 */
 void Con_MessageMode4_f (void) {
-	chat_playerNum = VM_Call( cgvm, CG_LAST_ATTACKER );
+	chat_playerNum = cgameExport->LastAttacker();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -177,10 +177,10 @@ void Con_Dump_f (void)
 {
 	int		l, x, i;
 	short	*line;
-	fileHandle_t	f;
+	og::File *f;
 	int		bufferlen;
 	char	*buffer;
-	char	filename[MAX_QPATH];
+	og::String filename;
 
 	if (Cmd_Argc() != 2)
 	{
@@ -188,15 +188,16 @@ void Con_Dump_f (void)
 		return;
 	}
 
-	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
-	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
+	filename = Cmd_Argv( 1 );
 
-	Com_Printf ("Dumped console text to %s.\n", filename );
+	filename.DefaultFileExtension( ".txt" );
 
-	f = FS_FOpenFileWrite( filename );
+	Com_Printf( "Dumped console text to %s.\n", filename.c_str() );
+
+	f = og::FS->OpenWrite( filename.c_str() );
 	if (!f)
 	{
-		Com_Printf ("ERROR: couldn't open %s.\n", filename);
+		Com_Printf( "ERROR: couldn't open %s.\n", filename.c_str() );
 		return;
 	}
 
@@ -217,32 +218,42 @@ void Con_Dump_f (void)
 	bufferlen = con.linewidth + 2 * sizeof ( char );
 #endif
 
-	buffer = Hunk_AllocateTempMemory( bufferlen );
-
-	// write the remaining lines
-	buffer[bufferlen-1] = 0;
-	for ( ; l <= con.current ; l++)
-	{
-		line = con.text + (l%con.totallines)*con.linewidth;
-		for(i=0; i<con.linewidth; i++)
-			buffer[i] = line[i] & 0xff;
-		for (x=con.linewidth-1 ; x>=0 ; x--)
+	buffer = (char *)Hunk_AllocateTempMemory( bufferlen );
+	
+	try {
+		// write the remaining lines
+		buffer[bufferlen-1] = 0;
+		for ( ; l <= con.current ; l++)
 		{
-			if (buffer[x] == ' ')
-				buffer[x] = 0;
-			else
-				break;
+			line = con.text + (l%con.totallines)*con.linewidth;
+			for(i=0; i<con.linewidth; i++)
+				buffer[i] = line[i] & 0xff;
+			for (x=con.linewidth-1 ; x>=0 ; x--)
+			{
+				if (buffer[x] == ' ')
+					buffer[x] = 0;
+				else
+					break;
+			}
+	#ifdef _WIN32
+			Q_strcat(buffer, bufferlen, "\r\n");
+	#else
+			Q_strcat(buffer, bufferlen, "\n");
+	#endif
+			f->Write( buffer, strlen( buffer ) );
 		}
-#ifdef _WIN32
-		Q_strcat(buffer, bufferlen, "\r\n");
-#else
-		Q_strcat(buffer, bufferlen, "\n");
-#endif
-		FS_Write(buffer, strlen(buffer), f);
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		Hunk_FreeTempMemory( buffer );
+		f->Close();
+		f = NULL;
+		Com_Printf( "ERROR: error writing dump\n" );
 	}
 
 	Hunk_FreeTempMemory( buffer );
-	FS_FCloseFile( f );
+
+	f->Close();
 }
 
 						
@@ -333,7 +344,7 @@ Cmd_CompleteTxtName
 */
 void Cmd_CompleteTxtName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "txt", false, true );
+		Field_CompleteFilename( "", "txt", false );
 	}
 }
 
@@ -534,7 +545,7 @@ void Con_DrawInput (void) {
 
 	y = con.vislines - ( SMALLCHAR_HEIGHT * 2 );
 
-	re.SetColor( con.color );
+	re->SetColor( con.color );
 
 	SCR_DrawSmallChar( con.xadjust + 1 * SMALLCHAR_WIDTH, y, ']' );
 
@@ -560,7 +571,7 @@ void Con_DrawNotify (void)
 	int		currentColor;
 
 	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	re->SetColor( g_color_table[currentColor] );
 
 	v = 0;
 	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
@@ -585,7 +596,7 @@ void Con_DrawNotify (void)
 			}
 			if ( ( (text[x]>>8)&7 ) != currentColor ) {
 				currentColor = (text[x]>>8)&7;
-				re.SetColor( g_color_table[currentColor] );
+				re->SetColor( g_color_table[currentColor] );
 			}
 			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*SMALLCHAR_WIDTH, v, text[x] & 0xff );
 		}
@@ -593,7 +604,7 @@ void Con_DrawNotify (void)
 		v += SMALLCHAR_HEIGHT;
 	}
 
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 
 	if (Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
 		return;
@@ -667,7 +678,7 @@ void Con_DrawSolidConsole( float frac ) {
 
 	// draw the version number
 
-	re.SetColor( g_color_table[ColorIndex(COLOR_RED)] );
+	re->SetColor( g_color_table[ColorIndex(COLOR_RED)] );
 
 	i = strlen( Q3_VERSION );
 
@@ -687,7 +698,7 @@ void Con_DrawSolidConsole( float frac ) {
 	if (con.display != con.current)
 	{
 	// draw arrows to show the buffer is backscrolled
-		re.SetColor( g_color_table[ColorIndex(COLOR_RED)] );
+		re->SetColor( g_color_table[ColorIndex(COLOR_RED)] );
 		for (x=0 ; x<con.linewidth ; x+=4)
 			SCR_DrawSmallChar( con.xadjust + (x+1)*SMALLCHAR_WIDTH, y, '^' );
 		y -= SMALLCHAR_HEIGHT;
@@ -701,7 +712,7 @@ void Con_DrawSolidConsole( float frac ) {
 	}
 
 	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	re->SetColor( g_color_table[currentColor] );
 
 	for (i=0 ; i<rows ; i++, y -= SMALLCHAR_HEIGHT, row--)
 	{
@@ -721,7 +732,7 @@ void Con_DrawSolidConsole( float frac ) {
 
 			if ( ( (text[x]>>8)&7 ) != currentColor ) {
 				currentColor = (text[x]>>8)&7;
-				re.SetColor( g_color_table[currentColor] );
+				re->SetColor( g_color_table[currentColor] );
 			}
 			SCR_DrawSmallChar(  con.xadjust + (x+1)*SMALLCHAR_WIDTH, y, text[x] & 0xff );
 		}
@@ -730,7 +741,7 @@ void Con_DrawSolidConsole( float frac ) {
 	// draw the input prompt, user text, and cursor if desired
 	Con_DrawInput ();
 
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 }
 
 

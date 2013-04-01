@@ -86,7 +86,7 @@ size_t S_OGG_Callback_read(void *ptr, size_t size, size_t nmemb, void *datasourc
 	byteSize = nmemb * size;
 
 	// read it with the Q3 function FS_Read()
-	bytesRead = FS_Read(ptr, byteSize, stream->file);
+	bytesRead = stream->file->Read( ptr, byteSize );
 
 	// update the file position
 	stream->pos += bytesRead;

@@ -75,8 +75,9 @@ static void UI_Mods_MenuEvent( void *ptr, int event ) {
 
 	switch ( ((menucommon_s*)ptr)->id ) {
 	case ID_GO:
-		trap_Cvar_Set( "fs_game", s_mods.fs_gameList[s_mods.list.curvalue] );
-		trap_Cmd_ExecuteText( EXEC_APPEND, "vid_restart;" );
+		// cvarSystem->Set( "fs_game", s_mods.fs_gameList[s_mods.list.curvalue] );
+		// trap->Cmd_ExecuteText( EXEC_APPEND, "vid_restart;" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, va( "game_restart %s", s_mods.fs_gameList[s_mods.list.curvalue] ) );
 		UI_PopMenu();
 		break;
 
@@ -92,17 +93,31 @@ static void UI_Mods_MenuEvent( void *ptr, int event ) {
 UI_Mods_ParseInfos
 ===============
 */
-static void UI_Mods_ParseInfos( char *modDir, char *modDesc ) {
-	s_mods.fs_gameList[s_mods.list.numitems] = s_mods.fs_gamePtr;
-	Q_strncpyz( s_mods.fs_gamePtr, modDir, 16 );
+static void UI_Mods_ParseInfos( const char *modDir, const char *modDesc ) {
+if( !Q_stricmp( modDir, "missionpack" ) ) {
+		s_mods.fs_gameList[s_mods.list.numitems] = s_mods.fs_gamePtr;
+		Q_strncpyz( s_mods.fs_gamePtr, modDir, 16 );
 
-	s_mods.descriptionList[s_mods.list.numitems] = s_mods.descriptionPtr;
-	Q_strncpyz( s_mods.descriptionPtr, modDesc, 48 );
+		s_mods.descriptionList[s_mods.list.numitems] = s_mods.descriptionPtr;
+		Q_strncpyz( s_mods.descriptionPtr, "Team Arena", 48 );
 
-	s_mods.list.itemnames[s_mods.list.numitems] = s_mods.descriptionPtr;
-	s_mods.descriptionPtr += strlen( s_mods.descriptionPtr ) + 1;
-	s_mods.fs_gamePtr += strlen( s_mods.fs_gamePtr ) + 1;
-	s_mods.list.numitems++;
+		s_mods.list.itemnames[s_mods.list.numitems] = s_mods.descriptionPtr;
+		s_mods.descriptionPtr += strlen( s_mods.descriptionPtr ) + 1;
+		s_mods.fs_gamePtr += strlen( s_mods.fs_gamePtr ) + 1;
+		s_mods.list.numitems++;
+	}
+	else {
+		s_mods.fs_gameList[s_mods.list.numitems] = s_mods.fs_gamePtr;
+		Q_strncpyz( s_mods.fs_gamePtr, modDir, 16 );
+
+		s_mods.descriptionList[s_mods.list.numitems] = s_mods.descriptionPtr;
+		Q_strncpyz( s_mods.descriptionPtr, modDesc, 48 );
+
+		s_mods.list.itemnames[s_mods.list.numitems] = s_mods.descriptionPtr;
+		s_mods.descriptionPtr += strlen( s_mods.descriptionPtr ) + 1;
+		s_mods.fs_gamePtr += strlen( s_mods.fs_gamePtr ) + 1;
+		s_mods.list.numitems++;
+	}
 }
 
 
@@ -112,13 +127,6 @@ UI_Mods_LoadMods
 ===============
 */
 static void UI_Mods_LoadMods( void ) {
-	int		numdirs;
-	char	dirlist[2048];
-	char	*dirptr;
-  char  *descptr;
-	int		i;
-	int		dirlen;
-
 	s_mods.list.itemnames = (const char **)s_mods.descriptionList;
 	s_mods.descriptionPtr = s_mods.description;
 	s_mods.fs_gamePtr = s_mods.fs_game;
@@ -128,16 +136,15 @@ static void UI_Mods_LoadMods( void ) {
 	s_mods.list.itemnames[0] = s_mods.descriptionList[0] = "Quake III Arena";
 	s_mods.fs_gameList[0] = "";
 
-	numdirs = trap_FS_GetFileList( "$modlist", "", dirlist, sizeof(dirlist) );
-	dirptr  = dirlist;
-	for( i = 0; i < numdirs; i++ ) {
-		dirlen = strlen( dirptr ) + 1;
-    descptr = dirptr + dirlen;
-  	UI_Mods_ParseInfos( dirptr, descptr);
-    dirptr += dirlen + strlen(descptr) + 1;
+	if( og::ModList * mods = og::FS->GetModList() ) {
+		for( int i = 0; i < mods->Num(); i++ ) {
+			UI_Mods_ParseInfos( mods->GetDirectory( i ), mods->GetDescription( i ) );
+		}
+
+		og::FS->FreeModList( mods );
 	}
 
-	trap_Print( va( "%i mods parsed\n", s_mods.list.numitems ) );
+	trap->Print( va( "%i mods parsed\n", s_mods.list.numitems ) );
 	if (s_mods.list.numitems > MAX_MODS) {
 		s_mods.list.numitems = MAX_MODS;
 	}
@@ -227,12 +234,12 @@ UI_Mods_Cache
 =================
 */
 void UI_ModsMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT0 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT1 );
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT0 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
 }
 
 

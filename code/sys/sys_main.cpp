@@ -238,9 +238,9 @@ void Sys_Quit( void )
 Sys_GetProcessorFeatures
 =================
 */
-cpuFeatures_t Sys_GetProcessorFeatures( void )
+int Sys_GetProcessorFeatures( void )
 {
-	cpuFeatures_t features = 0;
+	int features = 0;
 
 #ifndef DEDICATED
 	if( SDL_HasRDTSC( ) )    features |= CF_RDTSC;
@@ -481,6 +481,7 @@ void *Sys_LoadGameDll(const char *name,
 	intptr_t (QDECL **entryPoint)(int, ...),
 	intptr_t (*systemcalls)(intptr_t, ...))
 {
+#if 0
 	void *libHandle;
 	void (*dllEntry)(intptr_t (*syscallptr)(intptr_t, ...));
 
@@ -510,6 +511,8 @@ void *Sys_LoadGameDll(const char *name,
 	dllEntry( systemcalls );
 
 	return libHandle;
+#endif
+	return NULL;
 }
 
 /*
@@ -560,12 +563,10 @@ void Sys_SigHandler( int signal )
 	else
 	{
 		signalcaught = true;
-		VM_Forced_Unload_Start();
 #ifndef DEDICATED
 		CL_Shutdown(va("Received signal %d", signal), true, true);
 #endif
 		SV_Shutdown(va("Received signal %d", signal) );
-		VM_Forced_Unload_Done();
 	}
 
 	if( signal == SIGTERM || signal == SIGINT )
@@ -635,10 +636,12 @@ int main( int argc, char **argv )
 		Q_strcat( commandLine, sizeof( commandLine ), " " );
 	}
 
+	CON_Init( );
+
 	Com_Init( commandLine );
 	NET_Init( );
 
-	CON_Init( );
+	//CON_Init( );
 
 	signal( SIGILL, Sys_SigHandler );
 	signal( SIGFPE, Sys_SigHandler );
@@ -655,3 +658,22 @@ int main( int argc, char **argv )
 	return 0;
 }
 
+namespace og {
+	namespace User {
+		void Error( og::ErrorId id, const char *msg, const char *param ) {
+			// Todo: Throw an exception on the id's you think are important.
+			og::String error;
+			CreateErrorString( id, msg, param, error );
+			if( id == og::ERR_FS_FILE_OPENREAD )
+				Com_DPrintf( S_COLOR_YELLOW "Warning: %s\n", error.c_str() );
+			else
+				Com_Printf( S_COLOR_RED "ERROR: %s\n", error.c_str() );
+		}
+		void Warning( const char *msg ) {
+			Com_Printf( S_COLOR_YELLOW "WARNING: %s\n", msg );
+		}
+		void AssertFailed( const char *code, const char *function ) {
+			Com_Printf( S_COLOR_YELLOW "WARNING: Assert (%s) failed in %s!\n", code, function );
+		}
+	}
+}

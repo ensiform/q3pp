@@ -541,7 +541,9 @@ static void SV_WriteVoipToClient(client_t *cl, msg_t *msg)
 		{
 			packet = cl->voipPacket[(i + cl->queuedVoipIndex) % ARRAY_LEN(cl->voipPacket)];
 
+#ifdef USE_DOWNLOADS
 			if(!*cl->downloadName)
+#endif
 			{
         			totalbytes += packet->len;
 	        		if (totalbytes > (msg->maxsize - msg->cursize) / 2)
@@ -653,8 +655,10 @@ void SV_SendClientMessages(void)
 		if(!c->state)
 			continue;		// not connected
 
+#ifdef USE_DOWNLOADS
 		if(*c->downloadName)
 			continue;		// Client is downloading, don't send snapshots
+#endif
 
 		if(c->netchan.unsentFragments || c->netchan_start_queue)
 		{

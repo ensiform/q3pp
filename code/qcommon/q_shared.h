@@ -104,7 +104,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #if (defined _MSC_VER)
-#define Q_EXPORT __declspec(dllexport)
+#define Q_EXPORT extern "C" __declspec(dllexport)
 #elif (defined __SUNPRO_C)
 #define Q_EXPORT __global
 #elif ((__GNUC__ >= 3) && (!__EMX__) && (!sun))
@@ -129,14 +129,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
  **********************************************************************/
 
-#ifdef Q3_VM
-
-#include "../game/bg_lib.h"
-
-typedef int intptr_t;
-
-#else
-
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -147,13 +139,19 @@ typedef int intptr_t;
 #include <ctype.h>
 #include <limits.h>
 
-#ifdef _MSC_VER
+#if defined (_MSC_VER) && (_MSC_VER >= 1600)
+	#include <stdint.h>
+
+  // vsnprintf is ISO/IEC 9899:1999
+  // abstracting this to make it portable
+  int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+#elif _MSC_VER
   #include <io.h>
 
-  typedef __int64 int64_t;
-  typedef __int32 int32_t;
-  typedef __int16 int16_t;
-  typedef __int8 int8_t;
+  typedef signed __int64 int64_t;
+  typedef signed __int32 int32_t;
+  typedef signed __int16 int16_t;
+  typedef signed __int8 int8_t;
   typedef unsigned __int64 uint64_t;
   typedef unsigned __int32 uint32_t;
   typedef unsigned __int16 uint16_t;
@@ -168,10 +166,10 @@ typedef int intptr_t;
   #define Q_vsnprintf vsnprintf
 #endif
 
-#endif
-
-
 #include "q_platform.h"
+
+#include <og/Common.h>
+#include <og/Math.h>
 
 //=============================================================
 
@@ -181,11 +179,11 @@ typedef union {
 	float f;
 	int i;
 	unsigned int ui;
+	bool b;
 } floatint_t;
 
 typedef int		qhandle_t;
 typedef int		sfxHandle_t;
-typedef int		fileHandle_t;
 typedef int		clipHandle_t;
 
 #define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
@@ -436,12 +434,12 @@ int Q_isnan(float x);
 
   extern int (*Q_VMftol)(void);
 #elif id386
-  extern long QDECL qftolx87(float f);
-  extern long QDECL qftolsse(float f);
-  extern int QDECL qvmftolx87(void);
-  extern int QDECL qvmftolsse(void);
-  extern void QDECL qsnapvectorx87(vec3_t vec);
-  extern void QDECL qsnapvectorsse(vec3_t vec);
+  extern "C" long QDECL qftolx87(float f);
+  extern "C" long QDECL qftolsse(float f);
+  extern "C" int QDECL qvmftolx87(void);
+  extern "C" int QDECL qvmftolsse(void);
+  extern "C" void QDECL qsnapvectorx87(vec3_t vec);
+  extern "C" void QDECL qsnapvectorsse(vec3_t vec);
 
   extern long (QDECL *Q_ftol)(float f);
   extern int (QDECL *Q_VMftol)(void);
@@ -536,20 +534,9 @@ void ByteToDir( int b, vec3_t dir );
 
 #endif
 
-#ifdef Q3_VM
-#ifdef VectorCopy
-#undef VectorCopy
-// this is a little hack to get more efficient copies in our interpreter
-typedef struct {
-	float	v[3];
-} vec3struct_t;
-#define VectorCopy(a,b)	(*(vec3struct_t *)b=*(vec3struct_t *)a)
-#endif
-#endif
-
-#define VectorClear(a)			((a)[0]=(a)[1]=(a)[2]=0)
-#define VectorNegate(a,b)		((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2])
-#define VectorSet(v, x, y, z)	((v)[0]=(x), (v)[1]=(y), (v)[2]=(z))
+#define VectorClear( a )          ( ( a )[0] = ( a )[1] = ( a )[2] = 0 )
+#define VectorNegate( a, b )       ( ( b )[0] = -( a )[0], ( b )[1] = -( a )[1], ( b )[2] = -( a )[2] )
+#define VectorSet( v, x, y, z )   ( ( v )[0] = ( x ), ( v )[1] = ( y ), ( v )[2] = ( z ) )
 #define Vector4Copy(a,b)		((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
 
 #define Byte4Copy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
@@ -572,7 +559,6 @@ float RadiusFromBounds( const vec3_t mins, const vec3_t maxs );
 void ClearBounds( vec3_t mins, vec3_t maxs );
 void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs );
 
-#if !defined( Q3_VM ) || ( defined( Q3_VM ) && defined( __Q3_VM_MATH ) )
 static ID_INLINE int VectorCompare( const vec3_t v1, const vec3_t v2 ) {
 	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
 		return 0;
@@ -626,25 +612,6 @@ static ID_INLINE void CrossProduct( const vec3_t v1, const vec3_t v2, vec3_t cro
 	cross[1] = v1[2]*v2[0] - v1[0]*v2[2];
 	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
 }
-
-#else
-int VectorCompare( const vec3_t v1, const vec3_t v2 );
-
-vec_t VectorLength( const vec3_t v );
-
-vec_t VectorLengthSquared( const vec3_t v );
-
-vec_t Distance( const vec3_t p1, const vec3_t p2 );
-
-vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 );
-
-void VectorNormalizeFast( vec3_t v );
-
-void VectorInverse( vec3_t v );
-
-void CrossProduct( const vec3_t v1, const vec3_t v2, vec3_t cross );
-
-#endif
 
 vec_t VectorNormalize (vec3_t v);		// returns vector length
 vec_t VectorNormalize2( const vec3_t v, vec3_t out );
@@ -765,6 +732,8 @@ char *Com_SkipCharset( char *s, char *sep );
 
 void Com_RandomBytes( byte *string, int len );
 
+#if 0
+// No longer needed, but keeping until the old filesystem gets totally removed
 // mode parm for FS_FOpenFile
 typedef enum {
 	FS_READ,
@@ -778,6 +747,7 @@ typedef enum {
 	FS_SEEK_END,
 	FS_SEEK_SET
 } fsOrigin_t;
+#endif
 
 //=============================================
 
@@ -934,6 +904,19 @@ typedef struct {
 	int			integer;
 	char		string[MAX_CVAR_VALUE_STRING];
 } vmCvar_t;
+
+typedef struct {
+	void ( *Register )( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags );
+	void ( *Update )( vmCvar_t *vmCvar );
+	void ( *Set )( const char *var_name, const char *value );
+	void ( *SetValue )( const char *var_name, float value );
+	void ( *Reset )( const char *var_name );
+	int ( *VariableIntegerValue )( const char *var_name );
+	float ( *VariableValue )( const char *var_name );
+	void ( *VariableStringBuffer )( const char *var_name, char *buffer, int bufsize );
+	cvar_t *( *Get )( const char *var_name, const char *var_value, int flags );
+	void ( *InfoStringBuffer )( int bit, char* buff, int buffsize );
+} cvarSystem_t;
 
 
 /*
@@ -1285,9 +1268,9 @@ typedef struct entityState_s {
 	int		clientNum;		// 0 to (MAX_CLIENTS - 1), for players and corpses
 	int		frame;
 
-	int		solid;			// for client side prediction, trap_linkentity sets this properly
+	int		solid;			// for client side prediction, trap->linkentity sets this properly
 
-	int		event;			// impulse events -- muzzle flashes, footsteps, etc
+	int		_event;			// impulse events -- muzzle flashes, footsteps, etc
 	int		eventParm;
 
 	// for players
@@ -1380,6 +1363,7 @@ typedef enum {
 } e_status;
 
 typedef enum _flag_status {
+	FLAG_INVALID = -1,
 	FLAG_ATBASE = 0,
 	FLAG_TAKEN,			// CTF
 	FLAG_TAKEN_RED,		// One Flag CTF

@@ -86,11 +86,11 @@ int BotNumTeamMates(bot_state_t *bs) {
 	static int maxclients;
 
 	if (!maxclients)
-		maxclients = trap_Cvar_VariableIntegerValue("sv_maxclients");
+		maxclients = cvarSystem->VariableIntegerValue("sv_maxclients");
 
 	numplayers = 0;
 	for (i = 0; i < maxclients && i < MAX_CLIENTS; i++) {
-		trap_GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
+		trap->GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
 		//if no config string or no name
 		if (!strlen(buf) || !strlen(Info_ValueForKey(buf, "n"))) continue;
 		//skip spectators
@@ -115,7 +115,7 @@ int BotClientTravelTimeToGoal(int client, bot_goal_t *goal) {
 	BotAI_GetClientState(client, &ps);
 	areanum = BotPointAreaNum(ps.origin);
 	if (!areanum) return 1;
-	return trap_AAS_AreaTravelTimeToGoalArea(areanum, ps.origin, goal->areanum, TFL_DEFAULT);
+	return botlib->aas.AAS_AreaTravelTimeToGoalArea(areanum, ps.origin, goal->areanum, TFL_DEFAULT);
 }
 
 /*
@@ -151,11 +151,11 @@ int BotSortTeamMatesByBaseTravelTime(bot_state_t *bs, int *teammates, int maxtea
 	}
 #endif
 	if (!maxclients)
-		maxclients = trap_Cvar_VariableIntegerValue("sv_maxclients");
+		maxclients = cvarSystem->VariableIntegerValue("sv_maxclients");
 
 	numteammates = 0;
 	for (i = 0; i < maxclients && i < MAX_CLIENTS; i++) {
-		trap_GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
+		trap->GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
 		//if no config string or no name
 		if (!strlen(buf) || !strlen(Info_ValueForKey(buf, "n"))) continue;
 		//skip spectators
@@ -261,13 +261,13 @@ void BotSayTeamOrderAlways(bot_state_t *bs, int toclient) {
 	//if the bot is talking to itself
 	if (bs->client == toclient) {
 		//don't show the message just put it in the console message queue
-		trap_BotGetChatMessage(bs->cs, buf, sizeof(buf));
+		botlib->ai.BotGetChatMessage(bs->cs, buf, sizeof(buf));
 		ClientName(bs->client, name, sizeof(name));
 		Com_sprintf(teamchat, sizeof(teamchat), EC"(%s"EC")"EC": %s", name, buf);
-		trap_BotQueueConsoleMessage(bs->cs, CMS_CHAT, teamchat);
+		botlib->ai.BotQueueConsoleMessage(bs->cs, CMS_CHAT, teamchat);
 	}
 	else {
-		trap_BotEnterChat(bs->cs, toclient, CHAT_TELL);
+		botlib->ai.BotEnterChat(bs->cs, toclient, CHAT_TELL);
 	}
 }
 
@@ -281,7 +281,7 @@ void BotSayTeamOrder(bot_state_t *bs, int toclient) {
 	// voice chats only
 	char buf[MAX_MESSAGE_SIZE];
 
-	trap_BotGetChatMessage(bs->cs, buf, sizeof(buf));
+	botlib->ai.BotGetChatMessage(bs->cs, buf, sizeof(buf));
 #else
 	BotSayTeamOrderAlways(bs, toclient);
 #endif
@@ -296,10 +296,10 @@ void BotVoiceChat(bot_state_t *bs, int toclient, char *voicechat) {
 #ifdef MISSIONPACK
 	if (toclient == -1)
 		// voice only say team
-		trap_EA_Command(bs->client, va("vsay_team %s", voicechat));
+		botlib->ea.EA_Command(bs->client, va("vsay_team %s", voicechat));
 	else
 		// voice only tell single player
-		trap_EA_Command(bs->client, va("vtell %d %s", toclient, voicechat));
+		botlib->ea.EA_Command(bs->client, va("vtell %d %s", toclient, voicechat));
 #endif
 }
 
@@ -312,10 +312,10 @@ void BotVoiceChatOnly(bot_state_t *bs, int toclient, char *voicechat) {
 #ifdef MISSIONPACK
 	if (toclient == -1)
 		// voice only say team
-		trap_EA_Command(bs->client, va("vosay_team %s", voicechat));
+		botlib->ea.EA_Command(bs->client, va("vosay_team %s", voicechat));
 	else
 		// voice only tell single player
-		trap_EA_Command(bs->client, va("votell %d %s", toclient, voicechat));
+		botlib->ea.EA_Command(bs->client, va("votell %d %s", toclient, voicechat));
 #endif
 }
 
@@ -888,11 +888,11 @@ void BotTeamOrders(bot_state_t *bs) {
 	static int maxclients;
 
 	if (!maxclients)
-		maxclients = trap_Cvar_VariableIntegerValue("sv_maxclients");
+		maxclients = cvarSystem->VariableIntegerValue("sv_maxclients");
 
 	numteammates = 0;
 	for (i = 0; i < maxclients && i < MAX_CLIENTS; i++) {
-		trap_GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
+		trap->GetConfigstring(CS_PLAYERS+i, buf, sizeof(buf));
 		//if no config string or no name
 		if (!strlen(buf) || !strlen(Info_ValueForKey(buf, "n"))) continue;
 		//skip spectators
@@ -1955,13 +1955,13 @@ void BotTeamAI(bot_state_t *bs) {
 			if (bs->askteamleader_time && bs->askteamleader_time < FloatTime()) {
 				// if asked for a team leader and no response
 				BotAI_BotInitialChat(bs, "whoisteamleader", NULL);
-				trap_BotEnterChat(bs->cs, 0, CHAT_TEAM);
+				botlib->ai.BotEnterChat(bs->cs, 0, CHAT_TEAM);
 				bs->askteamleader_time = 0;
 				bs->becometeamleader_time = FloatTime() + 8 + random() * 10;
 			}
 			if (bs->becometeamleader_time && bs->becometeamleader_time < FloatTime()) {
 				BotAI_BotInitialChat(bs, "iamteamleader", NULL);
-				trap_BotEnterChat(bs->cs, 0, CHAT_TEAM);
+				botlib->ai.BotEnterChat(bs->cs, 0, CHAT_TEAM);
 				BotSayVoiceTeamOrder(bs, -1, VOICECHAT_STARTLEADER);
 				ClientName(bs->client, netname, sizeof(netname));
 				strncpy(bs->teamleader, netname, sizeof(bs->teamleader));

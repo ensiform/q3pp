@@ -40,14 +40,14 @@ typedef struct audioFormat_s
 
 typedef struct aviFileData_s
 {
-  bool      fileOpen;
-  fileHandle_t  f;
+  bool          fileOpen;
+  og::File      *f;
   char          fileName[ MAX_QPATH ];
   int           fileSize;
   int           moviOffset;
   int           moviSize;
 
-  fileHandle_t  idxF;
+  og::File      *idxF;
   int           numIndices;
 
   int           frameRate;
@@ -73,17 +73,6 @@ static aviFileData_t afd;
 
 static byte buffer[ MAX_AVI_BUFFER ];
 static int  bufIndex;
-
-/*
-===============
-SafeFS_Write
-===============
-*/
-static ID_INLINE void SafeFS_Write( const void *buffer, int len, fileHandle_t f )
-{
-  if( FS_Write( buffer, len, f ) < len )
-    Com_Error( ERR_DROP, "Failed to write avi file" );
-}
 
 /*
 ===============
@@ -346,13 +335,13 @@ bool CL_OpenAVIForWriting( const char *fileName )
     return false;
   }
 
-  if( ( afd.f = FS_FOpenFileWrite( fileName ) ) <= 0 )
+  if( ( afd.f = og::FS->OpenWrite( fileName ) ) <= 0 )
     return false;
 
-  if( ( afd.idxF = FS_FOpenFileWrite(
+  if( ( afd.idxF = og::FS->OpenWrite(
           va( "%s" INDEX_FILE_EXTENSION, fileName ) ) ) <= 0 )
   {
-    FS_FCloseFile( afd.f );
+    afd.f->Close();
     return false;
   }
 
@@ -372,9 +361,9 @@ bool CL_OpenAVIForWriting( const char *fileName )
   // Allocate a bit more space for the capture buffer to account for possible
   // padding at the end of pixel lines, and padding for alignment
   #define MAX_PACK_LEN 16
-  afd.cBuffer = Z_Malloc((afd.width * 3 + MAX_PACK_LEN - 1) * afd.height + MAX_PACK_LEN - 1);
+  afd.cBuffer = (byte *)Z_Malloc((afd.width * 3 + MAX_PACK_LEN - 1) * afd.height + MAX_PACK_LEN - 1);
   // raw avi files have pixel lines start on 4-byte boundaries
-  afd.eBuffer = Z_Malloc(PAD(afd.width * 3, AVI_LINE_PADDING) * afd.height);
+  afd.eBuffer = (byte *)Z_Malloc(PAD(afd.width * 3, AVI_LINE_PADDING) * afd.height);
 
   afd.a.rate = dma.speed;
   afd.a.format = WAV_FORMAT_PCM;
@@ -419,12 +408,23 @@ bool CL_OpenAVIForWriting( const char *fileName )
   // correct amount of space at the beginning of the file
   CL_WriteAVIHeader( );
 
-  SafeFS_Write( buffer, bufIndex, afd.f );
-  afd.fileSize = bufIndex;
+  try {
+    afd.f->Write( buffer, bufIndex );
+    afd.fileSize = bufIndex;
 
-  bufIndex = 0;
-  START_CHUNK( "idx1" );
-  SafeFS_Write( buffer, bufIndex, afd.idxF );
+    bufIndex = 0;
+    START_CHUNK( "idx1" );
+    afd.idxF->Write( buffer, bufIndex );
+  }
+  catch( og::FileReadWriteError &err ) {
+    err; // Shut up
+    afd.f->Close();
+    afd.idxF->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
+    Com_Printf( S_COLOR_RED "ERROR: Could not write to file %s", fileName );
+    return false;
+  }
 
   afd.moviSize = 4; // For the "movi"
   afd.fileOpen = true;
@@ -482,30 +482,40 @@ void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size )
   if( CL_CheckFileSize( 8 + size + 2 ) )
     return;
 
-  bufIndex = 0;
-  WRITE_STRING( "00dc" );
-  WRITE_4BYTES( size );
+  try {
+    bufIndex = 0;
+    WRITE_STRING( "00dc" );
+    WRITE_4BYTES( size );
 
-  SafeFS_Write( buffer, 8, afd.f );
-  SafeFS_Write( imageBuffer, size, afd.f );
-  SafeFS_Write( padding, paddingSize, afd.f );
-  afd.fileSize += ( chunkSize + paddingSize );
+    afd.f->Write( buffer, 8 );
+    afd.f->Write( imageBuffer, size );
+    afd.f->Write( padding, paddingSize );
+    afd.fileSize += ( chunkSize + paddingSize );
 
-  afd.numVideoFrames++;
-  afd.moviSize += ( chunkSize + paddingSize );
+    afd.numVideoFrames++;
+    afd.moviSize += ( chunkSize + paddingSize );
 
-  if( size > afd.maxRecordSize )
-    afd.maxRecordSize = size;
+    if( size > afd.maxRecordSize )
+      afd.maxRecordSize = size;
 
-  // Index
-  bufIndex = 0;
-  WRITE_STRING( "00dc" );           //dwIdentifier
-  WRITE_4BYTES( 0x00000010 );       //dwFlags (all frames are KeyFrames)
-  WRITE_4BYTES( chunkOffset );      //dwOffset
-  WRITE_4BYTES( size );             //dwLength
-  SafeFS_Write( buffer, 16, afd.idxF );
+    // Index
+    bufIndex = 0;
+    WRITE_STRING( "00dc" );           //dwIdentifier
+    WRITE_4BYTES( 0x00000010 );       //dwFlags (all frames are KeyFrames)
+    WRITE_4BYTES( chunkOffset );      //dwOffset
+    WRITE_4BYTES( size );             //dwLength
+    afd.idxF->Write( buffer, 16 );
 
-  afd.numIndices++;
+    afd.numIndices++;
+  }
+  catch( og::FileReadWriteError &err ) {
+    err; // Shut up
+    afd.f->Close();
+    afd.idxF->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
+    Com_Printf( S_COLOR_RED "ERROR: Could not write to avi file" );
+  }
 }
 
 #define PCM_BUFFER_SIZE 44100
@@ -553,26 +563,36 @@ void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
     WRITE_STRING( "01wb" );
     WRITE_4BYTES( bytesInBuffer );
 
-    SafeFS_Write( buffer, 8, afd.f );
-    SafeFS_Write( pcmCaptureBuffer, bytesInBuffer, afd.f );
-    SafeFS_Write( padding, paddingSize, afd.f );
-    afd.fileSize += ( chunkSize + paddingSize );
+    try {
+      afd.f->Write( buffer, 8 );
+      afd.f->Write( pcmCaptureBuffer, bytesInBuffer );
+      afd.f->Write( padding, paddingSize );
+      afd.fileSize += ( chunkSize + paddingSize );
 
-    afd.numAudioFrames++;
-    afd.moviSize += ( chunkSize + paddingSize );
-    afd.a.totalBytes += bytesInBuffer;
+      afd.numAudioFrames++;
+      afd.moviSize += ( chunkSize + paddingSize );
+      afd.a.totalBytes += bytesInBuffer;
 
-    // Index
-    bufIndex = 0;
-    WRITE_STRING( "01wb" );           //dwIdentifier
-    WRITE_4BYTES( 0 );                //dwFlags
-    WRITE_4BYTES( chunkOffset );      //dwOffset
-    WRITE_4BYTES( bytesInBuffer );    //dwLength
-    SafeFS_Write( buffer, 16, afd.idxF );
+      // Index
+      bufIndex = 0;
+      WRITE_STRING( "01wb" );           //dwIdentifier
+      WRITE_4BYTES( 0 );                //dwFlags
+      WRITE_4BYTES( chunkOffset );      //dwOffset
+      WRITE_4BYTES( bytesInBuffer );    //dwLength
+      afd.idxF->Write( buffer, 16 );
 
-    afd.numIndices++;
+      afd.numIndices++;
 
-    bytesInBuffer = 0;
+      bytesInBuffer = 0;
+    }
+    catch( og::FileReadWriteError &err ) {
+      err; // Shut up
+      afd.f->Close();
+      afd.idxF->Close();
+      Z_Free( afd.cBuffer );
+      Z_Free( afd.eBuffer );
+      Com_Printf( S_COLOR_RED "ERROR: Could not write to avi file" );
+    }
   }
 }
 
@@ -587,7 +607,7 @@ void CL_TakeVideoFrame( void )
   if( !afd.fileOpen )
     return;
 
-  re.TakeVideoFrame( afd.width, afd.height,
+  re->TakeVideoFrame( afd.width, afd.height,
       afd.cBuffer, afd.eBuffer, afd.motionJpeg );
 }
 
@@ -610,55 +630,81 @@ bool CL_CloseAVI( void )
 
   afd.fileOpen = false;
 
-  FS_Seek( afd.idxF, 4, FS_SEEK_SET );
-  bufIndex = 0;
-  WRITE_4BYTES( indexSize );
-  SafeFS_Write( buffer, bufIndex, afd.idxF );
-  FS_FCloseFile( afd.idxF );
+  try {
+    afd.idxF->Seek( 4, SEEK_SET );
+    bufIndex = 0;
+    WRITE_4BYTES( indexSize );
+    afd.idxF->Write( buffer, bufIndex );
+    afd.idxF->Close();
+  }
+  catch( og::FileReadWriteError &err ) {
+    err; // Shut up
+    afd.f->Close();
+    afd.idxF->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
+    Com_Printf( S_COLOR_RED "ERROR: Could not write to avi file %s" );
+    return false;
+  }
 
   // Write index
 
   // Open the temp index file
-  if( ( indexSize = FS_FOpenFileRead( idxFileName,
-          &afd.idxF, true ) ) <= 0 )
+  afd.idxF = og::FS->OpenRead( idxFileName );
+  if( afd.idxF == NULL )
   {
-    FS_FCloseFile( afd.f );
+    afd.f->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
     return false;
   }
 
-  indexRemainder = indexSize;
+  indexSize = afd.idxF->Size();
 
-  // Append index to end of avi file
-  while( indexRemainder > MAX_AVI_BUFFER )
-  {
-    FS_Read( buffer, MAX_AVI_BUFFER, afd.idxF );
-    SafeFS_Write( buffer, MAX_AVI_BUFFER, afd.f );
-    afd.fileSize += MAX_AVI_BUFFER;
-    indexRemainder -= MAX_AVI_BUFFER;
+  try {
+    indexRemainder = indexSize;
+
+    // Append index to end of avi file
+    while( indexRemainder > MAX_AVI_BUFFER )
+    {
+      afd.idxF->Read( buffer, MAX_AVI_BUFFER );
+      afd.f->Write( buffer, MAX_AVI_BUFFER );
+      afd.fileSize += MAX_AVI_BUFFER;
+      indexRemainder -= MAX_AVI_BUFFER;
+    }
+    afd.idxF->Read( buffer, indexRemainder );
+    afd.f->Write( buffer, indexRemainder );
+    afd.fileSize += indexRemainder;
+    afd.idxF->Close();
+
+    // Remove temp index file
+    og::FS->Remove( idxFileName );
+
+    // Write the real header
+    afd.f->Seek( 0, SEEK_SET );
+    CL_WriteAVIHeader( );
+
+    bufIndex = 4;
+    WRITE_4BYTES( afd.fileSize - 8 ); // "RIFF" size
+
+    bufIndex = afd.moviOffset + 4;    // Skip "LIST"
+    WRITE_4BYTES( afd.moviSize );
+
+    afd.f->Write( buffer, bufIndex );
+    afd.f->Close();
+    afd.idxF->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
   }
-  FS_Read( buffer, indexRemainder, afd.idxF );
-  SafeFS_Write( buffer, indexRemainder, afd.f );
-  afd.fileSize += indexRemainder;
-  FS_FCloseFile( afd.idxF );
-
-  // Remove temp index file
-  FS_HomeRemove( idxFileName );
-
-  // Write the real header
-  FS_Seek( afd.f, 0, FS_SEEK_SET );
-  CL_WriteAVIHeader( );
-
-  bufIndex = 4;
-  WRITE_4BYTES( afd.fileSize - 8 ); // "RIFF" size
-
-  bufIndex = afd.moviOffset + 4;    // Skip "LIST"
-  WRITE_4BYTES( afd.moviSize );
-
-  SafeFS_Write( buffer, bufIndex, afd.f );
-
-  Z_Free( afd.cBuffer );
-  Z_Free( afd.eBuffer );
-  FS_FCloseFile( afd.f );
+  catch( og::FileReadWriteError &err ) {
+    err; // Shut up
+    afd.f->Close();
+    afd.idxF->Close();
+    Z_Free( afd.cBuffer );
+    Z_Free( afd.eBuffer );
+    Com_Printf( S_COLOR_RED "ERROR: Could not write to avi file" );
+    return false;
+  }
 
   Com_Printf( "Wrote %d:%d frames to %s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
 

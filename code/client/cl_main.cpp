@@ -125,16 +125,19 @@ cvar_t	*cl_rate;
 clientActive_t		cl;
 clientConnection_t	clc;
 clientStatic_t		cls;
-vm_t				*cgvm;
 
 char				cl_reconnectArgs[MAX_OSPATH];
 char				cl_oldGame[MAX_QPATH];
 bool			cl_oldGameSet;
 
+#ifdef USE_RENDERER_DLOPEN
+//static void	*rendererLib = NULL;
+
+ogRendererExport *re = NULL;
+static ogRendererImport ri;
+#else
 // Structure containing functions exported from refresh DLL
 refexport_t	re;
-#ifdef USE_RENDERER_DLOPEN
-static void	*rendererLib = NULL;
 #endif
 
 ping_t	cl_pinglist[MAX_PINGREQUESTS];
@@ -156,7 +159,7 @@ int serverStatusCount;
 	void hA3Dg_ExportRenderGeom (refexport_t *incoming_re);
 #endif
 
-static int noGameRestart = false;
+static bool noGameRestart = false;
 
 extern void SV_BotFrame( int time );
 void CL_CheckForResend( void );
@@ -626,17 +629,21 @@ Dumps the current net message, prefixed by the length
 */
 
 void CL_WriteDemoMessage ( msg_t *msg, int headerBytes ) {
-	int		len, swlen;
+	try {
+		// write the packet sequence
+		clc.demofile->WriteInt( clc.serverMessageSequence );
 
-	// write the packet sequence
-	len = clc.serverMessageSequence;
-	swlen = LittleLong( len );
-	FS_Write (&swlen, 4, clc.demofile);
-	// skip the packet sequencing information
-	len = msg->cursize - headerBytes;
-	swlen = LittleLong(len);
-	FS_Write (&swlen, 4, clc.demofile);
-	FS_Write ( msg->data + headerBytes, len, clc.demofile );
+		// skip the packet sequencing information
+		int len = msg->cursize - headerBytes;
+		clc.demofile->WriteInt( len );
+		clc.demofile->Write( msg->data + headerBytes, len );
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		clc.demofile->Close();
+		clc.demofile = NULL;
+		Com_Printf( "ERROR: error writing to demo file\n" );
+	}
 }
 
 
@@ -648,19 +655,22 @@ stop recording a demo
 ====================
 */
 void CL_StopRecord_f( void ) {
-	int		len;
-
-	if ( !clc.demorecording ) {
-		Com_Printf ("Not recording a demo.\n");
+	if( !clc.demorecording ) {
+		Com_Printf( "Not recording a demo.\n" );
 		return;
 	}
 
-	// finish up
-	len = -1;
-	FS_Write (&len, 4, clc.demofile);
-	FS_Write (&len, 4, clc.demofile);
-	FS_FCloseFile (clc.demofile);
-	clc.demofile = 0;
+	try {
+		// finish up
+		clc.demofile->WriteInt( -1 );
+		clc.demofile->WriteInt( -1 );
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		Com_Printf( "ERROR: error writing to demo file\n" );
+	}
+	clc.demofile->Close();
+	clc.demofile = NULL;
 	clc.demorecording = false;
 	clc.spDemoRecording = false;
 	Com_Printf ("Stopped demo.\n");
@@ -704,7 +714,6 @@ void CL_Record_f( void ) {
 	byte		bufData[MAX_MSGLEN];
 	msg_t	buf;
 	int			i;
-	int			len;
 	entityState_t	*ent;
 	entityState_t	nullstate;
 	char		*s;
@@ -753,7 +762,7 @@ void CL_Record_f( void ) {
 #endif
 				Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, com_protocol->integer);
 
-			if (!FS_FileExists(name))
+			if (!og::FS->FileExists(name))
 				break;	// file doesn't exist
 		}
 	}
@@ -761,7 +770,7 @@ void CL_Record_f( void ) {
 	// open the demo file
 
 	Com_Printf ("recording to %s.\n", name);
-	clc.demofile = FS_FOpenFileWrite( name );
+	clc.demofile = og::FS->OpenWrite( name );
 	if ( !clc.demofile ) {
 		Com_Printf ("ERROR: couldn't open.\n");
 		return;
@@ -822,13 +831,19 @@ void CL_Record_f( void ) {
 	// finished writing the client packet
 	MSG_WriteByte( &buf, svc_EOF );
 
-	// write it to the demo file
-	len = LittleLong( clc.serverMessageSequence - 1 );
-	FS_Write (&len, 4, clc.demofile);
+	try {
+		// write it to the demo file
+		clc.demofile->WriteInt( clc.serverMessageSequence - 1 );
 
-	len = LittleLong (buf.cursize);
-	FS_Write (&len, 4, clc.demofile);
-	FS_Write (buf.data, buf.cursize, clc.demofile);
+		clc.demofile->WriteInt( buf.cursize );
+		clc.demofile->Write( buf.data, buf.cursize );
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		clc.demofile->Close();
+		clc.demofile = NULL;
+		Com_Printf( "ERROR: error writing to demo file\n" );
+	}
 
 	// the rest of the demo file will be copied from net messages
 }
@@ -907,22 +922,24 @@ void CL_DemoCompleted( void )
 			{
 				int i;
 				int numFrames;
-				fileHandle_t f;
+				og::File *f;
 
 				if( ( clc.timeDemoFrames - 1 ) > MAX_TIMEDEMO_DURATIONS )
 					numFrames = MAX_TIMEDEMO_DURATIONS;
 				else
 					numFrames = clc.timeDemoFrames - 1;
 
-				f = FS_FOpenFileWrite( cl_timedemoLog->string );
-				if( f )
-				{
-					FS_Printf( f, "# %s", buffer );
+				f = og::FS->OpenWrite( cl_timedemoLog->string );
+				if( f ) {
+					f->WriteCStr( og::Format( "# $*" ) << buffer );
 
-					for( i = 0; i < numFrames; i++ )
-						FS_Printf( f, "%d\n", clc.timeDemoDurations[ i ] );
+					og::Format lineFormat( "$*\n" );
+					for( i = 0; i < numFrames; i++ ) {
+						f->WriteCStr( lineFormat << clc.timeDemoDurations[i] );
+						lineFormat.Reset();
+					}
 
-					FS_FCloseFile( f );
+					f->Close();
 					Com_Printf( "%s written\n", cl_timedemoLog->string );
 				}
 				else
@@ -944,45 +961,34 @@ CL_ReadDemoMessage
 =================
 */
 void CL_ReadDemoMessage( void ) {
-	int			r;
+//	int			r;
 	msg_t		buf;
 	byte		bufData[ MAX_MSGLEN ];
-	int			s;
+//	int			s;
 
 	if ( !clc.demofile ) {
 		CL_DemoCompleted ();
 		return;
 	}
 
-	// get the sequence number
-	r = FS_Read( &s, 4, clc.demofile);
-	if ( r != 4 ) {
-		CL_DemoCompleted ();
-		return;
-	}
-	clc.serverMessageSequence = LittleLong( s );
+	try {
+		// get the sequence number
+		clc.serverMessageSequence = clc.demofile->ReadInt();
+		// init the message
+		MSG_Init( &buf, bufData, sizeof( bufData ) );
 
-	// init the message
-	MSG_Init( &buf, bufData, sizeof( bufData ) );
+		// get the length
+		buf.cursize = clc.demofile->ReadInt();
+		if( buf.cursize > buf.maxsize ) {
+			Com_Error( ERR_DROP, "CL_ReadDemoMessage: demoMsglen > MAX_MSGLEN" );
+		}
 
-	// get the length
-	r = FS_Read (&buf.cursize, 4, clc.demofile);
-	if ( r != 4 ) {
-		CL_DemoCompleted ();
-		return;
+		clc.demofile->Read( buf.data, buf.cursize );
 	}
-	buf.cursize = LittleLong( buf.cursize );
-	if ( buf.cursize == -1 ) {
-		CL_DemoCompleted ();
-		return;
-	}
-	if ( buf.cursize > buf.maxsize ) {
-		Com_Error (ERR_DROP, "CL_ReadDemoMessage: demoMsglen > MAX_MSGLEN");
-	}
-	r = FS_Read( buf.data, buf.cursize, clc.demofile );
-	if ( r != buf.cursize ) {
-		Com_Printf( "Demo file was truncated.\n");
-		CL_DemoCompleted ();
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		Com_Printf( "Demo file was truncated.\n" );
+		CL_DemoCompleted();
 		return;
 	}
 
@@ -996,21 +1002,20 @@ void CL_ReadDemoMessage( void ) {
 CL_WalkDemoExt
 ====================
 */
-static int CL_WalkDemoExt(char *arg, char *name, int *demofile)
+static og::File *CL_WalkDemoExt(char *arg, char *name)
 {
-	int i = 0;
-	*demofile = 0;
+	og::File *file;
 
 #ifdef LEGACY_PROTOCOL
 	if(com_legacyprotocol->integer > 0)
 	{
 		Com_sprintf(name, MAX_OSPATH, "demos/%s.%s%d", arg, DEMOEXT, com_legacyprotocol->integer);
-		FS_FOpenFileRead(name, demofile, true);
+		file = og::FS->OpenRead( name );
 		
-		if (*demofile)
+		if (file)
 		{
 			Com_Printf("Demo file: %s\n", name);
-			return com_legacyprotocol->integer;
+			return file;
 		}
 	}
 	
@@ -1018,18 +1023,18 @@ static int CL_WalkDemoExt(char *arg, char *name, int *demofile)
 #endif
 	{
 		Com_sprintf(name, MAX_OSPATH, "demos/%s.%s%d", arg, DEMOEXT, com_protocol->integer);
-		FS_FOpenFileRead(name, demofile, true);
+		file = og::FS->OpenRead( name );
 
-		if (*demofile)
+		if (file)
 		{
 			Com_Printf("Demo file: %s\n", name);
-			return com_protocol->integer;
+			return file;
 		}
 	}
 
 	Com_Printf("Not found: %s\n", name);
 
-	while(demo_protocols[i])
+	for( int i = 0; demo_protocols[i]; i++ )
 	{
 #ifdef LEGACY_PROTOCOL
 		if(demo_protocols[i] == com_legacyprotocol->integer)
@@ -1039,19 +1044,18 @@ static int CL_WalkDemoExt(char *arg, char *name, int *demofile)
 			continue;
 	
 		Com_sprintf (name, MAX_OSPATH, "demos/%s.%s%d", arg, DEMOEXT, demo_protocols[i]);
-		FS_FOpenFileRead( name, demofile, true );
-		if (*demofile)
+		file = og::FS->OpenRead( name );
+		if (file)
 		{
 			Com_Printf("Demo file: %s\n", name);
 
-			return demo_protocols[i];
+			return file;
 		}
-		else
-			Com_Printf("Not found: %s\n", name);
-		i++;
+
+		Com_Printf("Not found: %s\n", name);
 	}
-	
-	return -1;
+
+	return NULL;
 }
 
 /*
@@ -1118,7 +1122,7 @@ void CL_PlayDemo_f( void ) {
 		  )
 		{
 			Com_sprintf(name, sizeof(name), "demos/%s", arg);
-			FS_FOpenFileRead(name, &clc.demofile, true);
+			clc.demofile = og::FS->OpenRead( name );
 		}
 		else
 		{
@@ -1132,11 +1136,11 @@ void CL_PlayDemo_f( void ) {
 
 			Q_strncpyz(retry, arg, len + 1);
 			retry[len] = '\0';
-			protocol = CL_WalkDemoExt(retry, name, &clc.demofile);
+			clc.demofile = CL_WalkDemoExt(retry, name);
 		}
 	}
 	else
-		protocol = CL_WalkDemoExt(arg, name, &clc.demofile);
+		clc.demofile = CL_WalkDemoExt(arg, name);
 	
 	if (!clc.demofile) {
 		Com_Error( ERR_DROP, "couldn't open %s", name);
@@ -1233,8 +1237,8 @@ void CL_ShutdownAll(bool shutdownRef)
 	// shutdown the renderer
 	if(shutdownRef)
 		CL_ShutdownRef();
-	else if(re.Shutdown)
-		re.Shutdown(false);		// don't destroy window or context
+	else if(re)
+		re->Shutdown(false);		// don't destroy window or context
 
 	cls.uiStarted = false;
 	cls.cgameStarted = false;
@@ -1352,11 +1356,14 @@ update cl_guid using QKEY_FILE and optional prefix
 */
 static void CL_UpdateGUID( const char *prefix, int prefix_len )
 {
-	fileHandle_t f;
-	int len;
+	og::File *f = og::FS->OpenRead( QKEY_FILE );
 
-	len = FS_SV_FOpenFileRead( QKEY_FILE, &f );
-	FS_FCloseFile( f );
+	if( !f )
+		return;
+
+	uInt len = f->Size();
+
+	f->Close();
 
 	if( len != QKEY_SIZE ) 
 		Cvar_Set( "cl_guid", "" );
@@ -1398,12 +1405,14 @@ void CL_Disconnect( bool showMainMenu ) {
 		CL_StopRecord_f ();
 	}
 
+#ifdef USE_DOWNLOADS
 	if (clc.download) {
-		FS_FCloseFile( clc.download );
-		clc.download = 0;
+		clc.download->Close();
+		clc.download = NULL;
 	}
 	*clc.downloadTempName = *clc.downloadName = 0;
 	Cvar_Set( "cl_downloadName", "" );
+#endif
 
 #ifdef USE_MUMBLE
 	if (cl_useMumble->integer && mumble_islinked()) {
@@ -1436,12 +1445,12 @@ void CL_Disconnect( bool showMainMenu ) {
 #endif
 
 	if ( clc.demofile ) {
-		FS_FCloseFile( clc.demofile );
-		clc.demofile = 0;
+		clc.demofile->Close();
+		clc.demofile = NULL;
 	}
 
-	if ( uivm && showMainMenu ) {
-		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
+	if ( uiExport && showMainMenu ) {
+		uiExport->SetActiveMenu( UIMENU_NONE );
 	}
 
 	SCR_StopCinematic ();
@@ -1457,7 +1466,7 @@ void CL_Disconnect( bool showMainMenu ) {
 	}
 	
 	// Remove pure paks
-	FS_PureServerSetLoadedPaks("", "");
+//	FS_PureServerSetLoadedPaks("", "");
 	
 	CL_ClearState ();
 
@@ -1866,12 +1875,16 @@ CL_SendPureChecksums
 =================
 */
 void CL_SendPureChecksums( void ) {
+#if 0
 	char cMsg[MAX_INFO_VALUE];
 
 	// if we are pure we need to send back a command with our referenced pk3 checksums
 	Com_sprintf(cMsg, sizeof(cMsg), "cp %d %s", cl.serverId, FS_ReferencedPakPureChecksums());
 
 	CL_AddReliableCommand(cMsg, false);
+#else
+	CL_AddReliableCommand("cp", false);
+#endif
 }
 
 /*
@@ -1929,7 +1942,7 @@ void CL_Vid_Restart_f( void ) {
 		// client is no longer pure untill new checksums are sent
 		CL_ResetPureClientAtServer();
 		// clear pak references
-		FS_ClearPakReferences( FS_UI_REF | FS_CGAME_REF );
+//		FS_ClearPakReferences( FS_UI_REF | FS_CGAME_REF );
 		// reinitialize the filesystem if the game directory or checksum has changed
 
 		cls.rendererStarted = false;
@@ -1993,7 +2006,7 @@ CL_PK3List_f
 ==================
 */
 void CL_OpenedPK3List_f( void ) {
-	Com_Printf("Opened PK3 Names: %s\n", FS_LoadedPakNames());
+//	Com_Printf("Opened PK3 Names: %s\n", FS_LoadedPakNames());
 }
 
 /*
@@ -2002,7 +2015,7 @@ CL_PureList_f
 ==================
 */
 void CL_ReferencedPK3List_f( void ) {
-	Com_Printf("Referenced PK3 Names: %s\n", FS_ReferencedPakNames());
+//	Com_Printf("Referenced PK3 Names: %s\n", FS_ReferencedPakNames());
 }
 
 /*
@@ -2045,6 +2058,7 @@ void CL_Clientinfo_f( void ) {
 
 //====================================================================
 
+#ifdef USE_DOWNLOADS
 /*
 =================
 CL_DownloadsComplete
@@ -2292,6 +2306,7 @@ void CL_InitDownloads(void) {
 		
 	CL_DownloadsComplete();
 }
+#endif
 
 /*
 =================
@@ -2925,12 +2940,12 @@ void CL_Frame ( int msec ) {
 	if ( cls.cddialog ) {
 		// bring up the cd error dialog if needed
 		cls.cddialog = false;
-		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NEED_CD );
+		uiExport->SetActiveMenu( UIMENU_NEED_CD );
 	} else	if ( clc.state == CA_DISCONNECTED && !( Key_GetCatcher( ) & KEYCATCH_UI )
-		&& !com_sv_running->integer && uivm ) {
+		&& !com_sv_running->integer && uiExport ) {
 		// if disconnected, bring up the menu
 		S_StopAllSounds();
-		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+		uiExport->SetActiveMenu( UIMENU_MAIN );
 	}
 
 	// if recording an avi, lock to a fixed fps
@@ -3070,11 +3085,12 @@ CL_ShutdownRef
 ============
 */
 void CL_ShutdownRef( void ) {
-	if ( !re.Shutdown ) {
+	if ( !re ) {
 		return;
 	}
-	re.Shutdown( true );
-	Com_Memset( &re, 0, sizeof( re ) );
+	re->Shutdown( true );
+	og::Plugin::Unload( re );
+	re = NULL;
 }
 
 /*
@@ -3084,12 +3100,12 @@ CL_InitRenderer
 */
 void CL_InitRenderer( void ) {
 	// this sets up the renderer and calls R_Init
-	re.BeginRegistration( &cls.glconfig );
+	re->BeginRegistration( &cls.glconfig );
 
 	// load character sets
-	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
-	cls.whiteShader = re.RegisterShader( "white" );
-	cls.consoleShader = re.RegisterShader( "console" );
+	cls.charSetShader = re->RegisterShader( "gfx/2d/bigchars" );
+	cls.whiteShader = re->RegisterShader( "white" );
+	cls.consoleShader = re->RegisterShader( "console" );
 	g_console_field_width = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 }
@@ -3153,12 +3169,95 @@ int CL_ScaledMilliseconds(void) {
 	return Sys_Milliseconds()*com_timescale->value;
 }
 
+void setupRefImport( void ) {
+	ri.fs                          = og::FS;
+	ri.Printf                      = CL_RefPrintf;
+	ri.Error                       = Com_Error;
+	ri.Milliseconds                = CL_ScaledMilliseconds;
+
+#ifdef HUNK_DEBUG
+	ri.Hunk_AllocDebug             = Hunk_AllocDebug;
+#else
+	ri.Hunk_Alloc                  = Hunk_Alloc;
+#endif
+
+	ri.Hunk_AllocateTempMemory     = Hunk_AllocateTempMemory;
+	ri.Hunk_FreeTempMemory         = Hunk_FreeTempMemory;
+
+	ri.Malloc                      = CL_RefMalloc;
+	ri.Free                        = Z_Free;
+
+	ri.Cvar_Get                    = Cvar_Get;
+	ri.Cvar_Set                    = Cvar_Set;
+	ri.Cvar_SetValue               = Cvar_SetValue;
+	ri.Cvar_CheckRange             = Cvar_CheckRange;
+	ri.Cvar_VariableIntegerValue   = Cvar_VariableIntegerValue;
+
+	ri.Cmd_AddCommand              = Cmd_AddCommand;
+	ri.Cmd_RemoveCommand           = Cmd_RemoveCommand;
+
+	ri.Cmd_Argc                    = Cmd_Argc;
+	ri.Cmd_Argv                    = Cmd_Argv;
+	ri.Cmd_ExecuteText             = Cbuf_ExecuteText;
+
+	ri.CM_ClusterPVS               = CM_ClusterPVS;
+	ri.CM_DrawDebugSurface         = CM_DrawDebugSurface;
+
+	// cinematic stuff
+
+	ri.CIN_UploadCinematic         = CIN_UploadCinematic;
+	ri.CIN_PlayCinematic           = CIN_PlayCinematic;
+	ri.CIN_RunCinematic            = CIN_RunCinematic;
+
+	ri.CL_WriteAVIVideoFrame       = CL_WriteAVIVideoFrame;
+
+	ri.IN_Init                     = IN_Init;
+	ri.IN_Shutdown                 = IN_Shutdown;
+	ri.IN_Restart                  = IN_Restart;
+
+	ri.ftol                        = Q_ftol;
+
+	ri.Sys_SetEnv                  = Sys_SetEnv;
+	ri.Sys_GLimpSafeInit           = Sys_GLimpSafeInit;
+	ri.Sys_GLimpInit               = Sys_GLimpInit;
+	ri.Sys_LowPhysicalMemory       = Sys_LowPhysicalMemory;
+}
+
 /*
 ============
 CL_InitRef
 ============
 */
 void CL_InitRef( void ) {
+#ifdef USE_RENDERER_DLOPEN
+	cl_renderer = Cvar_Get("cl_renderer", "opengl1", CVAR_ARCHIVE | CVAR_LATCH);
+	setupRefImport();
+
+	// Load the renderer plugin
+	og::Format filename( "renderer_$*_" ARCH_STRING);
+
+	filename << cl_renderer->string;
+	
+	og::String netpath;
+
+	og::FS->FindDLL( filename, netpath );
+	if( netpath.IsEmpty() ) {
+	//if( !FS_FindDll( filename, netpath ) ) {
+		Com_Error( ERR_FATAL, "Could not locate '%s'\n", filename.c_str() );
+	}
+
+	re = static_cast<ogRendererExport *>( og::Plugin::Load( netpath.c_str(), &ri ) );
+	if( !re ) {
+		Com_Error( ERR_FATAL, "og::Plugin::Load on %s failed", cl_renderer->string );
+	}
+
+	Com_Printf( "-------------------------------\n");
+
+	// unpause so the cgame definately gets a snapshot and renders a frame
+	Cvar_Set( "cl_paused", "0" );
+
+#endif
+#if 0
 	refimport_t	ri;
 	refexport_t	*ret;
 #ifdef USE_RENDERER_DLOPEN
@@ -3264,6 +3363,7 @@ void CL_InitRef( void ) {
 
 	// unpause so the cgame definately gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
+#endif
 }
 
 
@@ -3332,7 +3432,7 @@ void CL_Video_f( void )
       Com_sprintf( filename, MAX_OSPATH, "videos/video%d%d%d%d.avi",
           a, b, c, d );
 
-      if( !FS_FileExists( filename ) )
+	  if( !og::FS->FileExists( filename ) )
         break; // file doesn't exist
     }
 
@@ -3366,12 +3466,16 @@ it by filling it with 2048 bytes of random data.
 */
 static void CL_GenerateQKey(void)
 {
-	int len = 0;
+	uInt len = 0;
 	unsigned char buff[ QKEY_SIZE ];
-	fileHandle_t f;
 
-	len = FS_SV_FOpenFileRead( QKEY_FILE, &f );
-	FS_FCloseFile( f );
+	og::File *f = og::FS->OpenRead( QKEY_FILE );
+
+	if( f ) {
+		len = f->Size();
+		f->Close();
+	}
+
 	if( len == QKEY_SIZE ) {
 		Com_Printf( "QKEY found.\n" );
 		return;
@@ -3385,14 +3489,14 @@ static void CL_GenerateQKey(void)
 		Com_Printf( "QKEY building random string\n" );
 		Com_RandomBytes( buff, sizeof(buff) );
 
-		f = FS_SV_FOpenFileWrite( QKEY_FILE );
+		f = og::FS->OpenWrite( QKEY_FILE );
 		if( !f ) {
 			Com_Printf( "QKEY could not open %s for write\n",
 				QKEY_FILE );
 			return;
 		}
-		FS_Write( buff, sizeof(buff), f );
-		FS_FCloseFile( f );
+		f->Write( buff, sizeof(buff) );
+		f->Close();
 		Com_Printf( "QKEY generated\n" );
 	}
 } 
@@ -3584,6 +3688,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("demo", CL_PlayDemo_f);
 	Cmd_SetCommandCompletionFunc( "demo", CL_CompleteDemoName );
 	Cmd_AddCommand ("cinematic", CL_PlayCinematic_f);
+	Cmd_SetCommandCompletionFunc( "cinematic", CL_CompleteCinematicName );
 	Cmd_AddCommand ("stoprecord", CL_StopRecord_f);
 	Cmd_AddCommand ("connect", CL_Connect_f);
 	Cmd_AddCommand ("reconnect", CL_Reconnect_f);

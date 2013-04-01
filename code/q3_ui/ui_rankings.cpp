@@ -99,7 +99,7 @@ void Rankings_DrawText( void* self )
 
 	// draw cursor if we have focus
 	if( focus ) {
-		if ( trap_Key_GetOverstrikeMode() ) {
+		if ( trap->Key_GetOverstrikeMode() ) {
 			c = 11;
 		} else {
 			c = 10;
@@ -248,7 +248,7 @@ static void Rankings_MenuEvent( void* ptr, int event ) {
 
 	case ID_LOGOUT:
 		// server side masqueraded player logout first
-		trap_CL_UI_RankUserRequestLogout();
+		trap->CL_UI_RankUserRequestLogout();
 		UI_ForceMenuOff();
 		break;
 		
@@ -257,7 +257,7 @@ static void Rankings_MenuEvent( void* ptr, int event ) {
 		break;
 
 	case ID_SPECTATE:
-		trap_Cmd_ExecuteText( EXEC_APPEND, "cmd rank_spectate\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "cmd rank_spectate\n" );
 		UI_ForceMenuOff();
 		break;
 
@@ -266,7 +266,7 @@ static void Rankings_MenuEvent( void* ptr, int event ) {
 		break;
 		
 	case ID_LEAVE:
-		trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect\n" );
 		UI_ForceMenuOff();
 		break;
 
@@ -365,7 +365,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.leave.color				= colorRed;
 	y += 20;
 
-	status = (grank_status_t)trap_Cvar_VariableValue("client_status");
+	status = (grank_status_t)cvarSystem->VariableValue("client_status");
 	if( (status != QGR_STATUS_NEW) && (status != QGR_STATUS_SPECTATOR) )
 	{
 		s_rankings.login.generic.flags |= QMF_HIDDEN | QMF_INACTIVE;	
@@ -403,7 +403,7 @@ Rankings_Cache
 ===============
 */
 void Rankings_Cache( void ) {
-	trap_R_RegisterShaderNoMip( RANKINGS_FRAME );
+	trap->re->RegisterShaderNoMip( RANKINGS_FRAME );
 }
 
 

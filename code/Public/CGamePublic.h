@@ -27,7 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../botlib/botlib.h"
 #include "../client/snd_local.h"
-#include "../renderercommon/tr_public.h"
+#include "../Public/RendererPublic.h"
+//#include "../renderercommon/tr_public.h"
 #include "../game/bg_public.h"
 #include "Snapshot.h"
 
@@ -58,7 +59,8 @@ public:
 	int GetApiVersion( void ) const { return CGAME_API_VERSION; }
 
 	og::FileSystem *fs;
-	refexport_t *re;
+	ogRendererExport *re;
+//	refexport_t *re;
 	soundInterface_t *si;
 	botlib_export_t *botlib;
 	cvarSystem_t *cvarSystem;

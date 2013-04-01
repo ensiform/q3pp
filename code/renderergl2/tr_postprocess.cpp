@@ -277,7 +277,7 @@ static bool RB_UpdateSunFlareVis(void)
 				break;
 		}
 
-		ri.Printf(PRINT_DEVELOPER, "Waited %d iterations\n", iter);
+		ri->Printf(PRINT_DEVELOPER, "Waited %d iterations\n", iter);
 	}
 	
 	qglGetQueryObjectuivARB(tr.sunFlareQuery[tr.sunFlareQueryIndex], GL_QUERY_RESULT_ARB, &sampleCount);

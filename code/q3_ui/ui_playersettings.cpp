@@ -152,7 +152,7 @@ static void PlayerSettings_DrawName( void *self ) {
 
 	// draw cursor if we have focus
 	if( focus ) {
-		if ( trap_Key_GetOverstrikeMode() ) {
+		if ( trap->Key_GetOverstrikeMode() ) {
 			c = 11;
 		} else {
 			c = 10;
@@ -235,7 +235,7 @@ static void PlayerSettings_DrawPlayer( void *self ) {
 	vec3_t			viewangles;
 	char			buf[MAX_QPATH];
 
-	trap_Cvar_VariableStringBuffer( "model", buf, sizeof( buf ) );
+	cvarSystem->VariableStringBuffer( "model", buf, sizeof( buf ) );
 	if ( strcmp( buf, s_playersettings.playerModel ) != 0 ) {
 		UI_PlayerInfo_SetModel( &s_playersettings.playerinfo, buf );
 		strcpy( s_playersettings.playerModel, buf );
@@ -258,13 +258,13 @@ PlayerSettings_SaveChanges
 */
 static void PlayerSettings_SaveChanges( void ) {
 	// name
-	trap_Cvar_Set( "name", s_playersettings.name.field.buffer );
+	cvarSystem->Set( "name", s_playersettings.name.field.buffer );
 
 	// handicap
-	trap_Cvar_SetValue( "handicap", 100 - s_playersettings.handicap.curvalue * 5 );
+	cvarSystem->SetValue( "handicap", 100 - s_playersettings.handicap.curvalue * 5 );
 
 	// effects color
-	trap_Cvar_SetValue( "color1", uitogamecode[s_playersettings.effects.curvalue] );
+	cvarSystem->SetValue( "color1", uitogamecode[s_playersettings.effects.curvalue] );
 }
 
 
@@ -295,7 +295,7 @@ static void PlayerSettings_SetMenuItems( void ) {
 	Q_strncpyz( s_playersettings.name.field.buffer, UI_Cvar_VariableString("name"), sizeof(s_playersettings.name.field.buffer) );
 
 	// effects color
-	c = trap_Cvar_VariableValue( "color1" ) - 1;
+	c = cvarSystem->VariableValue( "color1" ) - 1;
 	if( c < 0 || c > 6 ) {
 		c = 6;
 	}
@@ -312,7 +312,7 @@ static void PlayerSettings_SetMenuItems( void ) {
 	UI_PlayerInfo_SetInfo( &s_playersettings.playerinfo, LEGS_IDLE, TORSO_STAND, viewangles, vec3_origin, WP_MACHINEGUN, false );
 
 	// handicap
-	h = Com_Clamp( 5, 100, trap_Cvar_VariableValue("handicap") );
+	h = Com_Clamp( 5, 100, cvarSystem->VariableValue("handicap") );
 	s_playersettings.handicap.curvalue = 20 - h / 5;
 }
 
@@ -329,7 +329,7 @@ static void PlayerSettings_MenuEvent( void* ptr, int event ) {
 
 	switch( ((menucommon_s*)ptr)->id ) {
 	case ID_HANDICAP:
-		trap_Cvar_Set( "handicap", va( "%i", 100 - 25 * s_playersettings.handicap.curvalue ) );
+		cvarSystem->Set( "handicap", va( "%i", 100 - 25 * s_playersettings.handicap.curvalue ) );
 		break;
 
 	case ID_MODEL:
@@ -484,21 +484,21 @@ PlayerSettings_Cache
 =================
 */
 void PlayerSettings_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_MODEL0 );
-	trap_R_RegisterShaderNoMip( ART_MODEL1 );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_MODEL0 );
+	trap->re->RegisterShaderNoMip( ART_MODEL1 );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
 
-	s_playersettings.fxBasePic = trap_R_RegisterShaderNoMip( ART_FX_BASE );
-	s_playersettings.fxPic[0] = trap_R_RegisterShaderNoMip( ART_FX_RED );
-	s_playersettings.fxPic[1] = trap_R_RegisterShaderNoMip( ART_FX_YELLOW );
-	s_playersettings.fxPic[2] = trap_R_RegisterShaderNoMip( ART_FX_GREEN );
-	s_playersettings.fxPic[3] = trap_R_RegisterShaderNoMip( ART_FX_TEAL );
-	s_playersettings.fxPic[4] = trap_R_RegisterShaderNoMip( ART_FX_BLUE );
-	s_playersettings.fxPic[5] = trap_R_RegisterShaderNoMip( ART_FX_CYAN );
-	s_playersettings.fxPic[6] = trap_R_RegisterShaderNoMip( ART_FX_WHITE );
+	s_playersettings.fxBasePic = trap->re->RegisterShaderNoMip( ART_FX_BASE );
+	s_playersettings.fxPic[0] = trap->re->RegisterShaderNoMip( ART_FX_RED );
+	s_playersettings.fxPic[1] = trap->re->RegisterShaderNoMip( ART_FX_YELLOW );
+	s_playersettings.fxPic[2] = trap->re->RegisterShaderNoMip( ART_FX_GREEN );
+	s_playersettings.fxPic[3] = trap->re->RegisterShaderNoMip( ART_FX_TEAL );
+	s_playersettings.fxPic[4] = trap->re->RegisterShaderNoMip( ART_FX_BLUE );
+	s_playersettings.fxPic[5] = trap->re->RegisterShaderNoMip( ART_FX_CYAN );
+	s_playersettings.fxPic[6] = trap->re->RegisterShaderNoMip( ART_FX_WHITE );
 }
 
 

@@ -29,7 +29,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
 
+#ifndef __BOTLIB_H__
+#define __BOTLIB_H__
 #define	BOTLIB_API_VERSION		2
+
+#include <og/FileSystem.h>
 
 struct aas_clientmove_s;
 struct aas_entityinfo_s;
@@ -158,7 +162,7 @@ typedef struct bot_entitystate_s
 	int		modelindex;		// model used
 	int		modelindex2;	// weapons, CTF flags, etc
 	int		frame;			// model frame number
-	int		event;			// impulse events -- muzzle flashes, footsteps, etc
+	int		_event;			// impulse events -- muzzle flashes, footsteps, etc
 	int		eventParm;		// even parameter
 	int		powerups;		// bit flags
 	int		weapon;			// determines weapon and flash model, etc
@@ -190,12 +194,7 @@ typedef struct botlib_import_s
 	void		(*FreeMemory)(void *ptr);		// free memory from Zone
 	int			(*AvailableMemory)(void);		// available Zone memory
 	void		*(*HunkAlloc)(int size);		// allocate from hunk
-	//file system access
-	int			(*FS_FOpenFile)( const char *qpath, fileHandle_t *file, fsMode_t mode );
-	int			(*FS_Read)( void *buffer, int len, fileHandle_t f );
-	int			(*FS_Write)( const void *buffer, int len, fileHandle_t f );
-	void		(*FS_FCloseFile)( fileHandle_t f );
-	int			(*FS_Seek)( fileHandle_t f, long offset, int origin );
+
 	//debug visualisation stuff
 	int			(*DebugLineCreate)(void);
 	void		(*DebugLineDelete)(int line);
@@ -515,3 +514,4 @@ name:						default:			module(s):			description:
 
 */
 
+#endif

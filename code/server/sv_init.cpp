@@ -269,7 +269,7 @@ static void SV_Startup( void ) {
 	}
 	SV_BoundMaxClients( 1 );
 
-	svs.clients = Z_Malloc (sizeof(client_t) * sv_maxclients->integer );
+	svs.clients = (client_t *)Z_Malloc (sizeof(client_t) * sv_maxclients->integer );
 	if ( com_dedicated->integer ) {
 		svs.numSnapshotEntities = sv_maxclients->integer * PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES;
 	} else {
@@ -319,7 +319,7 @@ void SV_ChangeMaxClients( void ) {
 		return;
 	}
 
-	oldClients = Hunk_AllocateTempMemory( count * sizeof(client_t) );
+	oldClients = (client_t *)Hunk_AllocateTempMemory( count * sizeof(client_t) );
 	// copy the clients to hunk memory
 	for ( i = 0 ; i < count ; i++ ) {
 		if ( svs.clients[i].state >= CS_CONNECTED ) {
@@ -334,7 +334,7 @@ void SV_ChangeMaxClients( void ) {
 	Z_Free( svs.clients );
 
 	// allocate new clients
-	svs.clients = Z_Malloc ( sv_maxclients->integer * sizeof(client_t) );
+	svs.clients = (client_t *)Z_Malloc ( sv_maxclients->integer * sizeof(client_t) );
 	Com_Memset( svs.clients, 0, sv_maxclients->integer * sizeof(client_t) );
 
 	// copy the clients over
@@ -374,24 +374,6 @@ static void SV_ClearServer(void) {
 
 /*
 ================
-SV_TouchCGame
-
-  touch the cgame.vm so that a pure client can load it if it's in a seperate pk3
-================
-*/
-static void SV_TouchCGame(void) {
-	fileHandle_t	f;
-	char filename[MAX_QPATH];
-
-	Com_sprintf( filename, sizeof(filename), "vm/%s.qvm", "cgame" );
-	FS_FOpenFileRead( filename, &f, false );
-	if ( f ) {
-		FS_FCloseFile( f );
-	}
-}
-
-/*
-================
 SV_SpawnServer
 
 Change the server to a new map, taking all connected
@@ -404,7 +386,7 @@ void SV_SpawnServer( char *server, bool killBots ) {
 	int			checksum;
 	bool	isBot;
 	char		systemInfo[16384];
-	const char	*p;
+//	const char	*p;
 
 	// shut down the existing game if it is running
 	SV_ShutdownGameProgs();
@@ -441,10 +423,10 @@ void SV_SpawnServer( char *server, bool killBots ) {
 	}
 
 	// clear pak references
-	FS_ClearPakReferences(0);
+//	FS_ClearPakReferences(0);
 
 	// allocate the snapshot entities on the hunk
-	svs.snapshotEntities = Hunk_Alloc( sizeof(entityState_t)*svs.numSnapshotEntities, h_high );
+	svs.snapshotEntities = (entityState_t *)Hunk_Alloc( sizeof(entityState_t)*svs.numSnapshotEntities, h_high );
 	svs.nextSnapshotEntities = 0;
 
 	// toggle the server bit so clients can detect that a
@@ -498,7 +480,7 @@ void SV_SpawnServer( char *server, bool killBots ) {
 	sv.state = SS_LOADING;
 
 	// load and spawn all other entities
-	SV_InitGameProgs();
+	SV_InitGameProgs( false );
 
 	// don't allow a map_restart if game is modified
 	sv_gametype->modified = false;
@@ -506,7 +488,7 @@ void SV_SpawnServer( char *server, bool killBots ) {
 	// run a few frames to allow everything to settle
 	for (i = 0;i < 3; i++)
 	{
-		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
+		gameExport->RunFrame( sv.time);
 		SV_BotFrame (sv.time);
 		sv.time += 100;
 		svs.time += 100;
@@ -532,7 +514,7 @@ void SV_SpawnServer( char *server, bool killBots ) {
 			}
 
 			// connect the client again
-			denied = VM_ExplicitArgPtr( gvm, VM_Call( gvm, GAME_CLIENT_CONNECT, i, false, isBot ) );	// firstTime = false
+			denied = gameExport->ClientConnect( i, false, isBot );	// firstTime = false
 			if ( denied ) {
 				// this generally shouldn't happen, because the client
 				// was connected before the level change
@@ -556,14 +538,14 @@ void SV_SpawnServer( char *server, bool killBots ) {
 					client->deltaMessage = -1;
 					client->lastSnapshotTime = 0;	// generate a snapshot immediately
 
-					VM_Call( gvm, GAME_CLIENT_BEGIN, i );
+					gameExport->ClientBegin( i );
 				}
 			}
 		}
 	}	
 
 	// run another frame to allow things to look at all the players
-	VM_Call (gvm, GAME_RUN_FRAME, sv.time);
+	gameExport->RunFrame( sv.time);
 	SV_BotFrame (sv.time);
 	sv.time += 100;
 	svs.time += 100;
@@ -571,30 +553,26 @@ void SV_SpawnServer( char *server, bool killBots ) {
 	if ( sv_pure->integer ) {
 		// the server sends these to the clients so they will only
 		// load pk3s also loaded at the server
-		p = FS_LoadedPakChecksums();
+/*		p = FS_LoadedPakChecksums();
 		Cvar_Set( "sv_paks", p );
 		if (strlen(p) == 0) {
 			Com_Printf( "WARNING: sv_pure set but no PK3 files loaded\n" );
 		}
 		p = FS_LoadedPakNames();
-		Cvar_Set( "sv_pakNames", p );
-
-		// if a dedicated pure server we need to touch the cgame because it could be in a
-		// seperate pk3 file and the client will need to load the latest cgame.qvm
-		if ( com_dedicated->integer ) {
-			SV_TouchCGame();
-		}
+		Cvar_Set( "sv_pakNames", p );*/
 	}
 	else {
 		Cvar_Set( "sv_paks", "" );
 		Cvar_Set( "sv_pakNames", "" );
 	}
+
 	// the server sends these to the clients so they can figure
 	// out which pk3s should be auto-downloaded
-	p = FS_ReferencedPakChecksums();
+/*	p = FS_ReferencedPakChecksums();
 	Cvar_Set( "sv_referencedPaks", p );
 	p = FS_ReferencedPakNames();
 	Cvar_Set( "sv_referencedPakNames", p );
+*/
 
 	// save systeminfo and serverinfo strings
 	Q_strncpyz( systemInfo, Cvar_InfoString_Big( CVAR_SYSTEMINFO ), sizeof( systemInfo ) );
@@ -669,8 +647,10 @@ void SV_Init (void)
 	sv_zombietime = Cvar_Get ("sv_zombietime", "2", CVAR_TEMP );
 	Cvar_Get ("nextmap", "", CVAR_TEMP );
 
+#ifdef USE_DOWNLOADS
 	sv_allowDownload = Cvar_Get ("sv_allowDownload", "0", CVAR_SERVERINFO);
 	Cvar_Get ("sv_dlURL", "", CVAR_SERVERINFO | CVAR_ARCHIVE);
+#endif
 	
 	sv_master[0] = Cvar_Get("sv_master1", MASTER_SERVER_NAME, 0);
 	sv_master[1] = Cvar_Get("sv_master2", "master.ioquake3.org", 0);

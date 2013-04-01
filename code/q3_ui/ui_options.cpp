@@ -100,10 +100,10 @@ SystemConfig_Cache
 ===============
 */
 void SystemConfig_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
 }
 
 /*
@@ -113,14 +113,14 @@ Options_MenuInit
 */
 void Options_MenuInit( void ) {
 	int				y;
-	uiClientState_t	cstate;
+	ogClientState	cstate;
 
 	memset( &s_options, 0, sizeof(optionsmenu_t) );
 
 	SystemConfig_Cache();
 	s_options.menu.wrapAround = true;
 
-	trap_GetClientState( &cstate );
+	trap->GetClientState( &cstate );
 	if ( cstate.connState >= CA_CONNECTED ) {
 		s_options.menu.fullscreen = false;
 	}

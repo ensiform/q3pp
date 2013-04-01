@@ -322,68 +322,6 @@ enum clc_ops_e {
 /*
 ==============================================================
 
-VIRTUAL MACHINE
-
-==============================================================
-*/
-
-typedef struct vm_s vm_t;
-
-typedef enum {
-	VMI_NATIVE,
-	VMI_BYTECODE,
-	VMI_COMPILED
-} vmInterpret_t;
-
-typedef enum {
-	TRAP_MEMSET = 100,
-	TRAP_MEMCPY,
-	TRAP_STRNCPY,
-	TRAP_SIN,
-	TRAP_COS,
-	TRAP_ATAN2,
-	TRAP_SQRT,
-	TRAP_MATRIXMULTIPLY,
-	TRAP_ANGLEVECTORS,
-	TRAP_PERPENDICULARVECTOR,
-	TRAP_FLOOR,
-	TRAP_CEIL,
-
-	TRAP_TESTPRINTINT,
-	TRAP_TESTPRINTFLOAT
-} sharedTraps_t;
-
-void	VM_Init( void );
-vm_t	*VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *), 
-				   vmInterpret_t interpret );
-// module should be bare: "cgame", not "cgame.dll" or "vm/cgame.qvm"
-
-void	VM_Free( vm_t *vm );
-void	VM_Clear(void);
-void	VM_Forced_Unload_Start(void);
-void	VM_Forced_Unload_Done(void);
-vm_t	*VM_Restart(vm_t *vm, bool unpure);
-
-intptr_t		QDECL VM_Call( vm_t *vm, int callNum, ... );
-
-void	VM_Debug( int level );
-
-void	*VM_ArgPtr( intptr_t intValue );
-void	*VM_ExplicitArgPtr( vm_t *vm, intptr_t intValue );
-
-#define	VMA(x) VM_ArgPtr(args[x])
-static ID_INLINE float _vmf(intptr_t x)
-{
-	floatint_t fi;
-	fi.i = (int) x;
-	return fi.f;
-}
-#define	VMF(x)	_vmf(args[x])
-
-
-/*
-==============================================================
-
 CMD
 
 Command text buffering and command execution
@@ -423,7 +361,9 @@ then searches for a command or variable that matches the first token.
 
 */
 
-typedef void (*xcommand_t) (void);
+typedef void ( *xcommand_t )( void );
+
+typedef void ( *callbackFunc_t )( const char *s );
 
 void	Cmd_Init (void);
 
@@ -441,7 +381,7 @@ typedef void (*completionFunc_t)( char *args, int argNum );
 // don't allow VMs to remove system commands
 void	Cmd_RemoveCommandSafe( const char *cmd_name );
 
-void	Cmd_CommandCompletion( void(*callback)(const char *s) );
+void	Cmd_CommandCompletion( callbackFunc_t callback );
 // callback with each valid string
 void Cmd_SetCommandCompletionFunc( const char *command,
 	completionFunc_t complete );
@@ -452,8 +392,9 @@ int		Cmd_Argc (void);
 char	*Cmd_Argv (int arg);
 void	Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength );
 char	*Cmd_Args (void);
-char	*Cmd_ArgsFrom( int arg );
 void	Cmd_ArgsBuffer( char *buffer, int bufferLength );
+char	*Cmd_ArgsFrom( int arg );
+void	Cmd_ArgsFromBuffer( int arg, char *buffer, int bufferLength );
 char	*Cmd_Cmd (void);
 void	Cmd_Args_Sanitize( void );
 // The functions that execute commands get their parameters with these
@@ -536,7 +477,7 @@ void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize 
 int	Cvar_Flags(const char *var_name);
 // returns CVAR_NONEXISTENT if cvar doesn't exist or the flags of that particular CVAR.
 
-void	Cvar_CommandCompletion( void(*callback)(const char *s) );
+void	Cvar_CommandCompletion( callbackFunc_t callback );
 // callback with each valid string
 
 void 	Cvar_Reset( const char *var_name );
@@ -550,7 +491,7 @@ bool Cvar_Command( void );
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void 	Cvar_WriteVariables( fileHandle_t f );
+void 	Cvar_WriteVariables( og::File *f );
 // writes lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
@@ -605,136 +546,25 @@ issues.
 bool FS_Initialized( void );
 
 void	FS_InitFilesystem ( void );
-void	FS_Shutdown( bool closemfp );
+void	FS_Shutdown( void );
 
 bool FS_ConditionalRestart(int checksumFeed, bool disconnect);
 void	FS_Restart( int checksumFeed );
 // shutdown and restart the filesystem so changes to fs_gamedir can take effect
 
-void FS_AddGameDirectory( const char *path, const char *dir );
+bool FS_FindDll( const char *filename, og::String &path );
 
-char	**FS_ListFiles( const char *directory, const char *extension, int *numfiles );
-// directory should not have either a leading or trailing /
-// if extension is "/", only subdirectories will be returned
-// the returned files will not include any directories or /
+bool FS_CheckDirTraversal(const char *checkdir);
+//bool FS_idPak(char *pak, char *base, int numPaks);
 
-void	FS_FreeFileList( char **list );
+void	FS_FilenameCompletion( const char *dir, const char *ext,
+		bool stripExt, bool removeDir, callbackFunc_t callback );
 
-bool FS_FileExists( const char *file );
-
-bool FS_CreatePath (char *OSPath);
-
-vmInterpret_t FS_FindVM(void **startSearch, char *found, int foundlen, const char *name, int enableDll);
-
-char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
-bool FS_CompareZipChecksum(const char *zipfile);
-
-int		FS_LoadStack( void );
-
-int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
-int		FS_GetModList(  char *listbuf, int bufsize );
-
-fileHandle_t	FS_FOpenFileWrite( const char *qpath );
-fileHandle_t	FS_FOpenFileAppend( const char *filename );
-fileHandle_t	FS_FCreateOpenPipeFile( const char *filename );
-// will properly create any needed paths and deal with seperater character issues
-
-fileHandle_t FS_SV_FOpenFileWrite( const char *filename );
-long		FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp );
-void	FS_SV_Rename( const char *from, const char *to );
-long		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, bool uniqueFILE );
-// if uniqueFILE is true, then a new FILE will be fopened even if the file
-// is found in an already open pak file.  If uniqueFILE is false, you must call
-// FS_FCloseFile instead of fclose, otherwise the pak FILE would be improperly closed
-// It is generally safe to always set uniqueFILE to true, because the majority of
-// file IO goes through FS_ReadFile, which Does The Right Thing already.
-
-int		FS_FileIsInPAK(const char *filename, int *pChecksum );
-// returns 1 if a file is in the PAK file, otherwise -1
-
-int		FS_Write( const void *buffer, int len, fileHandle_t f );
-
-int		FS_Read2( void *buffer, int len, fileHandle_t f );
-int		FS_Read( void *buffer, int len, fileHandle_t f );
-// properly handles partial reads and reads from other dlls
-
-void	FS_FCloseFile( fileHandle_t f );
-// note: you can't just fclose from another DLL, due to MS libc issues
-
-long	FS_ReadFileDir(const char *qpath, void *searchPath, bool unpure, void **buffer);
-long	FS_ReadFile(const char *qpath, void **buffer);
-// returns the length of the file
-// a null buffer will just return the file length without loading
-// as a quick check for existance. -1 length == not present
-// A 0 byte will always be appended at the end, so string ops are safe.
-// the buffer should be considered read-only, because it may be cached
-// for other uses.
-
-void	FS_ForceFlush( fileHandle_t f );
-// forces flush on files we're writing to.
-
-void	FS_FreeFile( void *buffer );
-// frees the memory returned by FS_ReadFile
-
-void	FS_WriteFile( const char *qpath, const void *buffer, int size );
-// writes a complete file, creating any subdirectories needed
-
-long FS_filelength(fileHandle_t f);
-// doesn't work for files that are opened from a pack file
-
-int		FS_FTell( fileHandle_t f );
-// where are we?
-
-void	FS_Flush( fileHandle_t f );
-
-void 	QDECL FS_Printf( fileHandle_t f, const char *fmt, ... ) __attribute__ ((format (printf, 2, 3)));
-// like fprintf
-
-int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode );
-// opens a file for reading, writing, or appending depending on the value of mode
-
-int		FS_Seek( fileHandle_t f, long offset, int origin );
-// seek on a file (doesn't work for zip files!!!!!!!!)
+void FS_ModListCompletion( callbackFunc_t callback );
 
 bool FS_FilenameCompare( const char *s1, const char *s2 );
 
-const char *FS_LoadedPakNames( void );
-const char *FS_LoadedPakChecksums( void );
-const char *FS_LoadedPakPureChecksums( void );
-// Returns a space separated string containing the checksums of all loaded pk3 files.
-// Servers with sv_pure set will get this string and pass it to clients.
-
-const char *FS_ReferencedPakNames( void );
-const char *FS_ReferencedPakChecksums( void );
-const char *FS_ReferencedPakPureChecksums( void );
-// Returns a space separated string containing the checksums of all loaded 
-// AND referenced pk3 files. Servers with sv_pure set will get this string 
-// back from clients for pure validation 
-
-void FS_ClearPakReferences( int flags );
-// clears referenced booleans on loaded pk3s
-
-void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames );
-void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
-// If the string is empty, all data sources will be allowed.
-// If not empty, only pk3 files that match one of the space
-// separated checksums will be checked for files, with the
-// sole exception of .cfg files.
-
-bool FS_CheckDirTraversal(const char *checkdir);
-bool FS_idPak(char *pak, char *base, int numPaks);
-bool FS_ComparePaks( char *neededpaks, int len, bool dlstring );
-
-void FS_Rename( const char *from, const char *to );
-
-void FS_Remove( const char *osPath );
-void FS_HomeRemove( const char *homePath );
-
-void	FS_FilenameCompletion( const char *dir, const char *ext,
-		bool stripExt, void(*callback)(const char *s), bool allowNonPureFilesOnDisk );
-
-const char *FS_GetCurrentGameDir(void);
-bool FS_Which(const char *filename, void *searchPath);
+//bool FS_Which(const char *filename, void *searchPath);
 
 /*
 ==============================================================
@@ -756,7 +586,8 @@ void Field_Clear( field_t *edit );
 void Field_AutoComplete( field_t *edit );
 void Field_CompleteKeyname( void );
 void Field_CompleteFilename( const char *dir,
-		const char *ext, bool stripExt, bool allowNonPureFilesOnDisk );
+		const char *ext, bool stripExt, bool removeDir=true );
+void Field_CompleteModList( void );
 void Field_CompleteCommand( char *cmd,
 		bool doCommands, bool doCvars );
 
@@ -821,6 +652,7 @@ void 		QDECL Com_DPrintf( const char *fmt, ... ) __attribute__ ((format (printf,
 void 		QDECL Com_Error( int code, const char *fmt, ... ) __attribute__ ((noreturn, format(printf, 2, 3)));
 void 		Com_Quit_f( void ) __attribute__ ((noreturn));
 void		Com_GameRestart(int checksumFeed, bool disconnect);
+void       Com_CompleteModList( char *args, int argNum );
 
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
@@ -883,8 +715,8 @@ extern	int		com_frameTime;
 extern	bool	com_errorEntered;
 extern	bool	com_fullyInitialized;
 
-extern	fileHandle_t	com_journalFile;
-extern	fileHandle_t	com_journalDataFile;
+extern og::File *com_journalFile;
+extern og::File *com_journalDataFile;
 
 typedef enum {
 	TAG_FREE,
@@ -1018,7 +850,7 @@ void CL_Snd_Shutdown(void);
 void Key_KeynameCompletion( void(*callback)(const char *s) );
 // for keyname autocompletion
 
-void Key_WriteBindings( fileHandle_t f );
+void Key_WriteBindings( og::File *f );
 // for writing the config files
 
 void S_ClearSoundBuffer( void );
@@ -1059,9 +891,7 @@ NON-PORTABLE SYSTEM SERVICES
 void	Sys_Init (void);
 
 // general development dll loading for virtual machine testing
-void	* QDECL Sys_LoadGameDll( const char *name, intptr_t (QDECL **entryPoint)(int, ...),
-				  intptr_t (QDECL *systemcalls)(intptr_t, ...) );
-void	Sys_UnloadDll( void *dllHandle );
+//void	Sys_UnloadDll( void *dllHandle );
 
 void	Sys_UnloadGame( void );
 void	*Sys_GetGameAPI( void *parms );
@@ -1093,7 +923,7 @@ bool Sys_RandomBytes( byte *string, int len );
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( bool show );
 
-cpuFeatures_t Sys_GetProcessorFeatures( void );
+int Sys_GetProcessorFeatures( void );
 
 void	Sys_SetErrorText( const char *text );
 

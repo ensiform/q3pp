@@ -26,7 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <og/Plugin.h>
 
 #include "../client/snd_local.h"
-#include "../renderercommon/tr_public.h"
+#include "../Public/RendererPublic.h"
+//#include "../renderercommon/tr_public.h"
 #include "../botlib/botlib.h"
 
 const int UI_API_VERSION = 1;
@@ -46,6 +47,7 @@ typedef enum {
 	UIMENU_MAIN,
 	UIMENU_INGAME,
 	UIMENU_NEED_CD,
+	UIMENU_BAD_CD_KEY,
 	UIMENU_TEAM,
 	UIMENU_POSTGAME
 } uiMenuCommand_t;
@@ -72,7 +74,8 @@ public:
 
 	og::FileSystem *fs;
 	cvarSystem_t *cvarSystem;
-	refexport_t *re;
+	ogRendererExport *re;
+	//refexport_t *re;
 	soundInterface_t *si;
 	botlib_export_t *botlib;
 
@@ -117,9 +120,12 @@ public:
 	int ( *LAN_ServerIsVisible )( int source, int n );
 	bool ( *LAN_UpdateVisiblePings )( int source );
 	void ( *LAN_ResetPings )( int source );
-	int ( *LAN_GetServerStatus )( const char *serverAddress, char *serverStatus, int maxLen );
+	int ( *LAN_GetServerStatus )( char *serverAddress, char *serverStatus, int maxLen );
 	int ( *LAN_CompareServers )( int source, int sortKey, int sortDir, int s1, int s2 );
 	int ( *MemoryRemaining )( void );
+	void ( *GetCDKey )( char *buf, int buflen );
+	void ( *SetCDKey )( char *buf );
+	bool ( *VerifyCDKey )( const char *key, const char *checksum );
 	int ( *Com_RealTime )( qtime_t *qtime );
 	void ( *Sys_SnapVector )( float *v );
 	int ( *CIN_PlayCinematic )( const char *arg0, int xpos, int ypos, int width, int height, int bits );

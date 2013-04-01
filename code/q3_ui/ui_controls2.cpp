@@ -364,14 +364,14 @@ static void Controls_InitCvars( void )
 			break;
 
 		// get current value
-		cvarptr->value = trap_Cvar_VariableValue( cvarptr->name );
+		cvarptr->value = cvarSystem->VariableValue( cvarptr->name );
 
 		// get default value
-		trap_Cvar_Reset( cvarptr->name );
-		cvarptr->defaultvalue = trap_Cvar_VariableValue( cvarptr->name );
+		cvarSystem->Reset( cvarptr->name );
+		cvarptr->defaultvalue = cvarSystem->VariableValue( cvarptr->name );
 
 		// restore current value
-		trap_Cvar_SetValue( cvarptr->name, cvarptr->value );
+		cvarSystem->SetValue( cvarptr->name, cvarptr->value );
 	}
 }
 
@@ -546,7 +546,7 @@ static void Controls_UpdateModel( int anim ) {
 		break;
 	}
 
-	UI_PlayerInfo_SetInfo( &s_controls.playerinfo, s_controls.playerLegs, s_controls.playerTorso, s_controls.playerViewangles, s_controls.playerMoveangles, s_controls.playerWeapon, s_controls.playerChat );
+	UI_PlayerInfo_SetInfo( &s_controls.playerinfo, s_controls.playerLegs, s_controls.playerTorso, s_controls.playerViewangles, s_controls.playerMoveangles, (weapon_t)s_controls.playerWeapon, s_controls.playerChat );
 }
 
 
@@ -672,13 +672,13 @@ static void Controls_DrawKeyBinding( void *self )
 		strcpy(name,"???");
 	else
 	{
-		trap_Key_KeynumToStringBuf( b1, name, 32 );
+		trap->Key_KeynumToStringBuf( b1, name, 32 );
 		Q_strupr(name);
 
 		b2 = g_bindings[a->generic.id].bind2;
 		if (b2 != -1)
 		{
-			trap_Key_KeynumToStringBuf( b2, name2, 32 );
+			trap->Key_KeynumToStringBuf( b2, name2, 32 );
 			Q_strupr(name2);
 
 			strcat( name, " or " );
@@ -740,7 +740,7 @@ static void Controls_DrawPlayer( void *self ) {
 	menubitmap_s	*b;
 	char			buf[MAX_QPATH];
 
-	trap_Cvar_VariableStringBuffer( "model", buf, sizeof( buf ) );
+	cvarSystem->VariableStringBuffer( "model", buf, sizeof( buf ) );
 	if ( strcmp( buf, s_controls.playerModel ) != 0 ) {
 		UI_PlayerInfo_SetModel( &s_controls.playerinfo, buf );
 		strcpy( s_controls.playerModel, buf );
@@ -768,7 +768,7 @@ static void Controls_GetKeyAssignment (char *command, int *twokeys)
 
 	for ( j = 0; j < 256; j++ )
 	{
-		trap_Key_GetBindingBuf( j, b, 256 );
+		trap->Key_GetBindingBuf( j, b, 256 );
 		if ( *b == 0 ) {
 			continue;
 		}
@@ -838,26 +838,26 @@ static void Controls_SetConfig( void )
 
 		if (bindptr->bind1 != -1)
 		{	
-			trap_Key_SetBinding( bindptr->bind1, bindptr->command );
+			trap->Key_SetBinding( bindptr->bind1, bindptr->command );
 
 			if (bindptr->bind2 != -1)
-				trap_Key_SetBinding( bindptr->bind2, bindptr->command );
+				trap->Key_SetBinding( bindptr->bind2, bindptr->command );
 		}
 	}
 
 	if ( s_controls.invertmouse.curvalue )
-		trap_Cvar_SetValue( "m_pitch", -fabs( trap_Cvar_VariableValue( "m_pitch" ) ) );
+		cvarSystem->SetValue( "m_pitch", -fabs( cvarSystem->VariableValue( "m_pitch" ) ) );
 	else
-		trap_Cvar_SetValue( "m_pitch", fabs( trap_Cvar_VariableValue( "m_pitch" ) ) );
+		cvarSystem->SetValue( "m_pitch", fabs( cvarSystem->VariableValue( "m_pitch" ) ) );
 
-	trap_Cvar_SetValue( "m_filter", s_controls.smoothmouse.curvalue );
-	trap_Cvar_SetValue( "cl_run", s_controls.alwaysrun.curvalue );
-	trap_Cvar_SetValue( "cg_autoswitch", s_controls.autoswitch.curvalue );
-	trap_Cvar_SetValue( "sensitivity", s_controls.sensitivity.curvalue );
-	trap_Cvar_SetValue( "in_joystick", s_controls.joyenable.curvalue );
-	trap_Cvar_SetValue( "joy_threshold", s_controls.joythreshold.curvalue );
-	trap_Cvar_SetValue( "cl_freelook", s_controls.freelook.curvalue );
-	trap_Cmd_ExecuteText( EXEC_APPEND, "in_restart\n" );
+	cvarSystem->SetValue( "m_filter", s_controls.smoothmouse.curvalue );
+	cvarSystem->SetValue( "cl_run", s_controls.alwaysrun.curvalue );
+	cvarSystem->SetValue( "cg_autoswitch", s_controls.autoswitch.curvalue );
+	cvarSystem->SetValue( "sensitivity", s_controls.sensitivity.curvalue );
+	cvarSystem->SetValue( "in_joystick", s_controls.joyenable.curvalue );
+	cvarSystem->SetValue( "joy_threshold", s_controls.joythreshold.curvalue );
+	cvarSystem->SetValue( "cl_freelook", s_controls.freelook.curvalue );
+	trap->Cmd_ExecuteText( EXEC_APPEND, "in_restart\n" );
 }
 
 /*
@@ -979,11 +979,11 @@ static sfxHandle_t Controls_MenuKey( int key )
 			if (key == -1)
 			{
 				if( bindptr->bind1 != -1 ) {
-					trap_Key_SetBinding( bindptr->bind1, "" );
+					trap->Key_SetBinding( bindptr->bind1, "" );
 					bindptr->bind1 = -1;
 				}
 				if( bindptr->bind2 != -1 ) {
-					trap_Key_SetBinding( bindptr->bind2, "" );
+					trap->Key_SetBinding( bindptr->bind2, "" );
 					bindptr->bind2 = -1;
 				}
 			}
@@ -995,8 +995,8 @@ static sfxHandle_t Controls_MenuKey( int key )
 			}
 			else
 			{
-				trap_Key_SetBinding( bindptr->bind1, "" );
-				trap_Key_SetBinding( bindptr->bind2, "" );
+				trap->Key_SetBinding( bindptr->bind1, "" );
+				trap->Key_SetBinding( bindptr->bind2, "" );
 				bindptr->bind1 = key;
 				bindptr->bind2 = -1;
 			}						
@@ -1177,7 +1177,7 @@ static void Controls_InitWeapons( void ) {
 		if ( item->giType != IT_WEAPON ) {
 			continue;
 		}
-		trap_R_RegisterModel( item->world_model[0] );
+		trap->re->RegisterModel( item->world_model[0] );
 	}
 }
 
@@ -1628,7 +1628,7 @@ static void Controls_MenuInit( void )
 
 	Menu_AddItem( &s_controls.menu, &s_controls.back );
 
-	trap_Cvar_VariableStringBuffer( "name", s_controls.name.string, 16 );
+	cvarSystem->VariableStringBuffer( "name", s_controls.name.string, 16 );
 	Q_CleanStr( s_controls.name.string );
 
 	// initialize the configurable cvars
@@ -1657,10 +1657,10 @@ Controls_Cache
 =================
 */
 void Controls_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
 }
 
 

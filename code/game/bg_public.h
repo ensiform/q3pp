@@ -22,6 +22,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 // bg_public.h -- definitions shared by both the server game and client game modules
 
+#ifndef __BG_PUBLIC_H__
+#define __BG_PUBLIC_H__
+
 // because games can change separately from the main system version, we need a
 // second version that must match between game and cgame
 
@@ -187,7 +190,7 @@ typedef struct {
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
-	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
+	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask, bool capsule );
 	int			(*pointcontents)( const vec3_t point, int passEntityNum );
 } pmove_t;
 
@@ -302,6 +305,7 @@ typedef enum {
 
 
 typedef enum {
+	WP_INVALID = -1,
 	WP_NONE,
 
 	WP_GAUNTLET,
@@ -736,3 +740,6 @@ bool	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
 #define KAMI_BOOMSPHERE_MAXRADIUS		720
 #define KAMI_SHOCKWAVE2_MAXRADIUS		704
 
+extern cvarSystem_t *cvarSystem;
+
+#endif

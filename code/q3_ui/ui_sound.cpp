@@ -124,12 +124,12 @@ static void UI_SoundOptionsMenu_Event( void* ptr, int event ) {
 /*
 	case ID_A3D:
 		if( soundOptionsInfo.a3d.curvalue ) {
-			trap_Cmd_ExecuteText( EXEC_NOW, "s_enable_a3d\n" );
+			trap->Cmd_ExecuteText( EXEC_NOW, "s_enable_a3d\n" );
 		}
 		else {
-			trap_Cmd_ExecuteText( EXEC_NOW, "s_disable_a3d\n" );
+			trap->Cmd_ExecuteText( EXEC_NOW, "s_disable_a3d\n" );
 		}
-		soundOptionsInfo.a3d.curvalue = (int)trap_Cvar_VariableValue( "s_usingA3D" );
+		soundOptionsInfo.a3d.curvalue = (int)cvarSystem->VariableValue( "s_usingA3D" );
 		break;
 */
 	case ID_BACK:
@@ -137,10 +137,10 @@ static void UI_SoundOptionsMenu_Event( void* ptr, int event ) {
 		break;
 
 	case ID_APPLY:
-		trap_Cvar_SetValue( "s_volume", soundOptionsInfo.sfxvolume.curvalue / 10 );
+		cvarSystem->SetValue( "s_volume", soundOptionsInfo.sfxvolume.curvalue / 10 );
 		soundOptionsInfo.sfxvolume_original = soundOptionsInfo.sfxvolume.curvalue;
 
-		trap_Cvar_SetValue( "s_musicvolume", soundOptionsInfo.musicvolume.curvalue / 10 );
+		cvarSystem->SetValue( "s_musicvolume", soundOptionsInfo.musicvolume.curvalue / 10 );
 		soundOptionsInfo.musicvolume_original = soundOptionsInfo.musicvolume.curvalue;
 
 		// Check if something changed that requires the sound system to be restarted.
@@ -166,14 +166,14 @@ static void UI_SoundOptionsMenu_Event( void* ptr, int event ) {
 			if (speed == DEFAULT_SDL_SND_SPEED)
 				speed = 0;
 
-			trap_Cvar_SetValue( "s_sdlSpeed", speed );
+			cvarSystem->SetValue( "s_sdlSpeed", speed );
 			soundOptionsInfo.quality_original = soundOptionsInfo.quality.curvalue;
 
-			trap_Cvar_SetValue( "s_useOpenAL", (soundOptionsInfo.soundSystem.curvalue == UISND_OPENAL) );
+			cvarSystem->SetValue( "s_useOpenAL", (soundOptionsInfo.soundSystem.curvalue == UISND_OPENAL) );
 			soundOptionsInfo.soundSystem_original = soundOptionsInfo.soundSystem.curvalue;
 
 			UI_ForceMenuOff();
-			trap_Cmd_ExecuteText( EXEC_APPEND, "snd_restart\n" );
+			trap->Cmd_ExecuteText( EXEC_APPEND, "snd_restart\n" );
 		}
 		break;
 	}
@@ -397,17 +397,17 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.back );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.apply );
 
-	soundOptionsInfo.sfxvolume.curvalue = soundOptionsInfo.sfxvolume_original = trap_Cvar_VariableValue( "s_volume" ) * 10;
-	soundOptionsInfo.musicvolume.curvalue = soundOptionsInfo.musicvolume_original = trap_Cvar_VariableValue( "s_musicvolume" ) * 10;
+	soundOptionsInfo.sfxvolume.curvalue = soundOptionsInfo.sfxvolume_original = cvarSystem->VariableValue( "s_volume" ) * 10;
+	soundOptionsInfo.musicvolume.curvalue = soundOptionsInfo.musicvolume_original = cvarSystem->VariableValue( "s_musicvolume" ) * 10;
 
-	if (trap_Cvar_VariableValue( "s_useOpenAL" ))
+	if (cvarSystem->VariableValue( "s_useOpenAL" ))
 		soundOptionsInfo.soundSystem_original = UISND_OPENAL;
 	else
 		soundOptionsInfo.soundSystem_original = UISND_SDL;
 
 	soundOptionsInfo.soundSystem.curvalue = soundOptionsInfo.soundSystem_original;
 
-	speed = trap_Cvar_VariableValue( "s_sdlSpeed" );
+	speed = cvarSystem->VariableValue( "s_sdlSpeed" );
 	if (!speed) // Check for default
 		speed = DEFAULT_SDL_SND_SPEED;
 
@@ -419,7 +419,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 		soundOptionsInfo.quality_original = 2;
 	soundOptionsInfo.quality.curvalue = soundOptionsInfo.quality_original;
 
-//	soundOptionsInfo.a3d.curvalue = (int)trap_Cvar_VariableValue( "s_usingA3D" );
+//	soundOptionsInfo.a3d.curvalue = (int)cvarSystem->VariableValue( "s_usingA3D" );
 }
 
 
@@ -429,12 +429,12 @@ UI_SoundOptionsMenu_Cache
 ===============
 */
 void UI_SoundOptionsMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_ACCEPT0 );
-	trap_R_RegisterShaderNoMip( ART_ACCEPT1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_ACCEPT0 );
+	trap->re->RegisterShaderNoMip( ART_ACCEPT1 );
 }
 
 

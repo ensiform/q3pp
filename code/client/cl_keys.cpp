@@ -1018,17 +1018,16 @@ Key_WriteBindings
 Writes lines containing "bind key value"
 ============
 */
-void Key_WriteBindings( fileHandle_t f ) {
-	int		i;
+void Key_WriteBindings( og::File *f ) {
+	f->WriteCStr( "unbindall\n" );
 
-	FS_Printf (f, "unbindall\n" );
+	og::Format bindFormat( "bind $* \"$*\"\n" );
 
-	for (i=0 ; i<MAX_KEYS ; i++) {
+	for( int i = 0; i < MAX_KEYS; i++ ) {
 		if (keys[i].binding && keys[i].binding[0] ) {
-			FS_Printf (f, "bind %s \"%s\"\n", Key_KeynumToString(i), keys[i].binding);
-
+			f->WriteCStr( bindFormat << Key_KeynumToString( i ) << keys[i].binding );
+			bindFormat.Reset();
 		}
-
 	}
 }
 
@@ -1247,23 +1246,23 @@ void CL_KeyDownEvent( int key, unsigned time )
 		// escape always gets out of CGAME stuff
 		if (Key_GetCatcher( ) & KEYCATCH_CGAME) {
 			Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CGAME );
-			VM_Call (cgvm, CG_EVENT_HANDLING, CGAME_EVENT_NONE);
+			cgameExport->EventHandling( CGAME_EVENT_NONE );
 			return;
 		}
 
 		if ( !( Key_GetCatcher( ) & KEYCATCH_UI ) ) {
 			if ( clc.state == CA_ACTIVE && !clc.demoplaying ) {
-				VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_INGAME );
+				uiExport->SetActiveMenu( UIMENU_INGAME );
 			}
 			else if ( clc.state != CA_DISCONNECTED ) {
 				CL_Disconnect_f();
 				S_StopAllSounds();
-				VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+				uiExport->SetActiveMenu( UIMENU_MAIN );
 			}
 			return;
 		}
 
-		VM_Call( uivm, UI_KEY_EVENT, key, true );
+		uiExport->KeyEvent( key, true );
 		return;
 	}
 
@@ -1271,12 +1270,12 @@ void CL_KeyDownEvent( int key, unsigned time )
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) {
 		Console_Key( key );
 	} else if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
-		if ( uivm ) {
-			VM_Call( uivm, UI_KEY_EVENT, key, true );
+		if ( uiExport ) {
+			uiExport->KeyEvent( key, true );
 		} 
 	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
-		if ( cgvm ) {
-			VM_Call( cgvm, CG_KEY_EVENT, key, true );
+		if ( cgameExport ) {
+			cgameExport->KeyEvent( key, true );
 		} 
 	} else if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE ) {
 		Message_Key( key );
@@ -1319,10 +1318,10 @@ void CL_KeyUpEvent( int key, unsigned time )
 	//
 	CL_ParseBinding( key, false, time );
 
-	if ( Key_GetCatcher( ) & KEYCATCH_UI && uivm ) {
-		VM_Call( uivm, UI_KEY_EVENT, key, false );
-	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME && cgvm ) {
-		VM_Call( cgvm, CG_KEY_EVENT, key, false );
+	if ( Key_GetCatcher( ) & KEYCATCH_UI && uiExport ) {
+		uiExport->KeyEvent( key, false );
+	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME && cgameExport ) {
+		cgameExport->KeyEvent( key, false );
 	}
 }
 
@@ -1361,7 +1360,7 @@ void CL_CharEvent( int key ) {
 	}
 	else if ( Key_GetCatcher( ) & KEYCATCH_UI )
 	{
-		VM_Call( uivm, UI_KEY_EVENT, key | K_CHAR_FLAG, true );
+		uiExport->KeyEvent( key | K_CHAR_FLAG, true );
 	}
 	else if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE ) 
 	{
@@ -1393,7 +1392,7 @@ void Key_ClearStates (void)
 			CL_KeyEvent( i, false, 0 );
 
 		}
-		keys[i].down = 0;
+		keys[i].down = false;
 		keys[i].repeats = 0;
 	}
 }
@@ -1439,61 +1438,63 @@ void CL_LoadConsoleHistory( void )
 {
 	char					*token, *text_p;
 	int						i, numChars, numLines = 0;
-	fileHandle_t	f;
 
-	consoleSaveBufferSize = FS_FOpenFileRead( CONSOLE_HISTORY_FILE, &f, false );
-	if( !f )
+	byte *buffer;
+	int len = og::FS->LoadFile( CONSOLE_HISTORY_FILE, &buffer );
+	if( !buffer )
 	{
 		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
 		return;
 	}
 
-	if( consoleSaveBufferSize <= MAX_CONSOLE_SAVE_BUFFER &&
-			FS_Read( consoleSaveBuffer, consoleSaveBufferSize, f ) == consoleSaveBufferSize )
+	if( len > MAX_CONSOLE_SAVE_BUFFER )
 	{
-		text_p = consoleSaveBuffer;
-
-		for( i = COMMAND_HISTORY - 1; i >= 0; i-- )
-		{
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			historyEditLines[ i ].cursor = atoi( token );
-
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			historyEditLines[ i ].scroll = atoi( token );
-
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			numChars = atoi( token );
-			text_p++;
-			if( numChars > ( strlen( consoleSaveBuffer ) -	( text_p - consoleSaveBuffer ) ) )
-			{
-				Com_DPrintf( S_COLOR_YELLOW "WARNING: probable corrupt history\n" );
-				break;
-			}
-			Com_Memcpy( historyEditLines[ i ].buffer,
-					text_p, numChars );
-			historyEditLines[ i ].buffer[ numChars ] = '\0';
-			text_p += numChars;
-
-			numLines++;
-		}
-
-		memmove( &historyEditLines[ 0 ], &historyEditLines[ i + 1 ],
-				numLines * sizeof( field_t ) );
-		for( i = numLines; i < COMMAND_HISTORY; i++ )
-			Field_Clear( &historyEditLines[ i ] );
-
-		historyLine = nextHistoryLine = numLines;
-	}
-	else
+		og::FS->FreeFile( buffer );
 		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
+		return;
+	}
 
-	FS_FCloseFile( f );
+	char *consoleSaveBuffer = (char *)buffer;
+	text_p = consoleSaveBuffer;
+
+	for( i = COMMAND_HISTORY - 1; i >= 0; i-- )
+	{
+		if( !*( token = COM_Parse( &text_p ) ) )
+			break;
+
+		historyEditLines[ i ].cursor = atoi( token );
+
+		if( !*( token = COM_Parse( &text_p ) ) )
+			break;
+
+		historyEditLines[ i ].scroll = atoi( token );
+
+		if( !*( token = COM_Parse( &text_p ) ) )
+			break;
+
+		numChars = atoi( token );
+		text_p++;
+		if( numChars > ( strlen( consoleSaveBuffer ) -	( text_p - consoleSaveBuffer ) ) )
+		{
+			Com_DPrintf( S_COLOR_YELLOW "WARNING: probable corrupt history\n" );
+			break;
+		}
+		Com_Memcpy( historyEditLines[ i ].buffer,
+				text_p, numChars );
+		historyEditLines[ i ].buffer[ numChars ] = '\0';
+		text_p += numChars;
+
+		numLines++;
+	}
+
+	memmove( &historyEditLines[ 0 ], &historyEditLines[ i + 1 ],
+			numLines * sizeof( field_t ) );
+	for( i = numLines; i < COMMAND_HISTORY; i++ )
+		Field_Clear( &historyEditLines[ i ] );
+
+	historyLine = nextHistoryLine = numLines;
+
+	og::FS->FreeFile( buffer );
 }
 
 /*
@@ -1506,11 +1507,11 @@ so that it persists across invocations of q3
 */
 void CL_SaveConsoleHistory( void )
 {
-	int						i;
-	int						lineLength, saveBufferLength, additionalLength;
-	fileHandle_t	f;
+	int i;
+	int lineLength, additionalLength;
 
-	consoleSaveBuffer[ 0 ] = '\0';
+	og::File *f = og::FS->OpenWrite( CONSOLE_HISTORY_FILE );
+	og::Format format( "$* $* $* $* " );
 
 	i = ( nextHistoryLine - 1 ) % COMMAND_HISTORY;
 	do
@@ -1518,38 +1519,21 @@ void CL_SaveConsoleHistory( void )
 		if( historyEditLines[ i ].buffer[ 0 ] )
 		{
 			lineLength = strlen( historyEditLines[ i ].buffer );
-			saveBufferLength = strlen( consoleSaveBuffer );
 
 			//ICK
 			additionalLength = lineLength + strlen( "999 999 999  " );
 
-			if( saveBufferLength + additionalLength < MAX_CONSOLE_SAVE_BUFFER )
-			{
-				Q_strcat( consoleSaveBuffer, MAX_CONSOLE_SAVE_BUFFER,
-						va( "%d %d %d %s ",
-						historyEditLines[ i ].cursor,
-						historyEditLines[ i ].scroll,
-						lineLength,
-						historyEditLines[ i ].buffer ) );
-			}
-			else
+			if( ( f->Tell() + additionalLength ) >= MAX_CONSOLE_SAVE_BUFFER )
 				break;
+
+			f->WriteCStr( format << historyEditLines[i].cursor << historyEditLines[i].scroll
+				      << lineLength << historyEditLines[i].buffer );
+			format.Reset();
 		}
+
 		i = ( i - 1 + COMMAND_HISTORY ) % COMMAND_HISTORY;
 	}
 	while( i != ( nextHistoryLine - 1 ) % COMMAND_HISTORY );
 
-	consoleSaveBufferSize = strlen( consoleSaveBuffer );
-
-	f = FS_FOpenFileWrite( CONSOLE_HISTORY_FILE );
-	if( !f )
-	{
-		Com_Printf( "Couldn't write %s.\n", CONSOLE_HISTORY_FILE );
-		return;
-	}
-
-	if( FS_Write( consoleSaveBuffer, consoleSaveBufferSize, f ) < consoleSaveBufferSize )
-		Com_Printf( "Couldn't write %s.\n", CONSOLE_HISTORY_FILE );
-
-	FS_FCloseFile( f );
+	f->Close();
 }

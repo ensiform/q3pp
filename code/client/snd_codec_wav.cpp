@@ -26,46 +26,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 =================
-FGetLittleLong
-=================
-*/
-static int FGetLittleLong( fileHandle_t f ) {
-	int		v;
-
-	FS_Read( &v, sizeof(v), f );
-
-	return LittleLong( v);
-}
-
-/*
-=================
-FGetLittleShort
-=================
-*/
-static short FGetLittleShort( fileHandle_t f ) {
-	short	v;
-
-	FS_Read( &v, sizeof(v), f );
-
-	return LittleShort( v);
-}
-
-/*
-=================
 S_ReadChunkInfo
 =================
 */
-static int S_ReadChunkInfo(fileHandle_t f, char *name)
+static int S_ReadChunkInfo(og::File *f, char *name)
 {
-	int len, r;
-
 	name[4] = 0;
 
-	r = FS_Read(name, 4, f);
-	if(r != 4)
-		return -1;
+	f->Read( name, 4 );
 
-	len = FGetLittleLong(f);
+	int len = f->ReadInt();
 	if( len < 0 ) {
 		Com_Printf( S_COLOR_YELLOW "WARNING: Negative chunk length\n" );
 		return -1;
@@ -81,7 +51,7 @@ S_FindRIFFChunk
 Returns the length of the data in the chunk, or -1 if not found
 =================
 */
-static int S_FindRIFFChunk( fileHandle_t f, char *chunk ) {
+static int S_FindRIFFChunk( og::File *f, char *chunk ) {
 	char	name[5];
 	int		len;
 
@@ -94,7 +64,7 @@ static int S_FindRIFFChunk( fileHandle_t f, char *chunk ) {
 		len = PAD( len, 2 );
 
 		// Not the right chunk - skip it
-		FS_Seek( f, len, FS_SEEK_CUR );
+		f->Seek( len, SEEK_CUR );
 	}
 
 	return -1;
@@ -128,14 +98,14 @@ static void S_ByteSwapRawSamples( int samples, int width, int s_channels, const 
 S_ReadRIFFHeader
 =================
 */
-static bool S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
+static bool S_ReadRIFFHeader(og::File *file, snd_info_t *info)
 {
 	char dump[16];
 	int bits;
 	int fmtlen = 0;
 
 	// skip the riff wav header
-	FS_Read(dump, 12, file);
+	file->Read( dump, 12 );
 
 	// Scan for the format chunk
 	if((fmtlen = S_FindRIFFChunk(file, "fmt ")) < 0)
@@ -145,12 +115,12 @@ static bool S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 	}
 
 	// Save the parameters
-	FGetLittleShort(file); // wav_format
-	info->channels = FGetLittleShort(file);
-	info->rate = FGetLittleLong(file);
-	FGetLittleLong(file);
-	FGetLittleShort(file);
-	bits = FGetLittleShort(file);
+	file->ReadShort(); // wav_format
+	info->channels = file->ReadShort();
+	info->rate = file->ReadInt();
+	file->ReadInt();
+	file->ReadShort();
+	bits = file->ReadShort();
 
 	if( bits < 8 )
 	{
@@ -165,7 +135,7 @@ static bool S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 	if(fmtlen > 16)
 	{
 		fmtlen -= 16;
-		FS_Seek( file, fmtlen, FS_SEEK_CUR );
+		file->Seek( fmtlen, SEEK_CUR );
 	}
 
 	// Scan for the data chunk
@@ -197,42 +167,48 @@ S_WAV_CodecLoad
 */
 void *S_WAV_CodecLoad(const char *filename, snd_info_t *info)
 {
-	fileHandle_t file;
-	void *buffer;
-
 	// Try to open the file
-	FS_FOpenFileRead(filename, &file, true);
+	og::File * file = og::FS->OpenRead( filename );
 	if(!file)
 	{
 		return NULL;
 	}
 
-	// Read the RIFF header
-	if(!S_ReadRIFFHeader(file, info))
-	{
-		FS_FCloseFile(file);
-		Com_Printf( S_COLOR_RED "ERROR: Incorrect/unsupported format in \"%s\"\n",
-				filename);
+	void *buffer;
+	try {
+		// Read the RIFF header
+		if(!S_ReadRIFFHeader(file, info))
+		{
+			file->Close();
+			Com_Printf( S_COLOR_RED "ERROR: Incorrect/unsupported format in \"%s\"\n",
+					filename);
+			return NULL;
+		}
+
+		// Allocate some memory
+		buffer = Hunk_AllocateTempMemory(info->size);
+		if(!buffer)
+		{
+			file->Close();
+			Com_Printf( S_COLOR_RED "ERROR: Out of memory reading \"%s\"\n",
+					filename);
+			return NULL;
+		}
+
+		// Read, byteswap
+		file->Read( buffer, info->size );
+		S_ByteSwapRawSamples(info->samples, info->width, info->channels, (byte *)buffer);
+
+		// Close and return
+		file->Close();
+		return buffer;
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		file->Close();
+		Com_Printf( S_COLOR_RED "Error reading wav file: %s\n", filename );
 		return NULL;
 	}
-
-	// Allocate some memory
-	buffer = Hunk_AllocateTempMemory(info->size);
-	if(!buffer)
-	{
-		FS_FCloseFile(file);
-		Com_Printf( S_COLOR_RED "ERROR: Out of memory reading \"%s\"\n",
-				filename);
-		return NULL;
-	}
-
-	// Read, byteswap
-	FS_Read(buffer, info->size, file);
-	S_ByteSwapRawSamples(info->samples, info->width, info->channels, (byte *)buffer);
-
-	// Close and return
-	FS_FCloseFile(file);
-	return buffer;
 }
 
 /*
@@ -285,7 +261,7 @@ int S_WAV_CodecReadStream(snd_stream_t *stream, int bytes, void *buffer)
 		bytes = remaining;
 	stream->pos += bytes;
 	samples = (bytes / stream->info.width) / stream->info.channels;
-	FS_Read(buffer, bytes, stream->file);
-	S_ByteSwapRawSamples(samples, stream->info.width, stream->info.channels, buffer);
+	stream->file->Read( buffer, bytes );
+	S_ByteSwapRawSamples(samples, stream->info.width, stream->info.channels, (byte *)buffer);
 	return bytes;
 }

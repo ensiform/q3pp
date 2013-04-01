@@ -101,13 +101,13 @@ char	*ui_medalSounds[] = {
 UI_SPPostgameMenu_AgainEvent
 =================
 */
-static void UI_SPPostgameMenu_AgainEvent( void* ptr, int event )
+static void UI_SPPostgameMenu_AgainEvent( void* ptr, int _event )
 {
-	if (event != QM_ACTIVATED) {
+	if (_event != QM_ACTIVATED) {
 		return;
 	}
 	UI_PopMenu();
-	trap_Cmd_ExecuteText( EXEC_APPEND, "map_restart 0\n" );
+	trap->Cmd_ExecuteText( EXEC_APPEND, "map_restart 0\n" );
 }
 
 
@@ -167,7 +167,7 @@ static void UI_SPPostgameMenu_MenuEvent( void* ptr, int event )
 		return;
 	}
 	UI_PopMenu();
-	trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect; levelselect\n" );
+	trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect; levelselect\n" );
 }
 
 
@@ -182,7 +182,7 @@ static sfxHandle_t UI_SPPostgameMenu_MenuKey( int key ) {
 	}
 
 	if( postgameMenuInfo.phase == 1 ) {
-		trap_Cmd_ExecuteText( EXEC_APPEND, "abort_podium\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "abort_podium\n" );
 		postgameMenuInfo.phase = 2;
 		postgameMenuInfo.starttime = uis.realtime;
 		postgameMenuInfo.ignoreKeysTime	= uis.realtime + 250;
@@ -252,7 +252,7 @@ static void UI_SPPostgameMenu_DrawAwardsPresentation( int timer ) {
 
 	if( !postgameMenuInfo.playedSound[awardNum] ) {
 		postgameMenuInfo.playedSound[awardNum] = true;
-		trap_S_StartLocalSound( trap_S_RegisterSound( ui_medalSounds[postgameMenuInfo.awardsEarned[awardNum]], false ), CHAN_ANNOUNCER );
+		trap->si->StartLocalSound( trap->si->RegisterSound( ui_medalSounds[postgameMenuInfo.awardsEarned[awardNum]], false ), CHAN_ANNOUNCER );
 	}
 }
 
@@ -280,7 +280,7 @@ static void UI_SPPostgameMenu_MenuDrawScoreLine( int n, int y ) {
 		UI_DrawString( 640 - 31 * SMALLCHAR_WIDTH, y, "(tie)", UI_LEFT|UI_SMALLFONT, color_white );
 		rank &= ~RANK_TIED_FLAG;
 	}
-	trap_GetConfigString( CS_PLAYERS + postgameMenuInfo.clientNums[n], info, MAX_INFO_STRING );
+	trap->GetConfigString( CS_PLAYERS + postgameMenuInfo.clientNums[n], info, MAX_INFO_STRING );
 	Q_strncpyz( name, Info_ValueForKey( info, "n" ), sizeof(name) );
 	Q_CleanStr( name );
 
@@ -299,7 +299,7 @@ static void UI_SPPostgameMenu_MenuDraw( void ) {
 	int		n;
 	char	info[MAX_INFO_STRING];
 
-	trap_GetConfigString( CS_SYSTEMINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SYSTEMINFO, info, sizeof(info) );
 	serverId = atoi( Info_ValueForKey( info, "sv_serverid" ) );
 	if( serverId != postgameMenuInfo.serverId ) {
 		UI_PopMenu();
@@ -317,7 +317,7 @@ static void UI_SPPostgameMenu_MenuDraw( void ) {
 		timer = uis.realtime - postgameMenuInfo.starttime;
 
 		if( timer >= 1000 && postgameMenuInfo.winnerSound ) {
-			trap_S_StartLocalSound( postgameMenuInfo.winnerSound, CHAN_ANNOUNCER );
+			trap->si->StartLocalSound( postgameMenuInfo.winnerSound, CHAN_ANNOUNCER );
 			postgameMenuInfo.winnerSound = 0;
 		}
 
@@ -349,21 +349,21 @@ static void UI_SPPostgameMenu_MenuDraw( void ) {
 	if( postgameMenuInfo.phase == 3 ) {
 		if( uis.demoversion ) {
 			if( postgameMenuInfo.won == 1 && UI_ShowTierVideo( 8 )) {
-				trap_Cvar_Set( "nextmap", "" );
-				trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic demoEnd.RoQ\n" );
+				cvarSystem->Set( "nextmap", "" );
+				trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic demoEnd.RoQ\n" );
 				return;
 			}
 		}
 		else if( postgameMenuInfo.won > -1 && UI_ShowTierVideo( postgameMenuInfo.won + 1 )) {
 			if( postgameMenuInfo.won == postgameMenuInfo.lastTier ) {
-				trap_Cvar_Set( "nextmap", "" );
-				trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic end.RoQ\n" );
+				cvarSystem->Set( "nextmap", "" );
+				trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic end.RoQ\n" );
 				return;
 			}
 
-			trap_Cvar_SetValue( "ui_spSelection", postgameMenuInfo.won * ARENAS_PER_TIER );
-			trap_Cvar_Set( "nextmap", "levelselect" );
-			trap_Cmd_ExecuteText( EXEC_APPEND, va( "disconnect; cinematic tier%i.RoQ\n", postgameMenuInfo.won + 1 ) );
+			cvarSystem->SetValue( "ui_spSelection", postgameMenuInfo.won * ARENAS_PER_TIER );
+			cvarSystem->Set( "nextmap", "levelselect" );
+			trap->Cmd_ExecuteText( EXEC_APPEND, va( "disconnect; cinematic tier%i.RoQ\n", postgameMenuInfo.won + 1 ) );
 			return;
 		}
 
@@ -377,7 +377,7 @@ static void UI_SPPostgameMenu_MenuDraw( void ) {
 	}
 
 	// draw the scoreboard
-	if( !trap_Cvar_VariableValue( "ui_spScoreboard" ) ) {
+	if( !cvarSystem->VariableValue( "ui_spScoreboard" ) ) {
 		return;
 	}
 
@@ -403,23 +403,23 @@ void UI_SPPostgameMenu_Cache( void ) {
 	int			n;
 	bool	buildscript;
 
-	buildscript = trap_Cvar_VariableValue("com_buildscript");
+	buildscript = ( cvarSystem->VariableValue( "com_buildscript" ) != 0 );
 
-	trap_R_RegisterShaderNoMip( ART_MENU0 );
-	trap_R_RegisterShaderNoMip( ART_MENU1 );
-	trap_R_RegisterShaderNoMip( ART_REPLAY0 );
-	trap_R_RegisterShaderNoMip( ART_REPLAY1 );
-	trap_R_RegisterShaderNoMip( ART_NEXT0 );
-	trap_R_RegisterShaderNoMip( ART_NEXT1 );
+	trap->re->RegisterShaderNoMip( ART_MENU0 );
+	trap->re->RegisterShaderNoMip( ART_MENU1 );
+	trap->re->RegisterShaderNoMip( ART_REPLAY0 );
+	trap->re->RegisterShaderNoMip( ART_REPLAY1 );
+	trap->re->RegisterShaderNoMip( ART_NEXT0 );
+	trap->re->RegisterShaderNoMip( ART_NEXT1 );
 	for( n = 0; n < 6; n++ ) {
-		trap_R_RegisterShaderNoMip( ui_medalPicNames[n] );
-		trap_S_RegisterSound( ui_medalSounds[n], false );
+		trap->re->RegisterShaderNoMip( ui_medalPicNames[n] );
+		trap->si->RegisterSound( ui_medalSounds[n], false );
 	}
 
 	if( buildscript ) {
-		trap_S_RegisterSound( "music/loss.wav", false );
-		trap_S_RegisterSound( "music/win.wav", false );
-		trap_S_RegisterSound( "sound/player/announce/youwin.wav", false );
+		trap->si->RegisterSound( "music/loss.wav", false );
+		trap->si->RegisterSound( "music/win.wav", false );
+		trap->si->RegisterSound( "sound/player/announce/youwin.wav", false );
 	}
 }
 
@@ -481,7 +481,7 @@ static void Prepname( int index ) {
 	char	name[64];
 	char	info[MAX_INFO_STRING];
 
-	trap_GetConfigString( CS_PLAYERS + postgameMenuInfo.clientNums[index], info, MAX_INFO_STRING );
+	trap->GetConfigString( CS_PLAYERS + postgameMenuInfo.clientNums[index], info, MAX_INFO_STRING );
 	Q_strncpyz( name, Info_ValueForKey( info, "n" ), sizeof(name) );
 	Q_CleanStr( name );
 	len = strlen( name );
@@ -512,10 +512,10 @@ void UI_SPPostgameMenu_f( void ) {
 
 	memset( &postgameMenuInfo, 0, sizeof(postgameMenuInfo) );
 
-	trap_GetConfigString( CS_SYSTEMINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SYSTEMINFO, info, sizeof(info) );
 	postgameMenuInfo.serverId = atoi( Info_ValueForKey( info, "sv_serverid" ) );
 
-	trap_GetConfigString( CS_SERVERINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) );
 	Q_strncpyz( map, Info_ValueForKey( info, "mapname" ), sizeof(map) );
 	arena = UI_GetArenaInfoByMap( map );
 	if ( !arena ) {
@@ -609,7 +609,7 @@ void UI_SPPostgameMenu_f( void ) {
 	postgameMenuInfo.starttime = uis.realtime;
 	postgameMenuInfo.scoreboardtime = uis.realtime;
 
-	trap_Key_SetCatcher( KEYCATCH_UI );
+	trap->Key_SetCatcher( KEYCATCH_UI );
 	uis.menusp = 0;
 
 	UI_SPPostgameMenu_Init();
@@ -627,12 +627,12 @@ void UI_SPPostgameMenu_f( void ) {
 	Prepname( 2 );
 
 	if ( playerGameRank != 1 ) {
-		postgameMenuInfo.winnerSound = trap_S_RegisterSound( va( "sound/player/announce/%s_wins.wav", postgameMenuInfo.placeNames[0] ), false );
-		trap_Cmd_ExecuteText( EXEC_APPEND, "music music/loss\n" );
+		postgameMenuInfo.winnerSound = trap->si->RegisterSound( va( "sound/player/announce/%s_wins.wav", postgameMenuInfo.placeNames[0] ), false );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "music music/loss\n" );
 	}
 	else {
-		postgameMenuInfo.winnerSound = trap_S_RegisterSound( "sound/player/announce/youwin.wav", false );
-		trap_Cmd_ExecuteText( EXEC_APPEND, "music music/win\n" );
+		postgameMenuInfo.winnerSound = trap->si->RegisterSound( "sound/player/announce/youwin.wav", false );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "music music/win\n" );
 	}
 
 	postgameMenuInfo.phase = 1;

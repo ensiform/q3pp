@@ -323,7 +323,7 @@ void CL_KeyMove( usercmd_t *cmd ) {
 	// the walking flag is to keep animations consistant
 	// even during acceleration and develeration
 	//
-	if ( in_speed.active ^ cl_run->integer ) {
+	if ( ( in_speed.active ? 1 : 0 ) ^ cl_run->integer ) {
 		movespeed = 127;
 		cmd->buttons &= ~BUTTON_WALKING;
 	} else {
@@ -361,9 +361,9 @@ CL_MouseEvent
 */
 void CL_MouseEvent( int dx, int dy, int time ) {
 	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
-		VM_Call( uivm, UI_MOUSE_EVENT, dx, dy );
+		uiExport->MouseEvent( dx, dy );
 	} else if (Key_GetCatcher( ) & KEYCATCH_CGAME) {
-		VM_Call (cgvm, CG_MOUSE_EVENT, dx, dy);
+		cgameExport->MouseEvent( dx, dy );
 	} else {
 		cl.mouseDx[cl.mouseIndex] += dx;
 		cl.mouseDy[cl.mouseIndex] += dy;
@@ -392,7 +392,7 @@ CL_JoystickMove
 void CL_JoystickMove( usercmd_t *cmd ) {
 	float	anglespeed;
 
-	if ( !(in_speed.active ^ cl_run->integer) ) {
+	if ( !( ( in_speed.active ? 1 : 0 ) ^ cl_run->integer) ) {
 		cmd->buttons |= BUTTON_WALKING;
 	}
 
@@ -666,17 +666,21 @@ bool CL_ReadyToSendPacket( void ) {
 		return false;
 	}
 
+#ifdef USE_DOWNLOADS
 	// If we are downloading, we send no less than 50ms between packets
 	if ( *clc.downloadTempName &&
 		cls.realtime - clc.lastPacketSentTime < 50 ) {
 		return false;
 	}
+#endif
 
 	// if we don't have a valid gamestate yet, only send
 	// one packet a second
 	if ( clc.state != CA_ACTIVE && 
 		clc.state != CA_PRIMED && 
+#ifdef USE_DOWNLOADS
 		!*clc.downloadTempName &&
+#endif
 		cls.realtime - clc.lastPacketSentTime < 1000 ) {
 		return false;
 	}

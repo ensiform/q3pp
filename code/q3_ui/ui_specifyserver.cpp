@@ -82,7 +82,7 @@ static void SpecifyServer_Event( void* ptr, int event )
 				if (s_specifyserver.port.field.buffer[0])
 					Com_sprintf( buff+strlen(buff), 128, ":%s", s_specifyserver.port.field.buffer );
 
-				trap_Cmd_ExecuteText( EXEC_APPEND, va( "connect %s\n", buff ) );
+				trap->Cmd_ExecuteText( EXEC_APPEND, va( "connect %s\n", buff ) );
 			}
 			break;
 
@@ -196,7 +196,7 @@ void SpecifyServer_Cache( void )
 	{
 		if (!specifyserver_artlist[i])
 			break;
-		trap_R_RegisterShaderNoMip(specifyserver_artlist[i]);
+		trap->re->RegisterShaderNoMip(specifyserver_artlist[i]);
 	}
 }
 

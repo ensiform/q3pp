@@ -95,7 +95,7 @@ static void UI_AddBotsMenu_FightEvent( void* ptr, int event ) {
 	team = addBotsMenuInfo.team.itemnames[addBotsMenuInfo.team.curvalue];
 	skill = addBotsMenuInfo.skill.curvalue + 1;
 
-	trap_Cmd_ExecuteText( EXEC_APPEND, va("addbot %s %i %s %i\n",
+	trap->Cmd_ExecuteText( EXEC_APPEND, va("addbot %s %i %s %i\n",
 		addBotsMenuInfo.botnames[addBotsMenuInfo.selectedBotNum], skill, team, addBotsMenuInfo.delay) );
 
 	addBotsMenuInfo.delay += 1500;
@@ -262,7 +262,7 @@ static void UI_AddBotsMenu_Init( void ) {
 	int		count;
 	char	info[MAX_INFO_STRING];
 
-	trap_GetConfigString(CS_SERVERINFO, info, MAX_INFO_STRING);   
+	trap->GetConfigString(CS_SERVERINFO, info, MAX_INFO_STRING);   
 	gametype = atoi( Info_ValueForKey( info,"g_gametype" ) );
 
 	memset( &addBotsMenuInfo, 0 ,sizeof(addBotsMenuInfo) );
@@ -324,7 +324,7 @@ static void UI_AddBotsMenu_Init( void ) {
 	addBotsMenuInfo.skill.generic.name		= "Skill:";
 	addBotsMenuInfo.skill.generic.id		= ID_SKILL;
 	addBotsMenuInfo.skill.itemnames			= skillNames;
-	addBotsMenuInfo.skill.curvalue			= Com_Clamp( 0, 4, (int)trap_Cvar_VariableValue( "g_spSkill" ) - 1 );
+	addBotsMenuInfo.skill.curvalue			= Com_Clamp( 0, 4, (int)cvarSystem->VariableValue( "g_spSkill" ) - 1 );
 
 	y += SMALLCHAR_HEIGHT;
 	addBotsMenuInfo.team.generic.type		= MTYPE_SPINCONTROL;
@@ -390,14 +390,14 @@ UI_AddBots_Cache
 =================
 */
 void UI_AddBots_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT0 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT1 );
-	trap_R_RegisterShaderNoMip( ART_BACKGROUND );
-	trap_R_RegisterShaderNoMip( ART_ARROWS );
-	trap_R_RegisterShaderNoMip( ART_ARROWUP );
-	trap_R_RegisterShaderNoMip( ART_ARROWDOWN );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT0 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT1 );
+	trap->re->RegisterShaderNoMip( ART_BACKGROUND );
+	trap->re->RegisterShaderNoMip( ART_ARROWS );
+	trap->re->RegisterShaderNoMip( ART_ARROWUP );
+	trap->re->RegisterShaderNoMip( ART_ARROWDOWN );
 }
 
 

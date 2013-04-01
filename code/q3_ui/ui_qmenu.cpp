@@ -305,21 +305,21 @@ void Bitmap_Draw( menubitmap_s *b )
 	// used to refresh shader
 	if (b->generic.name && !b->shader)
 	{
-		b->shader = trap_R_RegisterShaderNoMip( b->generic.name );
+		b->shader = trap->re->RegisterShaderNoMip( b->generic.name );
 		if (!b->shader && b->errorpic)
-			b->shader = trap_R_RegisterShaderNoMip( b->errorpic );
+			b->shader = trap->re->RegisterShaderNoMip( b->errorpic );
 	}
 
 	if (b->focuspic && !b->focusshader)
-		b->focusshader = trap_R_RegisterShaderNoMip( b->focuspic );
+		b->focusshader = trap->re->RegisterShaderNoMip( b->focuspic );
 
 	if (b->generic.flags & QMF_GRAYED)
 	{
 		if (b->shader)
 		{
-			trap_R_SetColor( colorMdGrey );
+			trap->re->SetColor( colorMdGrey );
 			UI_DrawHandlePic( x, y, w, h, b->shader );
-			trap_R_SetColor( NULL );
+			trap->re->SetColor( NULL );
 		}
 	}
 	else
@@ -340,19 +340,19 @@ void Bitmap_Draw( menubitmap_s *b )
 			}
 			else
 				color = pulse_color;
-			color[3] = 0.5+0.5*sin(uis.realtime/PULSE_DIVISOR);
+			color[3] = 0.5+0.5*sin((double)uis.realtime/PULSE_DIVISOR);
 
-			trap_R_SetColor( color );
+			trap->re->SetColor( color );
 			UI_DrawHandlePic( x, y, w, h, b->focusshader );
-			trap_R_SetColor( NULL );
+			trap->re->SetColor( NULL );
 		}
 		else if ((b->generic.flags & QMF_HIGHLIGHT) || ((b->generic.flags & QMF_HIGHLIGHT_IF_FOCUS) && (Menu_ItemAtCursor( b->generic.parent ) == b)))
 		{	
 			if (b->focuscolor)
 			{
-				trap_R_SetColor( b->focuscolor );
+				trap->re->SetColor( b->focuscolor );
 				UI_DrawHandlePic( x, y, w, h, b->focusshader );
-				trap_R_SetColor( NULL );
+				trap->re->SetColor( NULL );
 			}
 			else
 				UI_DrawHandlePic( x, y, w, h, b->focusshader );
@@ -1255,7 +1255,7 @@ void Menu_AddItem( menuframework_s *menu, void *item )
 	menucommon_s	*itemptr;
 
 	if (menu->nitems >= MAX_MENUITEMS)
-		trap_Error ("Menu_AddItem: excessive items");
+		trap->Error ("Menu_AddItem: excessive items");
 
 	menu->items[menu->nitems] = item;
 	((menucommon_s*)menu->items[menu->nitems])->parent        = menu;
@@ -1309,7 +1309,7 @@ void Menu_AddItem( menuframework_s *menu, void *item )
 				break;
 
 			default:
-				trap_Error( va("Menu_Init: unknown type %d", itemptr->type) );
+				trap->Error( va("Menu_Init: unknown type %d", itemptr->type) );
 		}
 	}
 
@@ -1501,7 +1501,7 @@ void Menu_Draw( menuframework_s *menu )
 					break;
 
 				default:
-					trap_Error( va("Menu_Draw: unknown type %d", itemptr->type) );
+					trap->Error( va("Menu_Draw: unknown type %d", itemptr->type) );
 			}
 		}
 #ifndef NDEBUG
@@ -1528,7 +1528,7 @@ void Menu_Draw( menuframework_s *menu )
 #endif
 	}
 
-	itemptr = Menu_ItemAtCursor( menu );
+	itemptr = (menucommon_s *)Menu_ItemAtCursor( menu );
 	if ( itemptr && itemptr->statusbar)
 		itemptr->statusbar( ( void * ) itemptr );
 }
@@ -1586,7 +1586,7 @@ sfxHandle_t Menu_DefaultKey( menuframework_s *m, int key )
 		return 0;
 
 	// route key stimulus to widget
-	item = Menu_ItemAtCursor( m );
+	item = (menucommon_s *)Menu_ItemAtCursor( m );
 	if (item && !(item->flags & (QMF_GRAYED|QMF_INACTIVE)))
 	{
 		switch (item->type)
@@ -1627,7 +1627,7 @@ sfxHandle_t Menu_DefaultKey( menuframework_s *m, int key )
 			break;
 
 		case K_F12:
-			trap_Cmd_ExecuteText(EXEC_APPEND, "screenshot\n");
+			trap->Cmd_ExecuteText(EXEC_APPEND, "screenshot\n");
 			break;
 #endif
 		case K_KP_UPARROW:
@@ -1700,34 +1700,34 @@ Menu_Cache
 */
 void Menu_Cache( void )
 {
-	uis.charset			= trap_R_RegisterShaderNoMip( "gfx/2d/bigchars" );
-	uis.charsetProp		= trap_R_RegisterShaderNoMip( "menu/art/font1_prop.tga" );
-	uis.charsetPropGlow	= trap_R_RegisterShaderNoMip( "menu/art/font1_prop_glo.tga" );
-	uis.charsetPropB	= trap_R_RegisterShaderNoMip( "menu/art/font2_prop.tga" );
-	uis.cursor          = trap_R_RegisterShaderNoMip( "menu/art/3_cursor2" );
-	uis.rb_on           = trap_R_RegisterShaderNoMip( "menu/art/switch_on" );
-	uis.rb_off          = trap_R_RegisterShaderNoMip( "menu/art/switch_off" );
+	uis.charset			= trap->re->RegisterShaderNoMip( "gfx/2d/bigchars" );
+	uis.charsetProp		= trap->re->RegisterShaderNoMip( "menu/art/font1_prop.tga" );
+	uis.charsetPropGlow	= trap->re->RegisterShaderNoMip( "menu/art/font1_prop_glo.tga" );
+	uis.charsetPropB	= trap->re->RegisterShaderNoMip( "menu/art/font2_prop.tga" );
+	uis.cursor          = trap->re->RegisterShaderNoMip( "menu/art/3_cursor2" );
+	uis.rb_on           = trap->re->RegisterShaderNoMip( "menu/art/switch_on" );
+	uis.rb_off          = trap->re->RegisterShaderNoMip( "menu/art/switch_off" );
 
-	uis.whiteShader = trap_R_RegisterShaderNoMip( "white" );
+	uis.whiteShader = trap->re->RegisterShaderNoMip( "white" );
 	if ( uis.glconfig.hardwareType == GLHW_RAGEPRO ) {
 		// the blend effect turns to shit with the normal 
-		uis.menuBackShader	= trap_R_RegisterShaderNoMip( "menubackRagePro" );
+		uis.menuBackShader	= trap->re->RegisterShaderNoMip( "menubackRagePro" );
 	} else {
-		uis.menuBackShader	= trap_R_RegisterShaderNoMip( "menuback" );
+		uis.menuBackShader	= trap->re->RegisterShaderNoMip( "menuback" );
 	}
-	uis.menuBackNoLogoShader = trap_R_RegisterShaderNoMip( "menubacknologo" );
+	uis.menuBackNoLogoShader = trap->re->RegisterShaderNoMip( "menubacknologo" );
 
-	menu_in_sound	= trap_S_RegisterSound( "sound/misc/menu1.wav", false );
-	menu_move_sound	= trap_S_RegisterSound( "sound/misc/menu2.wav", false );
-	menu_out_sound	= trap_S_RegisterSound( "sound/misc/menu3.wav", false );
-	menu_buzz_sound	= trap_S_RegisterSound( "sound/misc/menu4.wav", false );
-	weaponChangeSound	= trap_S_RegisterSound( "sound/weapons/change.wav", false );
+	menu_in_sound	= trap->si->RegisterSound( "sound/misc/menu1.wav", false );
+	menu_move_sound	= trap->si->RegisterSound( "sound/misc/menu2.wav", false );
+	menu_out_sound	= trap->si->RegisterSound( "sound/misc/menu3.wav", false );
+	menu_buzz_sound	= trap->si->RegisterSound( "sound/misc/menu4.wav", false );
+	weaponChangeSound	= trap->si->RegisterSound( "sound/weapons/change.wav", false );
 
 	// need a nonzero sound, make an empty sound for this
 	menu_null_sound = -1;
 
-	sliderBar = trap_R_RegisterShaderNoMip( "menu/art/slider2" );
-	sliderButton_0 = trap_R_RegisterShaderNoMip( "menu/art/sliderbutt_0" );
-	sliderButton_1 = trap_R_RegisterShaderNoMip( "menu/art/sliderbutt_1" );
+	sliderBar = trap->re->RegisterShaderNoMip( "menu/art/slider2" );
+	sliderButton_0 = trap->re->RegisterShaderNoMip( "menu/art/sliderbutt_0" );
+	sliderButton_1 = trap->re->RegisterShaderNoMip( "menu/art/sliderbutt_1" );
 }
 	

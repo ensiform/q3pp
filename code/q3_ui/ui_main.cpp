@@ -32,6 +32,7 @@ USER INTERFACE MAIN
 #include "ui_local.h"
 
 
+#if 0
 /*
 ================
 vmMain
@@ -84,6 +85,7 @@ Q_EXPORT intptr_t vmMain( int command, int arg0, int arg1, int arg2, int arg3, i
 
 	return -1;
 }
+#endif
 
 
 /*
@@ -230,7 +232,7 @@ void UI_RegisterCvars( void ) {
 	cvarTable_t	*cv;
 
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
-		trap_Cvar_Register( cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags );
+		cvarSystem->Register( cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags );
 	}
 }
 
@@ -244,6 +246,6 @@ void UI_UpdateCvars( void ) {
 	cvarTable_t	*cv;
 
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
-		trap_Cvar_Update( cv->vmCvar );
+		cvarSystem->Update( cv->vmCvar );
 	}
 }

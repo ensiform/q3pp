@@ -223,7 +223,7 @@ void CL_ParseSnapshot( msg_t *msg ) {
 
 	// if we were just unpaused, we can only *now* really let the
 	// change come into effect or the client hangs.
-	cl_paused->modified = 0;
+	cl_paused->modified = false;
 
 	newSnap.messageNum = clc.serverMessageSequence;
 
@@ -381,11 +381,11 @@ void CL_SystemInfoChanged( void ) {
 	// check pure server string
 	s = Info_ValueForKey( systemInfo, "sv_paks" );
 	t = Info_ValueForKey( systemInfo, "sv_pakNames" );
-	FS_PureServerSetLoadedPaks( s, t );
+//	FS_PureServerSetLoadedPaks( s, t );
 
 	s = Info_ValueForKey( systemInfo, "sv_referencedPaks" );
 	t = Info_ValueForKey( systemInfo, "sv_referencedPakNames" );
-	FS_PureServerSetReferencedPaks( s, t );
+//	FS_PureServerSetReferencedPaks( s, t );
 
 	gameSet = false;
 	// scan through all the variables in the systeminfo and locally set cvars to match
@@ -449,12 +449,48 @@ static void CL_ParseServerInfo(void)
 	serverInfo = cl.gameState.stringData
 		+ cl.gameState.stringOffsets[ CS_SERVERINFO ];
 
+#ifdef USE_DOWNLOADS
 	clc.sv_allowDownload = atoi(Info_ValueForKey(serverInfo,
 		"sv_allowDownload"));
 	Q_strncpyz(clc.sv_dlURL,
 		Info_ValueForKey(serverInfo, "sv_dlURL"),
 		sizeof(clc.sv_dlURL));
+#endif
 }
+
+#ifndef USE_DOWNLOADS
+static void CL_StartLoading( void ) 
+{
+	// let the client game init and load data
+	clc.state = CA_LOADING;
+
+	// Pump the loop, this may change gamestate!
+	Com_EventLoop();
+
+	// if the gamestate was changed by calling Com_EventLoop
+	// then we loaded everything already and we don't want to do it again.
+	if( clc.state != CA_LOADING ) {
+		return;
+	}
+
+	// starting to load a map so we get out of full screen ui mode
+	Cvar_Set( "r_uiFullScreen", "0" );
+
+	// flush client memory and start loading stuff
+	// this will also (re)load the UI
+	// if this is a local client then only the client part of the hunk
+	// will be cleared, note that this is done after the hunk mark has been set
+	CL_FlushMemory();
+
+	// initialize the CGame
+	cls.cgameStarted = true;
+	CL_InitCGame();
+
+	CL_WritePacket();
+	CL_WritePacket();
+	CL_WritePacket();
+}
+#endif
 
 /*
 ==================
@@ -548,7 +584,11 @@ void CL_ParseGamestate( msg_t *msg ) {
 
 	// This used to call CL_StartHunkUsers, but now we enter the download state before loading the
 	// cgame
+#ifdef USE_DOWNLOADS
 	CL_InitDownloads();
+#else
+	CL_StartLoading();
+#endif
 
 	// make sure the game starts
 	Cvar_Set( "cl_paused", "0" );
@@ -557,6 +597,7 @@ void CL_ParseGamestate( msg_t *msg ) {
 
 //=====================================================================
 
+#ifdef USE_DOWNLOADS
 /*
 =====================
 CL_ParseDownload
@@ -610,7 +651,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 	// open the file if not opened yet
 	if (!clc.download)
 	{
-		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
+		clc.download = og::FS->OpenWrite( clc.downloadTempName );
 
 		if (!clc.download) {
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
@@ -621,7 +662,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 	}
 
 	if (size)
-		FS_Write( data, size, clc.download );
+		clc.download->Write( data, size );
 
 	CL_AddReliableCommand(va("nextdl %d", clc.downloadBlock), false);
 	clc.downloadBlock++;
@@ -633,11 +674,11 @@ void CL_ParseDownload ( msg_t *msg ) {
 
 	if (!size) { // A zero length block means EOF
 		if (clc.download) {
-			FS_FCloseFile( clc.download );
-			clc.download = 0;
+			clc.download->Close();
+			clc.download = NULL;
 
 			// rename the file
-			FS_SV_Rename ( clc.downloadTempName, clc.downloadName );
+			og::FS->Rename( clc.downloadTempName, clc.downloadName );
 		}
 
 		// send intentions now
@@ -652,6 +693,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 		CL_NextDownload ();
 	}
 }
+#endif
 
 #ifdef USE_VOIP
 static
@@ -924,7 +966,9 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			CL_ParseSnapshot( msg );
 			break;
 		case svc_download:
+#ifdef USE_DOWNLOADS
 			CL_ParseDownload( msg );
+#endif
 			break;
 		case svc_voip:
 #ifdef USE_VOIP

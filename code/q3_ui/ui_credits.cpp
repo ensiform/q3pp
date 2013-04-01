@@ -98,7 +98,7 @@ static sfxHandle_t UI_CreditMenu_Key( int key ) {
 	if (s_credits.frame == 1) {
 		s_credits.menu.draw = UI_CreditMenu_Draw_ioq3;
 	} else {
-		trap_Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
 	}
 	return 0;
 }

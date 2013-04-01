@@ -156,7 +156,7 @@ RankStatus_Cache
 ===============
 */
 void RankStatus_Cache( void ) {
-	trap_R_RegisterShaderNoMip( RANKSTATUS_FRAME );
+	trap->re->RegisterShaderNoMip( RANKSTATUS_FRAME );
 }
 
 
@@ -167,7 +167,7 @@ UI_RankStatusMenu
 */
 void UI_RankStatusMenu( void ) {
 
-	s_status = (grank_status_t)trap_Cvar_VariableValue("client_status");
+	s_status = (grank_status_t)cvarSystem->VariableValue("client_status");
 
 	switch( s_status )
 	{
@@ -203,7 +203,7 @@ void UI_RankStatusMenu( void ) {
 		return;
 	}
 	RankStatus_MenuInit();
-	trap_CL_UI_RankUserReset();
+	trap->CL_UI_RankUserReset();
 	UI_PushMenu ( &s_rankstatus.menu );
 }
 

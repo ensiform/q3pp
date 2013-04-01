@@ -42,7 +42,7 @@ typedef struct snd_codec_s snd_codec_t;
 typedef struct snd_stream_s
 {
 	snd_codec_t *codec;
-	fileHandle_t file;
+	og::File *file;
 	snd_info_t info;
 	int length;
 	int pos;

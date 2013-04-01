@@ -266,12 +266,9 @@ Cmd_Exec_f
 */
 void Cmd_Exec_f( void ) {
 	bool quiet;
-	union {
-		char	*c;
-		void	*v;
-	} f;
 	char	filename[MAX_QPATH];
-
+	byte *buffer;
+	int len;
 	quiet = !Q_stricmp(Cmd_Argv(0), "execq");
 
 	if (Cmd_Argc () != 2) {
@@ -282,17 +279,17 @@ void Cmd_Exec_f( void ) {
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
-	FS_ReadFile( filename, &f.v);
-	if (!f.c) {
+	len = og::FS->LoadFile(filename, &buffer);
+	if( len < 0 ) {
 		Com_Printf ("couldn't exec %s\n", filename);
 		return;
 	}
 	if (!quiet)
 		Com_Printf ("execing %s\n", filename);
 	
-	Cbuf_InsertText (f.c);
+	Cbuf_InsertText((char *)buffer);
 
-	FS_FreeFile (f.v);
+	og::FS->FreeFile(buffer);
 }
 
 
@@ -411,6 +408,18 @@ char	*Cmd_Args( void ) {
 
 /*
 ============
+Cmd_ArgsBuffer
+
+The interpreted versions use this because
+they can't have pointers returned to them
+============
+*/
+void	Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
+	Q_strncpyz( buffer, Cmd_Args(), bufferLength );
+}
+
+/*
+============
 Cmd_Args
 
 Returns a single string containing argv(arg) to argv(argc()-1)
@@ -441,8 +450,8 @@ The interpreted versions use this because
 they can't have pointers returned to them
 ============
 */
-void	Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
-	Q_strncpyz( buffer, Cmd_Args(), bufferLength );
+void	Cmd_ArgsFromBuffer( int arg, char *buffer, int bufferLength ) {
+	Q_strncpyz( buffer, Cmd_ArgsFrom( arg ), bufferLength );
 }
 
 /*
@@ -648,7 +657,7 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	}
 
 	// use a small malloc to avoid zone fragmentation
-	cmd = S_Malloc (sizeof(cmd_function_t));
+	cmd = (cmd_function_t *)S_Malloc (sizeof(cmd_function_t));
 	cmd->name = CopyString( cmd_name );
 	cmd->function = function;
 	cmd->complete = NULL;
@@ -713,8 +722,10 @@ void Cmd_RemoveCommandSafe( const char *cmd_name )
 		return;
 	if( cmd->function )
 	{
-		Com_Error( ERR_DROP, "Restricted source tried to remove "
-			"system command \"%s\"", cmd_name );
+		Com_Printf( S_COLOR_RED "Restricted source tried to remove "
+				     "system command \"%s\"", cmd_name );
+	//	Com_Error( ERR_DROP, "Restricted source tried to remove "
+	//		"system command \"%s\"", cmd_name );
 		return;
 	}
 
@@ -726,7 +737,7 @@ void Cmd_RemoveCommandSafe( const char *cmd_name )
 Cmd_CommandCompletion
 ============
 */
-void	Cmd_CommandCompletion( void(*callback)(const char *s) ) {
+void	Cmd_CommandCompletion( callbackFunc_t callback ) {
 	cmd_function_t	*cmd;
 	
 	for (cmd=cmd_functions ; cmd ; cmd=cmd->next) {
@@ -846,7 +857,7 @@ Cmd_CompleteCfgName
 */
 void Cmd_CompleteCfgName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", false, true );
+		Field_CompleteFilename( "", "cfg", false );
 	}
 }
 

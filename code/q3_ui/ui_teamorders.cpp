@@ -280,7 +280,7 @@ static void UI_TeamOrdersMenu_ListEvent( void *ptr, int event ) {
 		Com_sprintf( message, sizeof(message), teamMessages[selection], teamOrdersMenuInfo.botNames[teamOrdersMenuInfo.selectedBot] );
 	}
 
-	trap_Cmd_ExecuteText( EXEC_APPEND, va( "say_team \"%s\"\n", message ) );
+	trap->Cmd_ExecuteText( EXEC_APPEND, va( "say_team \"%s\"\n", message ) );
 	UI_PopMenu();
 }
 
@@ -291,7 +291,7 @@ UI_TeamOrdersMenu_BuildBotList
 ===============
 */
 static void UI_TeamOrdersMenu_BuildBotList( void ) {
-	uiClientState_t	cs;
+	ogClientState	cs;
 	int		numPlayers;
 	int		isBot;
 	int		n;
@@ -303,17 +303,17 @@ static void UI_TeamOrdersMenu_BuildBotList( void ) {
 		teamOrdersMenuInfo.bots[n] = teamOrdersMenuInfo.botNames[n];
 	}
 
-	trap_GetClientState( &cs );
+	trap->GetClientState( &cs );
 
 	Q_strncpyz( teamOrdersMenuInfo.botNames[0], "Everyone", 16 );
 	teamOrdersMenuInfo.numBots = 1;
 
-	trap_GetConfigString( CS_SERVERINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) );
 	numPlayers = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 	teamOrdersMenuInfo.gametype = atoi( Info_ValueForKey( info, "g_gametype" ) );
 
 	for( n = 0; n < numPlayers && teamOrdersMenuInfo.numBots < 9; n++ ) {
-		trap_GetConfigString( CS_PLAYERS + n, info, MAX_INFO_STRING );
+		trap->GetConfigString( CS_PLAYERS + n, info, MAX_INFO_STRING );
 
 		if( n == cs.clientNum ) {
 			playerTeam = *Info_ValueForKey( info, "t" );
@@ -401,9 +401,9 @@ UI_TeamOrdersMenu_Cache
 =================
 */
 void UI_TeamOrdersMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAME );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAME );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
 }
 
 
@@ -424,20 +424,20 @@ UI_TeamOrdersMenu_f
 ===============
 */
 void UI_TeamOrdersMenu_f( void ) {
-	uiClientState_t	cs;
+	ogClientState	cs;
 	char	info[MAX_INFO_STRING];
 	int		team;
 
 	// make sure it's a team game
-	trap_GetConfigString( CS_SERVERINFO, info, sizeof(info) );
+	trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) );
 	teamOrdersMenuInfo.gametype = atoi( Info_ValueForKey( info, "g_gametype" ) );
 	if( teamOrdersMenuInfo.gametype < GT_TEAM ) {
 		return;
 	}
 
 	// not available to spectators
-	trap_GetClientState( &cs );
-	trap_GetConfigString( CS_PLAYERS + cs.clientNum, info, MAX_INFO_STRING );
+	trap->GetClientState( &cs );
+	trap->GetConfigString( CS_PLAYERS + cs.clientNum, info, MAX_INFO_STRING );
 	team = atoi( Info_ValueForKey( info, "t" ) );
 	if( team == TEAM_SPECTATOR ) {
 		return;

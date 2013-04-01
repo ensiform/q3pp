@@ -941,7 +941,7 @@ void AAS_WriteRouteCache(void)
 	int i, j, numportalcache, numareacache, totalsize;
 	aas_routingcache_t *cache;
 	aas_cluster_t *cluster;
-	fileHandle_t fp;
+	og::File *fp;
 	char filename[MAX_QPATH];
 	routecacheheader_t routecacheheader;
 
@@ -967,7 +967,7 @@ void AAS_WriteRouteCache(void)
 	} //end for
 	// open the file for writing
 	Com_sprintf(filename, MAX_QPATH, "maps/%s.rcd", aasworld.mapname);
-	botimport.FS_FOpenFile( filename, &fp, FS_WRITE );
+	fp = og::FS->OpenWrite( filename );
 	if (!fp)
 	{
 		AAS_Error("Unable to open file: %s\n", filename);
@@ -982,48 +982,57 @@ void AAS_WriteRouteCache(void)
 	routecacheheader.clustercrc = CRC_ProcessString( (unsigned char *)aasworld.clusters, sizeof(aas_cluster_t) * aasworld.numclusters );
 	routecacheheader.numportalcache = numportalcache;
 	routecacheheader.numareacache = numareacache;
-	//write the header
-	botimport.FS_Write(&routecacheheader, sizeof(routecacheheader_t), fp);
-	//
-	totalsize = 0;
-	//write all the cache
-	for (i = 0; i < aasworld.numareas; i++)
-	{
-		for (cache = aasworld.portalcache[i]; cache; cache = cache->next)
+	try {
+		//write the header
+		fp->Write( &routecacheheader, sizeof( routecacheheader_t ) );
+		//
+		totalsize = 0;
+		//write all the cache
+		for (i = 0; i < aasworld.numareas; i++)
 		{
-			botimport.FS_Write(cache, cache->size, fp);
-			totalsize += cache->size;
-		} //end for
-	} //end for
-	for (i = 0; i < aasworld.numclusters; i++)
-	{
-		cluster = &aasworld.clusters[i];
-		for (j = 0; j < cluster->numareas; j++)
-		{
-			for (cache = aasworld.clusterareacache[i][j]; cache; cache = cache->next)
+			for (cache = aasworld.portalcache[i]; cache; cache = cache->next)
 			{
-				botimport.FS_Write(cache, cache->size, fp);
+				fp->Write( cache, cache->size );
 				totalsize += cache->size;
 			} //end for
 		} //end for
-	} //end for
-	// write the visareas
-	/*
-	for (i = 0; i < aasworld.numareas; i++)
-	{
-		if (!aasworld.areavisibility[i]) {
-			size = 0;
+		for (i = 0; i < aasworld.numclusters; i++)
+		{
+			cluster = &aasworld.clusters[i];
+			for (j = 0; j < cluster->numareas; j++)
+			{
+				for (cache = aasworld.clusterareacache[i][j]; cache; cache = cache->next)
+				{
+					fp->Write( cache, cache->size );
+					totalsize += cache->size;
+				} //end for
+			} //end for
+		} //end for
+		// write the visareas
+		/*
+		for (i = 0; i < aasworld.numareas; i++)
+		{
+			if (!aasworld.areavisibility[i]) {
+				size = 0;
+				botimport.FS_Write(&size, sizeof(int), fp);
+				continue;
+			}
+			AAS_DecompressVis( aasworld.areavisibility[i], aasworld.numareas, aasworld.decompressedvis );
+			size = AAS_CompressVis( aasworld.decompressedvis, aasworld.numareas, aasworld.decompressedvis );
 			botimport.FS_Write(&size, sizeof(int), fp);
-			continue;
+			botimport.FS_Write(aasworld.decompressedvis, size, fp);
 		}
-		AAS_DecompressVis( aasworld.areavisibility[i], aasworld.numareas, aasworld.decompressedvis );
-		size = AAS_CompressVis( aasworld.decompressedvis, aasworld.numareas, aasworld.decompressedvis );
-		botimport.FS_Write(&size, sizeof(int), fp);
-		botimport.FS_Write(aasworld.decompressedvis, size, fp);
+		*/
 	}
-	*/
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		fp->Close();
+		AAS_Error( "can't write file\n" );
+		AAS_DumpAASData();
+		return;
+	}
 	//
-	botimport.FS_FCloseFile(fp);
+	fp->Close();
 	botimport.Print(PRT_MESSAGE, "\nroute cache written to %s\n", filename);
 	botimport.Print(PRT_MESSAGE, "written %d bytes of routing cache\n", totalsize);
 } //end of the function AAS_WriteRouteCache
@@ -1033,15 +1042,15 @@ void AAS_WriteRouteCache(void)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-aas_routingcache_t *AAS_ReadCache(fileHandle_t fp)
+aas_routingcache_t *AAS_ReadCache(og::File *fp)
 {
 	int size;
 	aas_routingcache_t *cache;
 
-	botimport.FS_Read(&size, sizeof(size), fp);
+	fp->Read( &size, sizeof( size ) );
 	cache = (aas_routingcache_t *) GetMemory(size);
 	cache->size = size;
-	botimport.FS_Read((unsigned char *)cache + sizeof(size), size - sizeof(size), fp);
+	fp->Read( (unsigned char *)cache + sizeof( size ), size - sizeof( size ) );
 	cache->reachabilities = (unsigned char *) cache + sizeof(aas_routingcache_t) - sizeof(unsigned short) +
 		(size - sizeof(aas_routingcache_t) + sizeof(unsigned short)) / 3 * 2;
 	return cache;
@@ -1055,86 +1064,95 @@ aas_routingcache_t *AAS_ReadCache(fileHandle_t fp)
 int AAS_ReadRouteCache(void)
 {
 	int i, clusterareanum;//, size;
-	fileHandle_t fp;
+	og::File *fp;
 	char filename[MAX_QPATH];
 	routecacheheader_t routecacheheader;
 	aas_routingcache_t *cache;
 
 	Com_sprintf(filename, MAX_QPATH, "maps/%s.rcd", aasworld.mapname);
-	botimport.FS_FOpenFile( filename, &fp, FS_READ );
+	fp = og::FS->OpenRead( filename );
 	if (!fp)
 	{
 		return false;
 	} //end if
-	botimport.FS_Read(&routecacheheader, sizeof(routecacheheader_t), fp );
-	if (routecacheheader.ident != RCID)
-	{
-		AAS_Error("%s is not a route cache dump\n", filename);
-		return false;
-	} //end if
-	if (routecacheheader.version != RCVERSION)
-	{
-		AAS_Error("route cache dump has wrong version %d, should be %d\n", routecacheheader.version, RCVERSION);
-		return false;
-	} //end if
-	if (routecacheheader.numareas != aasworld.numareas)
-	{
-		//AAS_Error("route cache dump has wrong number of areas\n");
-		return false;
-	} //end if
-	if (routecacheheader.numclusters != aasworld.numclusters)
-	{
-		//AAS_Error("route cache dump has wrong number of clusters\n");
-		return false;
-	} //end if
-	if (routecacheheader.areacrc !=
-		CRC_ProcessString( (unsigned char *)aasworld.areas, sizeof(aas_area_t) * aasworld.numareas ))
-	{
-		//AAS_Error("route cache dump area CRC incorrect\n");
-		return false;
-	} //end if
-	if (routecacheheader.clustercrc !=
-		CRC_ProcessString( (unsigned char *)aasworld.clusters, sizeof(aas_cluster_t) * aasworld.numclusters ))
-	{
-		//AAS_Error("route cache dump cluster CRC incorrect\n");
-		return false;
-	} //end if
-	//read all the portal cache
-	for (i = 0; i < routecacheheader.numportalcache; i++)
-	{
-		cache = AAS_ReadCache(fp);
-		cache->next = aasworld.portalcache[cache->areanum];
-		cache->prev = NULL;
-		if (aasworld.portalcache[cache->areanum])
-			aasworld.portalcache[cache->areanum]->prev = cache;
-		aasworld.portalcache[cache->areanum] = cache;
-	} //end for
-	//read all the cluster area cache
-	for (i = 0; i < routecacheheader.numareacache; i++)
-	{
-		cache = AAS_ReadCache(fp);
-		clusterareanum = AAS_ClusterAreaNum(cache->cluster, cache->areanum);
-		cache->next = aasworld.clusterareacache[cache->cluster][clusterareanum];
-		cache->prev = NULL;
-		if (aasworld.clusterareacache[cache->cluster][clusterareanum])
-			aasworld.clusterareacache[cache->cluster][clusterareanum]->prev = cache;
-		aasworld.clusterareacache[cache->cluster][clusterareanum] = cache;
-	} //end for
-	// read the visareas
-	/*
-	aasworld.areavisibility = (byte **) GetClearedMemory(aasworld.numareas * sizeof(byte *));
-	aasworld.decompressedvis = (byte *) GetClearedMemory(aasworld.numareas * sizeof(byte));
-	for (i = 0; i < aasworld.numareas; i++)
-	{
-		botimport.FS_Read(&size, sizeof(size), fp );
-		if (size) {
-			aasworld.areavisibility[i] = (byte *) GetMemory(size);
-			botimport.FS_Read(aasworld.areavisibility[i], size, fp );
+
+	try {
+		fp->Read( &routecacheheader, sizeof( routecacheheader_t ) );
+		if (routecacheheader.ident != RCID)
+		{
+			AAS_Error("%s is not a route cache dump\n", filename);
+			return false;
+		} //end if
+		if (routecacheheader.version != RCVERSION)
+		{
+			AAS_Error("route cache dump has wrong version %d, should be %d\n", routecacheheader.version, RCVERSION);
+			return false;
+		} //end if
+		if (routecacheheader.numareas != aasworld.numareas)
+		{
+			//AAS_Error("route cache dump has wrong number of areas\n");
+			return false;
+		} //end if
+		if (routecacheheader.numclusters != aasworld.numclusters)
+		{
+			//AAS_Error("route cache dump has wrong number of clusters\n");
+			return false;
+		} //end if
+		if (routecacheheader.areacrc !=
+			CRC_ProcessString( (unsigned char *)aasworld.areas, sizeof(aas_area_t) * aasworld.numareas ))
+		{
+			//AAS_Error("route cache dump area CRC incorrect\n");
+			return false;
+		} //end if
+		if (routecacheheader.clustercrc !=
+			CRC_ProcessString( (unsigned char *)aasworld.clusters, sizeof(aas_cluster_t) * aasworld.numclusters ))
+		{
+			//AAS_Error("route cache dump cluster CRC incorrect\n");
+			return false;
+		} //end if
+		//read all the portal cache
+		for (i = 0; i < routecacheheader.numportalcache; i++)
+		{
+			cache = AAS_ReadCache(fp);
+			cache->next = aasworld.portalcache[cache->areanum];
+			cache->prev = NULL;
+			if (aasworld.portalcache[cache->areanum])
+				aasworld.portalcache[cache->areanum]->prev = cache;
+			aasworld.portalcache[cache->areanum] = cache;
+		} //end for
+		//read all the cluster area cache
+		for (i = 0; i < routecacheheader.numareacache; i++)
+		{
+			cache = AAS_ReadCache(fp);
+			clusterareanum = AAS_ClusterAreaNum(cache->cluster, cache->areanum);
+			cache->next = aasworld.clusterareacache[cache->cluster][clusterareanum];
+			cache->prev = NULL;
+			if (aasworld.clusterareacache[cache->cluster][clusterareanum])
+				aasworld.clusterareacache[cache->cluster][clusterareanum]->prev = cache;
+			aasworld.clusterareacache[cache->cluster][clusterareanum] = cache;
+		} //end for
+		// read the visareas
+		/*
+		aasworld.areavisibility = (byte **) GetClearedMemory(aasworld.numareas * sizeof(byte *));
+		aasworld.decompressedvis = (byte *) GetClearedMemory(aasworld.numareas * sizeof(byte));
+		for (i = 0; i < aasworld.numareas; i++)
+		{
+			botimport.FS_Read(&size, sizeof(size), fp );
+			if (size) {
+				aasworld.areavisibility[i] = (byte *) GetMemory(size);
+				botimport.FS_Read(aasworld.areavisibility[i], size, fp );
 		}
+		*/
 	}
-	*/
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		fp->Close();
+		fp = NULL;
+		Com_Printf( "ERROR: error reading file\n" );
+		return false;
+	}
 	//
-	botimport.FS_FCloseFile(fp);
+	fp->Close();
 	return true;
 } //end of the function AAS_ReadRouteCache
 //===========================================================================

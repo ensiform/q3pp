@@ -182,7 +182,7 @@ void CG_ClearParticles (void)
 		int j;
 
 		for (j=0; j<shaderAnimCounts[i]; j++) {
-			shaderAnims[i][j] = trap_R_RegisterShader( va("%s%i", shaderAnimNames[i], j+1) );
+			shaderAnims[i][j] = trap->re->RegisterShader( va("%s%i", shaderAnimNames[i], j+1) );
 		}
 	}
 	numShaderAnims = i;
@@ -657,8 +657,8 @@ void CG_AddParticleToScene (cparticle_t *p, vec3_t org, float alpha)
 		if (height > p->endheight)
 			height = p->endheight;
 
-		sinR = height * sin(DEG2RAD(p->roll)) * sqrt(2);
-		cosR = width * cos(DEG2RAD(p->roll)) * sqrt(2);
+		sinR = height * sin(DEG2RAD(p->roll)) * sqrt((double)2);
+		cosR = width * cos(DEG2RAD(p->roll)) * sqrt((double)2);
 
 		VectorCopy (org, verts[0].xyz);	
 		verts[0].xyz[0] -= sinR;
@@ -838,9 +838,9 @@ void CG_AddParticleToScene (cparticle_t *p, vec3_t org, float alpha)
 	}
 
 	if (p->type == P_WEATHER || p->type == P_WEATHER_TURBULENT || p->type == P_WEATHER_FLURRY)
-		trap_R_AddPolyToScene( p->pshader, 3, TRIverts );
+		trap->re->AddPolyToScene( p->pshader, 3, TRIverts, 1 );
 	else
-		trap_R_AddPolyToScene( p->pshader, 4, verts );
+		trap->re->AddPolyToScene( p->pshader, 4, verts, 1 );
 
 }
 
@@ -1700,7 +1700,7 @@ bool ValidBloodPool (vec3_t start)
 			VectorMA (x_pos, y, up, this_pos);
 			VectorMA (this_pos, -EXTRUDE_DIST*2, normal, end_pos);
 			
-			CG_Trace (&trace, this_pos, NULL, NULL, end_pos, -1, CONTENTS_SOLID);
+			CG_Trace (&trace, this_pos, NULL, NULL, end_pos, -1, CONTENTS_SOLID, false);
 
 			
 			if (trace.entityNum < ENTITYNUM_WORLD) // may only land on world

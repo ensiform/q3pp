@@ -165,7 +165,7 @@ static void SV_Map_f( void ) {
 	// make sure the level exists before trying to change, so that
 	// a typo at the server console won't end the game
 	Com_sprintf (expanded, sizeof(expanded), "maps/%s.bsp", map);
-	if ( FS_ReadFile (expanded, NULL) == -1 ) {
+	if ( !og::FS->FileExists( expanded ) ) {
 		Com_Printf ("Can't find map %s\n", expanded);
 		return;
 	}
@@ -297,12 +297,12 @@ static void SV_MapRestart_f( void ) {
 	sv.state = SS_LOADING;
 	sv.restarting = true;
 
-	SV_RestartGameProgs();
+	SV_InitGameProgs( true );
 
 	// run a few frames to allow everything to settle
 	for (i = 0; i < 3; i++)
 	{
-		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
+		gameExport->RunFrame( sv.time);
 		sv.time += 100;
 		svs.time += 100;
 	}
@@ -329,7 +329,7 @@ static void SV_MapRestart_f( void ) {
 		SV_AddServerCommand( client, "map_restart\n" );
 
 		// connect the client again, without the firstTime flag
-		denied = VM_ExplicitArgPtr( gvm, VM_Call( gvm, GAME_CLIENT_CONNECT, i, false, isBot ) );
+		denied = gameExport->ClientConnect( i, false, isBot );
 		if ( denied ) {
 			// this generally shouldn't happen, because the client
 			// was connected before the level change
@@ -350,7 +350,7 @@ static void SV_MapRestart_f( void ) {
 	}	
 
 	// run another frame to allow things to look at all the players
-	VM_Call (gvm, GAME_RUN_FRAME, sv.time);
+	gameExport->RunFrame( sv.time );
 	sv.time += 100;
 	svs.time += 100;
 }
@@ -632,83 +632,66 @@ SV_RehashBans_f
 Load saved bans from file.
 ==================
 */
-static void SV_RehashBans_f(void)
-{
-	int index, filelen;
-	fileHandle_t readfrom;
-	char *textbuf, *curpos, *maskpos, *newlinepos, *endpos;
-	char filepath[MAX_QPATH];
-	
-	// make sure server is running
-	if ( !com_sv_running->integer ) {
-		return;
-	}
-	
+static void SV_RehashBans_f( void ) {
+	int index;
+	char *curpos, *maskpos, *newlinepos, *endpos;
+
 	serverBansCount = 0;
-	
-	if(!sv_banFile->string || !*sv_banFile->string)
+
+	if( !sv_banFile->string || !*sv_banFile->string )
 		return;
 
-	Com_sprintf(filepath, sizeof(filepath), "%s/%s", FS_GetCurrentGameDir(), sv_banFile->string);
-
-	if((filelen = FS_SV_FOpenFileRead(filepath, &readfrom)) >= 0)
-	{
-		if(filelen < 2)
-		{
-			// Don't bother if file is too short.
-			FS_FCloseFile(readfrom);
+	byte *buffer;
+	int filelen = og::FS->LoadFile( sv_banFile->string, &buffer );
+	if( buffer ) {
+		if( filelen < 2 ) {
+			og::FS->FreeFile( buffer );
 			return;
 		}
 
-		curpos = textbuf = Z_Malloc(filelen);
-		
-		filelen = FS_Read(textbuf, filelen, readfrom);
-		FS_FCloseFile(readfrom);
-		
-		endpos = textbuf + filelen;
-		
-		for(index = 0; index < SERVER_MAXBANS && curpos + 2 < endpos; index++)
-		{
+		curpos = (char *)buffer;
+		endpos = curpos + filelen;
+
+		for( index = 0; index < SERVER_MAXBANS && curpos + 2 < endpos; index++ ) {
 			// find the end of the address string
-			for(maskpos = curpos + 2; maskpos < endpos && *maskpos != ' '; maskpos++);
-			
-			if(maskpos + 1 >= endpos)
+			for( maskpos = curpos + 2; maskpos < endpos && *maskpos != ' '; maskpos++ )
+				;
+
+			if( maskpos + 1 >= endpos )
 				break;
 
 			*maskpos = '\0';
 			maskpos++;
-			
+
 			// find the end of the subnet specifier
-			for(newlinepos = maskpos; newlinepos < endpos && *newlinepos != '\n'; newlinepos++);
-			
-			if(newlinepos >= endpos)
+			for( newlinepos = maskpos; newlinepos < endpos && *newlinepos != '\n'; newlinepos++ )
+				;
+
+			if( newlinepos >= endpos )
 				break;
-			
+
 			*newlinepos = '\0';
-			
-			if(NET_StringToAdr(curpos + 2, &serverBans[index].ip, NA_UNSPEC))
-			{
-				serverBans[index].isexception = (curpos[0] != '0');
-				serverBans[index].subnet = atoi(maskpos);
-				
-				if(serverBans[index].ip.type == NA_IP &&
-				   (serverBans[index].subnet < 1 || serverBans[index].subnet > 32))
-				{
+
+			if( NET_StringToAdr( curpos + 2, &serverBans[index].ip, NA_UNSPEC ) ) {
+				serverBans[index].isexception = ( curpos[0] != '0' );
+				serverBans[index].subnet      = atoi( maskpos );
+
+				if( serverBans[index].ip.type == NA_IP &&
+				    ( serverBans[index].subnet < 1 || serverBans[index].subnet > 32 ) ) {
 					serverBans[index].subnet = 32;
 				}
-				else if(serverBans[index].ip.type == NA_IP6 &&
-					(serverBans[index].subnet < 1 || serverBans[index].subnet > 128))
-				{
+				else if( serverBans[index].ip.type == NA_IP6 &&
+					 ( serverBans[index].subnet < 1 || serverBans[index].subnet > 128 ) ) {
 					serverBans[index].subnet = 128;
 				}
 			}
-			
+
 			curpos = newlinepos + 1;
 		}
-			
+
 		serverBansCount = index;
-		
-		Z_Free(textbuf);
+
+		og::FS->FreeFile( buffer );
 	}
 }
 
@@ -721,30 +704,31 @@ Save bans to file.
 */
 static void SV_WriteBans(void)
 {
-	int index;
-	fileHandle_t writeto;
-	char filepath[MAX_QPATH];
-	
 	if(!sv_banFile->string || !*sv_banFile->string)
 		return;
-	
-	Com_sprintf(filepath, sizeof(filepath), "%s/%s", FS_GetCurrentGameDir(), sv_banFile->string);
 
-	if((writeto = FS_SV_FOpenFileWrite(filepath)))
+	if( og::File * writeto = og::FS->OpenWrite( sv_banFile->string ) )
 	{
-		char writebuf[128];
-		serverBan_t *curban;
+		try {
+			char writebuf[128];
+			serverBan_t *curban;
 		
-		for(index = 0; index < serverBansCount; index++)
-		{
-			curban = &serverBans[index];
+			for(int index = 0; index < serverBansCount; index++)
+			{
+				curban = &serverBans[index];
 			
-			Com_sprintf(writebuf, sizeof(writebuf), "%d %s %d\n",
-				    curban->isexception, NET_AdrToString(curban->ip), curban->subnet);
-			FS_Write(writebuf, strlen(writebuf), writeto);
+				Com_sprintf(writebuf, sizeof(writebuf), "%d %s %d\n",
+					    curban->isexception, NET_AdrToString(curban->ip), curban->subnet);
+				writeto->Write( writebuf, strlen( writebuf ) );
+			}
+		}
+		catch( og::FileReadWriteError &err ) {
+			err; // Shut up
+			Com_Printf( "ERROR: error writing bans file\n" );
 		}
 
-		FS_FCloseFile(writeto);
+		writeto->Close();
+
 	}
 }
 
@@ -1389,7 +1373,7 @@ SV_CompleteMapName
 */
 static void SV_CompleteMapName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "maps", "bsp", true, false );
+		Field_CompleteFilename( "maps", "bsp", true );
 	}
 }
 

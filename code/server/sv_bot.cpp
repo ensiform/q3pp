@@ -432,8 +432,8 @@ SV_BotFrame
 void SV_BotFrame( int time ) {
 	if (!bot_enable) return;
 	//NOTE: maybe the game is already shutdown
-	if (!gvm) return;
-	VM_Call( gvm, BOTAI_START_FRAME, time );
+	if (!gameExport) return;
+	gameExport->BotAIStartFrame(time);
 }
 
 /*
@@ -520,7 +520,7 @@ void SV_BotInitBotLib(void) {
 
 	if (debugpolygons) Z_Free(debugpolygons);
 	bot_maxdebugpolys = Cvar_VariableIntegerValue("bot_maxdebugpolys");
-	debugpolygons = Z_Malloc(sizeof(bot_debugpoly_t) * bot_maxdebugpolys);
+	debugpolygons = (bot_debugpoly_t *)Z_Malloc(sizeof(bot_debugpoly_t) * bot_maxdebugpolys);
 
 	botlib_import.Print = BotImport_Print;
 	botlib_import.Trace = BotImport_Trace;
@@ -536,13 +536,6 @@ void SV_BotInitBotLib(void) {
 	botlib_import.FreeMemory = BotImport_FreeMemory;
 	botlib_import.AvailableMemory = Z_AvailableMemory;
 	botlib_import.HunkAlloc = BotImport_HunkAlloc;
-
-	// file system access
-	botlib_import.FS_FOpenFile = FS_FOpenFileByMode;
-	botlib_import.FS_Read = FS_Read2;
-	botlib_import.FS_Write = FS_Write;
-	botlib_import.FS_FCloseFile = FS_FCloseFile;
-	botlib_import.FS_Seek = FS_Seek;
 
 	//debug lines
 	botlib_import.DebugLineCreate = BotImport_DebugLineCreate;

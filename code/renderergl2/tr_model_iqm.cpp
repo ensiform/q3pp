@@ -154,7 +154,7 @@ bool R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_name )
 
 	LL( header->version );
 	if( header->version != IQM_VERSION ) {
-		ri.Printf(PRINT_WARNING, "R_LoadIQM: %s is a unsupported IQM version (%d), only version %d is supported.\n",
+		ri->Printf(PRINT_WARNING, "R_LoadIQM: %s is a unsupported IQM version (%d), only version %d is supported.\n",
 				mod_name, header->version, IQM_VERSION);
 		return false;
 	}
@@ -192,7 +192,7 @@ bool R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_name )
 
 	// check ioq3 joint limit
 	if ( header->num_joints > IQM_MAX_JOINTS ) {
-		ri.Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %d joints (%d).\n",
+		ri->Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %d joints (%d).\n",
 				mod_name, IQM_MAX_JOINTS, header->num_joints);
 		return false;
 	}
@@ -313,13 +313,13 @@ bool R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_name )
 		// check ioq3 limits
 		if ( mesh->num_vertexes > SHADER_MAX_VERTEXES ) 
 		{
-			ri.Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %i verts on a surface (%i).\n",
+			ri->Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %i verts on a surface (%i).\n",
 				  mod_name, SHADER_MAX_VERTEXES, mesh->num_vertexes );
 			return false;
 		}
 		if ( mesh->num_triangles*3 > SHADER_MAX_INDEXES ) 
 		{
-			ri.Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %i triangles on a surface (%i).\n",
+			ri->Printf(PRINT_WARNING, "R_LoadIQM: %s has more than %i triangles on a surface (%i).\n",
 				  mod_name, SHADER_MAX_INDEXES / 3, mesh->num_triangles );
 			return false;
 		}
@@ -444,7 +444,7 @@ bool R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_name )
 	size += joint_names;					// joint names
 
 	mod->type = MOD_IQM;
-	iqmData = (iqmData_t *)ri.Hunk_Alloc( size, h_low );
+	iqmData = (iqmData_t *)ri->Hunk_Alloc( size, h_low );
 	mod->modelData = iqmData;
 
 	// fill header
@@ -780,7 +780,7 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 	shader_t		*shader;
 	skin_t			*skin;
 
-	data = tr.currentModel->modelData;
+	data = (iqmData_t *)tr.currentModel->modelData;
 	surface = data->surfaces;
 
 	// don't add third_person objects if not in a portal
@@ -801,7 +801,7 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 	     || (ent->e.frame < 0)
 	     || (ent->e.oldframe >= data->num_frames)
 	     || (ent->e.oldframe < 0) ) {
-		ri.Printf( PRINT_DEVELOPER, "R_AddIQMSurfaces: no such frame %d to %d for '%s'\n",
+		ri->Printf( PRINT_DEVELOPER, "R_AddIQMSurfaces: no such frame %d to %d for '%s'\n",
 			   ent->e.oldframe, ent->e.frame,
 			   tr.currentModel->name );
 		ent->e.frame = 0;
@@ -857,7 +857,7 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 			&& fogNum == 0
 			&& !(ent->e.renderfx & ( RF_NOSHADOW | RF_DEPTHHACK ) ) 
 			&& shader->sort == SS_OPAQUE ) {
-			R_AddDrawSurf( (void *)surface, tr.shadowShader, 0, 0, 0 );
+			R_AddDrawSurf( (surfaceType_t *)surface, tr.shadowShader, 0, 0, 0 );
 		}
 
 		// projection shadows work fine with personal models
@@ -865,11 +865,11 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 			&& fogNum == 0
 			&& (ent->e.renderfx & RF_SHADOW_PLANE )
 			&& shader->sort == SS_OPAQUE ) {
-			R_AddDrawSurf( (void *)surface, tr.projectionShadowShader, 0, 0, 0 );
+			R_AddDrawSurf( (surfaceType_t *)surface, tr.projectionShadowShader, 0, 0, 0 );
 		}
 
 		if( !personalModel ) {
-			R_AddDrawSurf( (void *)surface, shader, fogNum, 0, 0 );
+			R_AddDrawSurf( (surfaceType_t *)surface, shader, fogNum, 0, 0 );
 		}
 
 		surface++;

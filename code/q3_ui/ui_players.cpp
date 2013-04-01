@@ -75,7 +75,7 @@ tryagain:
 	}
 
 	if ( item->classname ) {
-		pi->weaponModel = trap_R_RegisterModel( item->world_model[0] );
+		pi->weaponModel = trap->re->RegisterModel( item->world_model[0] );
 	}
 
 	if( pi->weaponModel == 0 ) {
@@ -91,13 +91,13 @@ tryagain:
 		strcpy( path, item->world_model[0] );
 		COM_StripExtension( path, path, sizeof(path) );
 		strcat( path, "_barrel.md3" );
-		pi->barrelModel = trap_R_RegisterModel( path );
+		pi->barrelModel = trap->re->RegisterModel( path );
 	}
 
 	strcpy( path, item->world_model[0] );
 	COM_StripExtension( path, path, sizeof(path) );
 	strcat( path, "_flash.md3" );
-	pi->flashModel = trap_R_RegisterModel( path );
+	pi->flashModel = trap->re->RegisterModel( path );
 
 	switch( weaponNum ) {
 	case WP_GAUNTLET:
@@ -295,7 +295,7 @@ static void UI_PositionEntityOnTag( refEntity_t *entity, const refEntity_t *pare
 	orientation_t	lerped;
 	
 	// lerp the tag
-	trap_CM_LerpTag( &lerped, parentModel, parent->oldframe, parent->frame,
+	trap->re->LerpTag( &lerped, parentModel, parent->oldframe, parent->frame,
 		1.0 - parent->backlerp, tagName );
 
 	// FIXME: allow origin offsets along tag?
@@ -322,7 +322,7 @@ static void UI_PositionRotatedEntityOnTag( refEntity_t *entity, const refEntity_
 	vec3_t			tempAxis[3];
 
 	// lerp the tag
-	trap_CM_LerpTag( &lerped, parentModel, parent->oldframe, parent->frame,
+	trap->re->LerpTag( &lerped, parentModel, parent->oldframe, parent->frame,
 		1.0 - parent->backlerp, tagName );
 
 	// FIXME: allow origin offsets along tag?
@@ -349,7 +349,7 @@ static void UI_SetLerpFrameAnimation( playerInfo_t *ci, lerpFrame_t *lf, int new
 	newAnimation &= ~ANIM_TOGGLEBIT;
 
 	if ( newAnimation < 0 || newAnimation >= MAX_ANIMATIONS ) {
-		trap_Error( va("Bad animation number: %i", newAnimation) );
+		trap->Error( va("Bad animation number: %i", newAnimation) );
 	}
 
 	anim = &ci->animations[ newAnimation ];
@@ -641,7 +641,7 @@ static void UI_PlayerFloatSprite( playerInfo_t *pi, vec3_t origin, qhandle_t sha
 	ent.customShader = shader;
 	ent.radius = 10;
 	ent.renderfx = 0;
-	trap_R_AddRefEntityToScene( &ent );
+	trap->re->AddRefEntityToScene( &ent );
 }
 
 
@@ -708,13 +708,13 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 	dp_realtime = time;
 
-	if ( pi->pendingWeapon != -1 && dp_realtime > pi->weaponTimer ) {
+	if ( pi->pendingWeapon != WP_INVALID && dp_realtime > pi->weaponTimer ) {
 		pi->weapon = pi->pendingWeapon;
 		pi->lastWeapon = pi->pendingWeapon;
-		pi->pendingWeapon = -1;
+		pi->pendingWeapon = WP_INVALID;
 		pi->weaponTimer = 0;
 		if( pi->currentWeapon != pi->weapon ) {
-			trap_S_StartLocalSound( weaponChangeSound, CHAN_LOCAL );
+			trap->si->StartLocalSound( weaponChangeSound, CHAN_LOCAL );
 		}
 	}
 
@@ -749,7 +749,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 	refdef.time = dp_realtime;
 
-	trap_R_ClearScene();
+	trap->re->ClearScene();
 
 	// get the rotation information
 	UI_PlayerAngles( pi, legs.axis, torso.axis, head.axis );
@@ -772,7 +772,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	legs.renderfx = renderfx;
 	VectorCopy (legs.origin, legs.oldorigin);
 
-	trap_R_AddRefEntityToScene( &legs );
+	trap->re->AddRefEntityToScene( &legs );
 
 	if (!legs.hModel) {
 		return;
@@ -794,7 +794,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 	torso.renderfx = renderfx;
 
-	trap_R_AddRefEntityToScene( &torso );
+	trap->re->AddRefEntityToScene( &torso );
 
 	//
 	// add the head
@@ -811,7 +811,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 	head.renderfx = renderfx;
 
-	trap_R_AddRefEntityToScene( &head );
+	trap->re->AddRefEntityToScene( &head );
 
 	//
 	// add the gun
@@ -828,7 +828,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		VectorCopy( origin, gun.lightingOrigin );
 		UI_PositionEntityOnTag( &gun, &torso, pi->torsoModel, "tag_weapon");
 		gun.renderfx = renderfx;
-		trap_R_AddRefEntityToScene( &gun );
+		trap->re->AddRefEntityToScene( &gun );
 	}
 
 	//
@@ -853,7 +853,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 		UI_PositionRotatedEntityOnTag( &barrel, &gun, pi->weaponModel, "tag_barrel");
 
-		trap_R_AddRefEntityToScene( &barrel );
+		trap->re->AddRefEntityToScene( &barrel );
 	}
 
 	//
@@ -872,12 +872,12 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 			VectorCopy( origin, flash.lightingOrigin );
 			UI_PositionEntityOnTag( &flash, &gun, pi->weaponModel, "tag_flash");
 			flash.renderfx = renderfx;
-			trap_R_AddRefEntityToScene( &flash );
+			trap->re->AddRefEntityToScene( &flash );
 		}
 
 		// make a dlight for the flash
 		if ( pi->flashDlightColor[0] || pi->flashDlightColor[1] || pi->flashDlightColor[2] ) {
-			trap_R_AddLightToScene( flash.origin, 200 + (rand()&31), pi->flashDlightColor[0],
+			trap->re->AddLightToScene( flash.origin, 200 + (rand()&31), pi->flashDlightColor[0],
 				pi->flashDlightColor[1], pi->flashDlightColor[2] );
 		}
 	}
@@ -886,7 +886,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	// add the chat icon
 	//
 	if ( pi->chat ) {
-		UI_PlayerFloatSprite( pi, origin, trap_R_RegisterShaderNoMip( "sprites/balloon3" ) );
+		UI_PlayerFloatSprite( pi, origin, trap->re->RegisterShaderNoMip( "sprites/balloon3" ) );
 	}
 
 	//
@@ -895,14 +895,14 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	origin[0] -= 100;	// + = behind, - = in front
 	origin[1] += 100;	// + = left, - = right
 	origin[2] += 100;	// + = above, - = below
-	trap_R_AddLightToScene( origin, 500, 1.0, 1.0, 1.0 );
+	trap->re->AddLightToScene( origin, 500, 1.0, 1.0, 1.0 );
 
 	origin[0] -= 100;
 	origin[1] -= 100;
 	origin[2] -= 100;
-	trap_R_AddLightToScene( origin, 500, 1.0, 0.0, 0.0 );
+	trap->re->AddLightToScene( origin, 500, 1.0, 0.0, 0.0 );
 
-	trap_R_RenderScene( &refdef );
+	trap->re->RenderScene( &refdef );
 }
 
 
@@ -915,13 +915,13 @@ static bool UI_RegisterClientSkin( playerInfo_t *pi, const char *modelName, cons
 	char		filename[MAX_QPATH];
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/lower_%s.skin", modelName, skinName );
-	pi->legsSkin = trap_R_RegisterSkin( filename );
+	pi->legsSkin = trap->re->RegisterSkin( filename );
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/upper_%s.skin", modelName, skinName );
-	pi->torsoSkin = trap_R_RegisterSkin( filename );
+	pi->torsoSkin = trap->re->RegisterSkin( filename );
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/head_%s.skin", modelName, skinName );
-	pi->headSkin = trap_R_RegisterSkin( filename );
+	pi->headSkin = trap->re->RegisterSkin( filename );
 
 	if ( !pi->legsSkin || !pi->torsoSkin || !pi->headSkin ) {
 		return false;
@@ -938,29 +938,24 @@ UI_ParseAnimationFile
 */
 static bool UI_ParseAnimationFile( const char *filename, animation_t *animations ) {
 	char		*text_p, *prev;
-	int			len;
 	int			i;
 	char		*token;
 	float		fps;
 	int			skip;
-	char		text[20000];
-	fileHandle_t	f;
 
 	memset( animations, 0, sizeof( animation_t ) * MAX_ANIMATIONS );
 
 	// load the file
-	len = trap_FS_FOpenFile( filename, &f, FS_READ );
-	if ( len <= 0 ) {
+	byte *buffer = NULL;
+	int len      = og::FS->LoadFile( filename, &buffer );
+	if( len < 0 ) {
+		trap->Print( va( S_COLOR_RED "file not found: %s\n", filename ) );
 		return false;
 	}
-	if ( len >= ( sizeof( text ) - 1 ) ) {
-		Com_Printf( "File %s too long\n", filename );
-		trap_FS_FCloseFile( f );
-		return false;
-	}
-	trap_FS_Read( text, len, f );
-	text[len] = 0;
-	trap_FS_FCloseFile( f );
+
+	og::AutoFreeFile aff( buffer );
+
+	char *text = (char *)buffer;
 
 	// parse the text
 	text_p = text;
@@ -1086,21 +1081,21 @@ bool UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName ) {
 	// load cmodels before models so filecache works
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/lower.md3", modelName );
-	pi->legsModel = trap_R_RegisterModel( filename );
+	pi->legsModel = trap->re->RegisterModel( filename );
 	if ( !pi->legsModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
 		return false;
 	}
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/upper.md3", modelName );
-	pi->torsoModel = trap_R_RegisterModel( filename );
+	pi->torsoModel = trap->re->RegisterModel( filename );
 	if ( !pi->torsoModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
 		return false;
 	}
 
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/head.md3", modelName );
-	pi->headModel = trap_R_RegisterModel( filename );
+	pi->headModel = trap->re->RegisterModel( filename );
 	if ( !pi->headModel ) {
 		Com_Printf( "Failed to load model file %s\n", filename );
 		return false;
@@ -1136,7 +1131,7 @@ void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model ) {
 	pi->weapon = WP_MACHINEGUN;
 	pi->currentWeapon = pi->weapon;
 	pi->lastWeapon = pi->weapon;
-	pi->pendingWeapon = -1;
+	pi->pendingWeapon = WP_INVALID;
 	pi->weaponTimer = 0;
 	pi->chat = false;
 	pi->newModel = true;
@@ -1156,7 +1151,7 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 
 	pi->chat = chat;
 
-	c = (int)trap_Cvar_VariableValue( "color1" );
+	c = (int)cvarSystem->VariableValue( "color1" );
  
 	VectorClear( pi->color1 );
 
@@ -1206,7 +1201,7 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 			pi->weapon = weaponNumber;
 			pi->currentWeapon = weaponNumber;
 			pi->lastWeapon = weaponNumber;
-			pi->pendingWeapon = -1;
+			pi->pendingWeapon = WP_INVALID;
 			pi->weaponTimer = 0;
 			UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 		}
@@ -1215,8 +1210,8 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 	}
 
 	// weapon
-	if ( weaponNumber == -1 ) {
-		pi->pendingWeapon = -1;
+	if ( weaponNumber == WP_INVALID ) {
+		pi->pendingWeapon = WP_INVALID;
 		pi->weaponTimer = 0;
 	}
 	else if ( weaponNumber != WP_NONE ) {

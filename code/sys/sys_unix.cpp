@@ -191,7 +191,7 @@ const char *Sys_Dirname( char *path )
 {
 	return dirname( path );
 }
-
+#if 0
 /*
 ==============
 Sys_FOpen
@@ -221,7 +221,7 @@ bool Sys_Mkdir( const char *path )
 
 	return true;
 }
-
+#endif
 /*
 ==================
 Sys_Mkfifo
@@ -278,6 +278,7 @@ DIRECTORY SCANNING
 ==============================================================
 */
 
+#if 0
 #define MAX_FOUND_FILES 0x1000
 
 /*
@@ -456,7 +457,7 @@ void Sys_FreeFileList( char **list )
 
 	Z_Free( list );
 }
-
+#endif
 /*
 ==================
 Sys_Sleep

@@ -23,8 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // g_public.h -- game module information visible to server
 
-#define	GAME_API_VERSION	8
-
 // entity->svFlags
 // the server does not know how to interpret most of the values
 // in entityStates (level eType), so the game must explicitly flag
@@ -67,7 +65,7 @@ typedef struct {
 	int			singleClient;		
 
 	bool	bmodel;				// if false, assume an explicit mins / maxs bounding box
-									// only set by trap_SetBrushModel
+									// only set by trap->SetBrushModel
 	vec3_t		mins, maxs;
 	int			contents;			// CONTENTS_TRIGGER, CONTENTS_SOLID, CONTENTS_BODY, etc
 									// a non-solid entity should set to 0
@@ -422,7 +420,7 @@ typedef enum {
 	GAME_CONSOLE_COMMAND,			// ( void );
 	// ConsoleCommand will be called when a command has been issued
 	// that is not recognized as a builtin function.
-	// The game can issue trap_argc() / trap_argv() commands to get the command
+	// The game can issue trap->Cmd_Argc() / trap->Cmd_Argv() commands to get the command
 	// and parameters.  Return false if the game doesn't recognize it as a command.
 
 	BOTAI_START_FRAME				// ( int time );

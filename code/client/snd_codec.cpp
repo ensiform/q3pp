@@ -141,7 +141,7 @@ void S_CodecInit()
 S_CodecShutdown
 =================
 */
-void S_CodecShutdown()
+void S_CodecShutdown(void)
 {
 	codecs = NULL;
 }
@@ -174,7 +174,7 @@ S_CodecOpenStream
 */
 snd_stream_t *S_CodecOpenStream(const char *filename)
 {
-	return S_CodecGetSound(filename, NULL);
+	return (snd_stream_t *)S_CodecGetSound(filename, NULL);
 }
 
 void S_CodecCloseStream(snd_stream_t *stream)
@@ -198,22 +198,24 @@ S_CodecUtilOpen
 snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec)
 {
 	snd_stream_t *stream;
-	fileHandle_t hnd;
+	og::File *hnd;
 	int length;
 
 	// Try to open the file
-	length = FS_FOpenFileRead(filename, &hnd, true);
+	hnd = og::FS->OpenRead( filename );
 	if(!hnd)
 	{
 		Com_DPrintf("Can't read sound file %s\n", filename);
 		return NULL;
 	}
 
+	length = hnd->Size();
+
 	// Allocate a stream
-	stream = Z_Malloc(sizeof(snd_stream_t));
+	stream = (snd_stream_t *)Z_Malloc(sizeof(snd_stream_t));
 	if(!stream)
 	{
-		FS_FCloseFile(hnd);
+		hnd->Close();
 		return NULL;
 	}
 
@@ -231,7 +233,7 @@ S_CodecUtilClose
 */
 void S_CodecUtilClose(snd_stream_t **stream)
 {
-	FS_FCloseFile((*stream)->file);
+	( *stream )->file->Close();
 	Z_Free(*stream);
 	*stream = NULL;
 }

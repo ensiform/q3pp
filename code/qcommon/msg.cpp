@@ -280,7 +280,11 @@ void MSG_WriteByte( msg_t *sb, int c ) {
 
 	MSG_WriteBits( sb, c, 8 );
 }
-
+void MSG_WriteBool( msg_t *sb, bool b ) {
+	floatint_t dat;
+	dat.b = b;
+	MSG_WriteBits( sb, dat.i, 1 );
+}
 void MSG_WriteData( msg_t *buf, const void *data, int length ) {
 	int i;
 	for(i=0;i<length;i++) {
@@ -427,6 +431,17 @@ int MSG_ReadLong( msg_t *msg ) {
 	}	
 	
 	return c;
+}
+
+bool MSG_ReadBool( msg_t *msg ) {
+	floatint_t dat;
+
+	dat.i = MSG_ReadBits( msg, 1 );
+	if( msg->readcount > msg->cursize ) {
+		dat.b = false;
+	}
+
+	return dat.b;
 }
 
 float MSG_ReadFloat( msg_t *msg ) {
@@ -787,7 +802,7 @@ netField_t	entityStateFields[] =
 { NETF(apos.trBase[1]), 0 },
 { NETF(pos.trDelta[2]), 0 },
 { NETF(apos.trBase[0]), 0 },
-{ NETF(event), 10 },
+{ NETF(_event), 10 },
 { NETF(angles2[1]), 0 },
 { NETF(eType), 8 },
 { NETF(torsoAnim), 8 },

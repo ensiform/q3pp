@@ -26,10 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "../renderercommon/tr_types.h"
 //NOTE: include the ui_public.h from the new UI
-#include "../ui/ui_public.h"
-//redefine to old API version
-#undef UI_API_VERSION
-#define UI_API_VERSION	4
+//#include "../ui/ui_public.h"
+#include "../Public/UIPublic.h"
 #include "../client/keycodes.h"
 #include "../game/bg_public.h"
 
@@ -558,7 +556,7 @@ typedef struct {
 	bool			firstdraw;
 } uiStatic_t;
 
-extern void			UI_Init( void );
+extern void			UI_Init( bool inGameLoad );
 extern void			UI_Shutdown( void );
 extern void			UI_KeyEvent( int key, int down );
 extern void			UI_MouseEvent( int dx, int dy );
@@ -619,72 +617,74 @@ void UI_SPPostgameMenu_f( void );
 void UI_SPSkillMenu( const char *arenaInfo );
 void UI_SPSkillMenu_Cache( void );
 
+#if 0
 //
 // ui_syscalls.c
 //
-void			trap_Print( const char *string );
-void			trap_Error( const char *string ) __attribute__((noreturn));
-int				trap_Milliseconds( void );
-void			trap_Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags );
-void			trap_Cvar_Update( vmCvar_t *vmCvar );
-void			trap_Cvar_Set( const char *var_name, const char *value );
-float			trap_Cvar_VariableValue( const char *var_name );
-void			trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
-void			trap_Cvar_SetValue( const char *var_name, float value );
-void			trap_Cvar_Reset( const char *name );
-void			trap_Cvar_Create( const char *var_name, const char *var_value, int flags );
-void			trap_Cvar_InfoStringBuffer( int bit, char *buffer, int bufsize );
-int				trap_Argc( void );
-void			trap_Argv( int n, char *buffer, int bufferLength );
-void			trap_Cmd_ExecuteText( int exec_when, const char *text );	// don't use EXEC_NOW!
-int				trap_FS_FOpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode );
-void			trap_FS_Read( void *buffer, int len, fileHandle_t f );
-void			trap_FS_Write( const void *buffer, int len, fileHandle_t f );
-void			trap_FS_FCloseFile( fileHandle_t f );
-int				trap_FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
-int				trap_FS_Seek( fileHandle_t f, long offset, int origin ); // fsOrigin_t
-qhandle_t		trap_R_RegisterModel( const char *name );
-qhandle_t		trap_R_RegisterSkin( const char *name );
-qhandle_t		trap_R_RegisterShaderNoMip( const char *name );
-void			trap_R_ClearScene( void );
-void			trap_R_AddRefEntityToScene( const refEntity_t *re );
-void			trap_R_AddPolyToScene( qhandle_t hShader , int numVerts, const polyVert_t *verts );
-void			trap_R_AddLightToScene( const vec3_t org, float intensity, float r, float g, float b );
-void			trap_R_RenderScene( const refdef_t *fd );
-void			trap_R_SetColor( const float *rgba );
-void			trap_R_DrawStretchPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader );
-void			trap_UpdateScreen( void );
-int				trap_CM_LerpTag( orientation_t *tag, clipHandle_t mod, int startFrame, int endFrame, float frac, const char *tagName );
-void			trap_S_StartLocalSound( sfxHandle_t sfx, int channelNum );
-sfxHandle_t	trap_S_RegisterSound( const char *sample, bool compressed );
-void			trap_Key_KeynumToStringBuf( int keynum, char *buf, int buflen );
-void			trap_Key_GetBindingBuf( int keynum, char *buf, int buflen );
-void			trap_Key_SetBinding( int keynum, const char *binding );
-bool		trap_Key_IsDown( int keynum );
-bool		trap_Key_GetOverstrikeMode( void );
-void			trap_Key_SetOverstrikeMode( bool state );
-void			trap_Key_ClearStates( void );
-int				trap_Key_GetCatcher( void );
-void			trap_Key_SetCatcher( int catcher );
-void			trap_GetClipboardData( char *buf, int bufsize );
-void			trap_GetClientState( uiClientState_t *state );
-void			trap_GetGlconfig( glconfig_t *glconfig );
-int				trap_GetConfigString( int index, char* buff, int buffsize );
-int				trap_LAN_GetServerCount( int source );
-void			trap_LAN_GetServerAddressString( int source, int n, char *buf, int buflen );
-void			trap_LAN_GetServerInfo( int source, int n, char *buf, int buflen );
-int				trap_LAN_GetPingQueueCount( void );
-int				trap_LAN_ServerStatus( const char *serverAddress, char *serverStatus, int maxLen );
-void			trap_LAN_ClearPing( int n );
-void			trap_LAN_GetPing( int n, char *buf, int buflen, int *pingtime );
-void			trap_LAN_GetPingInfo( int n, char *buf, int buflen );
-int				trap_MemoryRemaining( void );
-void			trap_GetCDKey( char *buf, int buflen );
-void			trap_SetCDKey( char *buf );
+void			trap->Print( const char *string );
+void			trap->Error( const char *string ) __attribute__((noreturn));
+int				trap->Milliseconds( void );
+void			cvarSystem->Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags );
+void			cvarSystem->Update( vmCvar_t *vmCvar );
+void			cvarSystem->Set( const char *var_name, const char *value );
+float			cvarSystem->VariableValue( const char *var_name );
+void			cvarSystem->VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
+void			cvarSystem->SetValue( const char *var_name, float value );
+void			cvarSystem->Reset( const char *name );
+void			trap->Cvar_Create( const char *var_name, const char *var_value, int flags );
+void			trap->Cvar_InfoStringBuffer( int bit, char *buffer, int bufsize );
+int				trap->Cmd_Argc( void );
+void			trap->Cmd_Argv( int n, char *buffer, int bufferLength );
+void			trap->Cmd_ExecuteText( int exec_when, const char *text );	// don't use EXEC_NOW!
+int				trap->FS_FOpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode );
+void			trap->FS_Read( void *buffer, int len, fileHandle_t f );
+void			trap->FS_Write( const void *buffer, int len, fileHandle_t f );
+void			trap->FS_FCloseFile( fileHandle_t f );
+int				trap->FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
+int				trap->FS_Seek( fileHandle_t f, long offset, int origin ); // fsOrigin_t
+qhandle_t		trap->re->RegisterModel( const char *name );
+qhandle_t		trap->re->RegisterSkin( const char *name );
+qhandle_t		trap->re->RegisterShaderNoMip( const char *name );
+void			trap->re->ClearScene( void );
+void			trap->re->AddRefEntityToScene( const refEntity_t *re );
+void			trap->re->AddPolyToScene( qhandle_t hShader , int numVerts, const polyVert_t *verts );
+void			trap->re->AddLightToScene( const vec3_t org, float intensity, float r, float g, float b );
+void			trap->re->RenderScene( const refdef_t *fd );
+void			trap->re->SetColor( const float *rgba );
+void			trap->re->DrawStretchPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader );
+void			trap->UpdateScreen( void );
+int				trap->CM_LerpTag( orientation_t *tag, clipHandle_t mod, int startFrame, int endFrame, float frac, const char *tagName );
+void			trap->si->StartLocalSound( sfxHandle_t sfx, int channelNum );
+sfxHandle_t	trap->si->RegisterSound( const char *sample, bool compressed );
+void			trap->Key_KeynumToStringBuf( int keynum, char *buf, int buflen );
+void			trap->Key_GetBindingBuf( int keynum, char *buf, int buflen );
+void			trap->Key_SetBinding( int keynum, const char *binding );
+bool		trap->Key_IsDown( int keynum );
+bool		trap->Key_GetOverstrikeMode( void );
+void			trap->Key_SetOverstrikeMode( bool state );
+void			trap->Key_ClearStates( void );
+int				trap->Key_GetCatcher( void );
+void			trap->Key_SetCatcher( int catcher );
+void			trap->GetClipboardData( char *buf, int bufsize );
+void			trap->GetClientState( uiClientState_t *state );
+void			trap->GetGlconfig( glconfig_t *glconfig );
+int				trap->GetConfigString( int index, char* buff, int buffsize );
+int				trap->LAN_GetServerCount( int source );
+void			trap->LAN_GetServerAddressString( int source, int n, char *buf, int buflen );
+void			trap->LAN_GetServerInfo( int source, int n, char *buf, int buflen );
+int				trap->LAN_GetPingQueueCount( void );
+int				trap->LAN_ServerStatus( const char *serverAddress, char *serverStatus, int maxLen );
+void			trap->LAN_ClearPing( int n );
+void			trap->LAN_GetPing( int n, char *buf, int buflen, int *pingtime );
+void			trap->LAN_GetPingInfo( int n, char *buf, int buflen );
+int				trap->MemoryRemaining( void );
+void			trap->GetCDKey( char *buf, int buflen );
+void			trap->SetCDKey( char *buf );
 
-bool               trap_VerifyCDKey( const char *key, const char *chksum);
+bool               trap->VerifyCDKey( const char *key, const char *chksum);
 
-void			trap_SetPbClStatus( int status );
+void			trap->SetPbClStatus( int status );
+#endif
 
 //
 // ui_addbots.c
@@ -801,5 +801,8 @@ void UI_SignupMenu( void );
 //
 void RankStatus_Cache( void );
 void UI_RankStatusMenu( void );
+
+extern ogUIImport *trap;
+extern botlib_export_t *botlib;
 
 #endif

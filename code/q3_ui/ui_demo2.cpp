@@ -70,10 +70,13 @@ typedef struct {
 	menubitmap_s	back;
 	menubitmap_s	go;
 
-	int				numDemos;
-	char			names[NAMEBUFSIZE];
+	//int				numDemos;
+	//char			names[NAMEBUFSIZE];
 	
 	char			*demolist[MAX_DEMOS];
+	char			*demoptr;
+
+	char  demos[NAMEBUFSIZE];
 } demos_t;
 
 static demos_t	s_demos;
@@ -84,15 +87,15 @@ static demos_t	s_demos;
 Demos_MenuEvent
 ===============
 */
-static void Demos_MenuEvent( void *ptr, int event ) {
-	if( event != QM_ACTIVATED ) {
+static void Demos_MenuEvent( void *ptr, int _event ) {
+	if( _event != QM_ACTIVATED ) {
 		return;
 	}
 
 	switch( ((menucommon_s*)ptr)->id ) {
 	case ID_GO:
 		UI_ForceMenuOff ();
-		trap_Cmd_ExecuteText( EXEC_APPEND, va( "demo %s\n",
+		trap->Cmd_ExecuteText( EXEC_APPEND, va( "demo %s\n",
 								s_demos.list.itemnames[s_demos.list.curvalue]) );
 		break;
 
@@ -110,6 +113,67 @@ static void Demos_MenuEvent( void *ptr, int event ) {
 	}
 }
 
+/*
+=================
+UI_DemosMenu_Key
+=================
+*/
+static sfxHandle_t UI_DemosMenu_Key( int key ) {
+	menucommon_s *item;
+
+	item = (menucommon_s *)Menu_ItemAtCursor( &s_demos.menu );
+
+	return Menu_DefaultKey( &s_demos.menu, key );
+}
+
+/*
+===============
+UI_Demos_LoadDemos
+===============
+*/
+static void UI_Demos_LoadDemos( void ) {
+	char demoExt[32];
+	int	protocol, protocolLegacy;
+
+	protocolLegacy = cvarSystem->VariableValue("com_legacyprotocol");
+	protocol = cvarSystem->VariableValue("com_protocol");
+
+	if(!protocol)
+		protocol = cvarSystem->VariableValue("protocol");
+	if(protocolLegacy == protocol)
+		protocolLegacy = 0;
+
+	Com_sprintf( demoExt, sizeof( demoExt ), ".%s%d", DEMOEXT, protocol );
+	s_demos.list.itemnames = (const char **)s_demos.demolist;
+	s_demos.demoptr = s_demos.demos;
+
+	if( og::FileList * files = og::FS->GetFileList( "demos", demoExt, og::LF_DEFAULT | og::LF_REMOVE_DIR ) ) {
+		int max = og::Min( files->Num(), MAX_DEMOS );
+		if( !files->Num() ) {
+			s_demos.list.itemnames[0] = "No Demos Found.";
+			s_demos.list.numitems = 1;
+
+			//degenerate case, not selectable
+			s_demos.go.generic.flags |= (QMF_INACTIVE|QMF_HIDDEN);
+			og::FS->FreeFileList( files );
+			return;
+		}
+
+		for( int i = 0; i < max; i++ ) {
+			og::String demoName = files->GetName( i );
+			demoName.StripFileExtension();
+			demoName.ToUpper();
+			s_demos.demolist[s_demos.list.numitems] = s_demos.demoptr;
+			Q_strncpyz( s_demos.demoptr, demoName.c_str(), 16 );
+
+			s_demos.list.itemnames[s_demos.list.numitems] = s_demos.demoptr;
+			s_demos.demoptr += strlen( s_demos.demoptr ) + 1;
+			s_demos.list.numitems++;
+		}
+
+		og::FS->FreeFileList( files );
+	}
+}
 
 /*
 ===============
@@ -117,12 +181,15 @@ Demos_MenuInit
 ===============
 */
 static void Demos_MenuInit( void ) {
+#if 0
 	int		i, j;
 	int		len;
 	char	*demoname, extension[32];
 	int	protocol, protocolLegacy;
+#endif
 
 	memset( &s_demos, 0 ,sizeof(demos_t) );
+	s_demos.menu.key = UI_DemosMenu_Key;
 
 	Demos_Cache();
 
@@ -210,19 +277,22 @@ static void Demos_MenuInit( void ) {
 	s_demos.list.generic.y			= 130;
 	s_demos.list.width				= 16;
 	s_demos.list.height				= 14;
-	s_demos.list.itemnames			= (const char **)s_demos.demolist;
+	//s_demos.list.itemnames			= (const char **)s_demos.demolist;
 	s_demos.list.columns			= 3;
 
-	protocolLegacy = trap_Cvar_VariableValue("com_legacyprotocol");
-	protocol = trap_Cvar_VariableValue("com_protocol");
+	UI_Demos_LoadDemos();
+
+#if 0
+	protocolLegacy = cvarSystem->VariableValue("com_legacyprotocol");
+	protocol = cvarSystem->VariableValue("com_protocol");
 
 	if(!protocol)
-		protocol = trap_Cvar_VariableValue("protocol");
+		protocol = cvarSystem->VariableValue("protocol");
 	if(protocolLegacy == protocol)
 		protocolLegacy = 0;
 
 	Com_sprintf(extension, sizeof(extension), ".%s%d", DEMOEXT, protocol);
-	s_demos.numDemos = trap_FS_GetFileList("demos", extension, s_demos.names, ARRAY_LEN(s_demos.names));
+	s_demos.numDemos = trap->FS_GetFileList("demos", extension, s_demos.names, ARRAY_LEN(s_demos.names));
 
 	demoname = s_demos.names;
 	i = 0;
@@ -246,7 +316,7 @@ static void Demos_MenuInit( void ) {
 			if(protocolLegacy > 0 && s_demos.numDemos < MAX_DEMOS)
 			{
 				Com_sprintf(extension, sizeof(extension), ".%s%d", DEMOEXT, protocolLegacy);
-				s_demos.numDemos += trap_FS_GetFileList("demos", extension, demoname,
+				s_demos.numDemos += trap->FS_GetFileList("demos", extension, demoname,
 									ARRAY_LEN(s_demos.names) - (demoname - s_demos.names));
 			}
 			else
@@ -264,6 +334,7 @@ static void Demos_MenuInit( void ) {
 		//degenerate case, not selectable
 		s_demos.go.generic.flags |= (QMF_INACTIVE|QMF_HIDDEN);
 	}
+#endif
 
 	Menu_AddItem( &s_demos.menu, &s_demos.banner );
 	Menu_AddItem( &s_demos.menu, &s_demos.framel );
@@ -282,15 +353,15 @@ Demos_Cache
 =================
 */
 void Demos_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_GO0 );
-	trap_R_RegisterShaderNoMip( ART_GO1 );
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_ARROWS );
-	trap_R_RegisterShaderNoMip( ART_ARROWLEFT );
-	trap_R_RegisterShaderNoMip( ART_ARROWRIGHT );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_GO0 );
+	trap->re->RegisterShaderNoMip( ART_GO1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_ARROWS );
+	trap->re->RegisterShaderNoMip( ART_ARROWLEFT );
+	trap->re->RegisterShaderNoMip( ART_ARROWRIGHT );
 }
 
 /*

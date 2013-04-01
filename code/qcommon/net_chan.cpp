@@ -490,26 +490,26 @@ packetQueue_t *packetQueue = NULL;
 static void NET_QueuePacket( int length, const void *data, netadr_t to,
 	int offset )
 {
-	packetQueue_t *new, *next = packetQueue;
+	packetQueue_t *_new, *next = packetQueue;
 
 	if(offset > 999)
 		offset = 999;
 
-	new = S_Malloc(sizeof(packetQueue_t));
-	new->data = S_Malloc(length);
-	Com_Memcpy(new->data, data, length);
-	new->length = length;
-	new->to = to;
-	new->release = Sys_Milliseconds() + (int)((float)offset / com_timescale->value);	
-	new->next = NULL;
+	_new = (packetQueue_t *)S_Malloc(sizeof(packetQueue_t));
+	_new->data = (byte *)S_Malloc(length);
+	Com_Memcpy(_new->data, data, length);
+	_new->length = length;
+	_new->to = to;
+	_new->release = Sys_Milliseconds() + (int)((float)offset / com_timescale->value);	
+	_new->next = NULL;
 
 	if(!packetQueue) {
-		packetQueue = new;
+		packetQueue = _new;
 		return;
 	}
 	while(next) {
 		if(!next->next) {
-			next->next = new;
+			next->next = _new;
 			return;
 		}
 		next = next->next;

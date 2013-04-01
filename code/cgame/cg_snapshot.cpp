@@ -83,7 +83,7 @@ CG_TransitionSnapshot instead.
 FIXME: Also called by map_restart?
 ==================
 */
-void CG_SetInitialSnapshot( snapshot_t *snap ) {
+void CG_SetInitialSnapshot( ogSnapshot *snap ) {
 	int				i;
 	centity_t		*cent;
 	entityState_t	*state;
@@ -127,7 +127,7 @@ The transition point from snap to nextSnap has passed
 */
 static void CG_TransitionSnapshot( void ) {
 	centity_t			*cent;
-	snapshot_t			*oldFrame;
+	ogSnapshot			*oldFrame;
 	int					i;
 
 	if ( !cg.snap ) {
@@ -196,7 +196,7 @@ CG_SetNextSnap
 A new snapshot has just been read in from the client system.
 ===================
 */
-static void CG_SetNextSnap( snapshot_t *snap ) {
+static void CG_SetNextSnap( ogSnapshot *snap ) {
 	int					num;
 	entityState_t		*es;
 	centity_t			*cent;
@@ -256,9 +256,9 @@ times if the client system fails to return a
 valid snapshot.
 ========================
 */
-static snapshot_t *CG_ReadNextSnapshot( void ) {
+static ogSnapshot *CG_ReadNextSnapshot( void ) {
 	bool	r;
-	snapshot_t	*dest;
+	ogSnapshot	*dest;
 
 	if ( cg.latestSnapshotNum > cgs.processedSnapshotNum + 1000 ) {
 		CG_Printf( "WARNING: CG_ReadNextSnapshot: way out of range, %i > %i\n", 
@@ -275,9 +275,9 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 
 		// try to read the snapshot from the client system
 		cgs.processedSnapshotNum++;
-		r = trap_GetSnapshot( cgs.processedSnapshotNum, dest );
+		r = trap->GetSnapshot( cgs.processedSnapshotNum, dest );
 
-		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time
+		// FIXME: why would trap->GetSnapshot return a snapshot with the same server time
 		if ( cg.snap && r && dest->serverTime == cg.snap->serverTime ) {
 			//continue;
 		}
@@ -325,11 +325,11 @@ of an interpolating one)
 ============
 */
 void CG_ProcessSnapshots( void ) {
-	snapshot_t		*snap;
+	ogSnapshot		*snap;
 	int				n;
 
 	// see what the latest snapshot the client system has is
-	trap_GetCurrentSnapshotNumber( &n, &cg.latestSnapshotTime );
+	trap->GetCurrentSnapshotNumber( &n, &cg.latestSnapshotTime );
 	if ( n != cg.latestSnapshotNum ) {
 		if ( n < cg.latestSnapshotNum ) {
 			// this should never happen

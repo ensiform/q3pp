@@ -23,11 +23,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../renderercommon/tr_public.h"
-#include "../ui/ui_public.h"
+#include "../Public/RendererPublic.h"
+//#include "../renderercommon/tr_public.h"
+#include "../Public/UIPublic.h"
 #include "keys.h"
 #include "snd_public.h"
-#include "../cgame/cg_public.h"
+#include "../Public/CGamePublic.h"
 #include "../game/bg_public.h"
 
 #ifdef USE_CURL
@@ -195,8 +196,9 @@ typedef struct {
 	int			lastExecutedServerCommand;		// last server command grabbed or executed with CL_GetServerCommand
 	char		serverCommands[MAX_RELIABLE_COMMANDS][MAX_STRING_CHARS];
 
+#ifdef USE_DOWNLOADS
 	// file transfer from server
-	fileHandle_t download;
+	og::File	*download;
 	char		downloadTempName[MAX_OSPATH];
 	char		downloadName[MAX_OSPATH];
 #ifdef USE_CURL
@@ -215,6 +217,7 @@ typedef struct {
 	int			downloadSize;	// how many bytes we got
 	char		downloadList[MAX_INFO_STRING]; // list of paks we need to download
 	bool	downloadRestart;	// if true, we need to do another FS_Restart because we downloaded a pak
+#endif
 
 	// demo information
 	char		demoName[MAX_QPATH];
@@ -223,7 +226,7 @@ typedef struct {
 	bool	demoplaying;
 	bool	demowaiting;	// don't record until a non-delta message is received
 	bool	firstDemoFrameSkipped;
-	fileHandle_t	demofile;
+	og::File *demofile;
 
 	int			timeDemoFrames;		// counter of rendered frames
 	int			timeDemoStart;		// cls.realtime before first frame
@@ -361,10 +364,7 @@ extern	bool	cl_oldGameSet;
 
 //=============================================================================
 
-extern	vm_t			*cgvm;	// interface to cgame dll or vm
-extern	vm_t			*uivm;	// interface to ui dll or vm
-extern	refexport_t		re;		// interface to refresh .dll
-
+//extern	refexport_t		re;		// interface to refresh .dll
 
 //
 // cvars
@@ -417,8 +417,10 @@ extern	cvar_t	*cl_aviMotionJpeg;
 
 extern	cvar_t	*cl_activeAction;
 
+#ifdef USE_DOWNLOADS
 extern	cvar_t	*cl_allowDownload;
 extern  cvar_t  *cl_downloadMethod;
+#endif
 extern	cvar_t	*cl_conXOffset;
 extern	cvar_t	*cl_inGameVideo;
 
@@ -466,8 +468,10 @@ void CL_NextDemo( void );
 void CL_ReadDemoMessage( void );
 void CL_StopRecord_f(void);
 
+#ifdef USE_DOWNLOADS
 void CL_InitDownloads(void);
 void CL_NextDownload(void);
+#endif
 
 void CL_GetPing( int n, char *buf, int buflen, int *pingtime );
 void CL_GetPingInfo( int n, char *buf, int buflen );
@@ -579,6 +583,7 @@ void	SCR_DrawSmallChar( int x, int y, int ch );
 // cl_cin.c
 //
 
+void CL_CompleteCinematicName( char *args, int argNum );
 void CL_PlayCinematic_f( void );
 void SCR_DrawCinematic (void);
 void SCR_RunCinematic (void);
@@ -635,3 +640,6 @@ bool CL_VideoRecording( void );
 //
 void CL_WriteDemoMessage ( msg_t *msg, int headerBytes );
 
+extern ogCGameExport *cgameExport;
+extern ogUIExport *uiExport;
+extern ogRendererExport *re;

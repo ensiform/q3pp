@@ -99,14 +99,14 @@ static void SpecifyLeague_GetList()
 		s_specifyleague.rankname.field.buffer, 
 		sizeof(playername) );
 
-	count = trap_CL_UI_RankGetLeauges( playername );
+	count = trap->CL_UI_RankGetLeauges( playername );
 
 	for(i = 0; i < count; i++)
 	{
 		char	s[MAX_LEAGUENAME];
 		const char	*var;
 		var = va( "leaguename%i", i+1 );
-		trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
+		cvarSystem->VariableStringBuffer( var, s, sizeof(s) );
 		Q_strncpyz(league_table[i].leaguename, s, sizeof(league_table[i].leaguename) );
 		Q_strncpyz(league_table[i].buff, league_table[i].leaguename, sizeof(league_table[i].buff) );
 	}
@@ -158,7 +158,7 @@ static void SpecifyLeague_Event( void* ptr, int event )
 		case ID_SPECIFYLEAGUEBACK:
 			if( event == QM_ACTIVATED )
 			{
-				trap_Cvar_Set( "sv_leagueName", league_table[s_specifyleague.list.curvalue].leaguename);
+				cvarSystem->Set( "sv_leagueName", league_table[s_specifyleague.list.curvalue].leaguename);
 				UI_PopMenu();
 			}
 		break;
@@ -316,7 +316,7 @@ void SpecifyLeague_Cache( void )
 	{
 		if (!specifyleague_artlist[i])
 			break;
-		trap_R_RegisterShaderNoMip(specifyleague_artlist[i]);
+		trap->re->RegisterShaderNoMip(specifyleague_artlist[i]);
 	}
 }
 

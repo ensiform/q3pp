@@ -84,10 +84,11 @@ void Sys_SetFloatEnv(void)
 Sys_DefaultHomePath
 ================
 */
+typedef HRESULT (__stdcall * GETFOLDERPATH)(HWND, int, HANDLE, DWORD, LPSTR); 
 char *Sys_DefaultHomePath( void )
 {
 	TCHAR szPath[MAX_PATH];
-	FARPROC qSHGetFolderPath;
+	GETFOLDERPATH qSHGetFolderPath;
 	HMODULE shfolder = LoadLibrary("shfolder.dll");
 	
 	if(!*homePath && com_homepath)
@@ -98,7 +99,7 @@ char *Sys_DefaultHomePath( void )
 			return NULL;
 		}
 
-		qSHGetFolderPath = GetProcAddress(shfolder, "SHGetFolderPathA");
+		qSHGetFolderPath = (GETFOLDERPATH)GetProcAddress(shfolder, "SHGetFolderPathA");
 		if(qSHGetFolderPath == NULL)
 		{
 			Com_Printf("Unable to find SHGetFolderPath in SHFolder.dll\n");
@@ -205,8 +206,8 @@ char *Sys_GetClipboardData( void )
 		HANDLE hClipboardData;
 
 		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
-			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) {
-				data = Z_Malloc( GlobalSize( hClipboardData ) + 1 );
+			if ( ( cliptext = (char *)GlobalLock( hClipboardData ) ) != 0 ) {
+				data = (char *)Z_Malloc( GlobalSize( hClipboardData ) + 1 );
 				Q_strncpyz( data, cliptext, GlobalSize( hClipboardData ) );
 				GlobalUnlock( hClipboardData );
 				
@@ -282,7 +283,7 @@ const char *Sys_Dirname( char *path )
 
 	return dir;
 }
-
+#if 0
 /*
 ==============
 Sys_FOpen
@@ -307,7 +308,7 @@ bool Sys_Mkdir( const char *path )
 
 	return true;
 }
-
+#endif
 /*
 ==================
 Sys_Mkfifo
@@ -341,6 +342,7 @@ DIRECTORY SCANNING
 ==============================================================
 */
 
+#if 0
 #define MAX_FOUND_FILES 0x1000
 
 /*
@@ -450,7 +452,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		if (!nfiles)
 			return NULL;
 
-		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+		listCopy = (char **)Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
 		for ( i = 0 ; i < nfiles ; i++ ) {
 			listCopy[i] = list[i];
 		}
@@ -503,7 +505,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		return NULL;
 	}
 
-	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+	listCopy = (char **)Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		listCopy[i] = list[i];
 	}
@@ -543,7 +545,7 @@ void Sys_FreeFileList( char **list )
 
 	Z_Free( list );
 }
-
+#endif
 
 /*
 ==============

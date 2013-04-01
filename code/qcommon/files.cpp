@@ -31,6 +31,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "q_shared.h"
 #include "qcommon.h"
+#if 0
+
 #include "unzip.h"
 
 /*
@@ -4067,4 +4069,558 @@ const char *FS_GetCurrentGameDir(void)
 		return fs_gamedirvar->string;
 
 	return com_basegame->string;
+}
+#endif
+
+static char fs_gamedir[MAX_OSPATH];         // this will be a single file name with no separators
+static cvar_t *fs_debug;
+static cvar_t *fs_homepath;
+
+#ifdef MACOS_X
+// Also search the .app bundle for .pk3 files
+static cvar_t *fs_apppath;
+#endif
+
+static cvar_t *fs_basepath;
+static cvar_t *fs_basegame;
+static cvar_t *fs_gamedirvar;
+static int fs_readCount;                        // total bytes read
+static int fs_loadCount;                        // total files read
+static int fs_loadStack;                        // total files in memory
+static int fs_packFiles    = 0;                 // total number of files in packs
+static int fs_checksumFeed = 0;
+
+// last valid game folder used
+og::String lastValidBase; // [MAX_OSPATH]
+og::String lastValidGame; // [MAX_OSPATH]
+
+og::StringList pakFiles;
+
+/*
+===========
+FS_FilenameCompare
+
+Ignore case and seprator char distinctions
+===========
+*/
+bool FS_FilenameCompare( const char *s1, const char *s2 ) {
+	int		c1, c2;
+
+	do {
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (c1 >= 'a' && c1 <= 'z') {
+			c1 -= ('a' - 'A');
+		}
+		if (c2 >= 'a' && c2 <= 'z') {
+			c2 -= ('a' - 'A');
+		}
+
+		if ( c1 == '\\' || c1 == ':' ) {
+			c1 = '/';
+		}
+		if ( c2 == '\\' || c2 == ':' ) {
+			c2 = '/';
+		}
+
+		if (c1 != c2) {
+			return true;		// strings not equal
+		}
+	} while (c1);
+
+	return false;		// strings are equal
+}
+
+/*
+===========
+FS_IsExt
+
+Return true if ext matches file extension filename
+===========
+*/
+
+bool FS_IsExt(const char *filename, const char *ext, int namelen)
+{
+	int extlen;
+
+	extlen = strlen(ext);
+
+	if(extlen > namelen)
+		return false;
+
+	filename += namelen - extlen;
+
+	return !Q_stricmp(filename, ext);
+}
+
+/*
+===========
+FS_IsDemoExt
+
+Return true if filename has a demo extension
+===========
+*/
+
+bool FS_IsDemoExt(const char *filename, int namelen)
+{
+	const char *ext_test;
+	int index, protocol;
+
+	ext_test = strrchr(filename, '.');
+	if(ext_test && !Q_stricmpn(ext_test + 1, DEMOEXT, ARRAY_LEN(DEMOEXT) - 1))
+	{
+		protocol = atoi(ext_test + ARRAY_LEN(DEMOEXT));
+
+		if(protocol == com_protocol->integer)
+			return true;
+
+#ifdef LEGACY_PROTOCOL
+		if(protocol == com_legacyprotocol->integer)
+			return true;
+#endif
+
+		for(index = 0; demo_protocols[index]; index++)
+		{
+			if(demo_protocols[index] == protocol)
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool FS_FindDll( const char *filename, og::String &path ) {
+	og::File *f = og::FS->OpenRead( filename );
+	if( f == NULL )
+		return false;
+
+	if( *f->GetPakFileName() != 0 ) {
+		f->Close();
+		return false;
+	}
+
+	path = f->GetFullPath();
+	f->Close();
+	return true;
+}
+static bool fs_initialized = true;
+bool FS_Initialized( void ) {
+	return fs_initialized;
+}
+void FS_Shutdown( void ) {
+	if( fs_initialized ) {
+		og::FileSystem::Shutdown();
+		fs_initialized = false;
+	}
+
+	Cmd_RemoveCommand( "path" );
+	Cmd_RemoveCommand( "dir" );
+	Cmd_RemoveCommand( "touchFile" );
+	//Cmd_RemoveCommand( "fdir" );
+	Cmd_RemoveCommand( "which" );
+}
+/*
+================
+FS_Dir_f
+================
+*/
+static void FS_Dir_f( void ) {
+	char *path;
+	char *extension;
+	int flags;
+
+	if( Cmd_Argc() < 2 || Cmd_Argc() > 3 ) {
+		Com_Printf( "usage: dir <directory> [extension]\n" );
+		return;
+	}
+
+	if( Cmd_Argc() == 2 ) {
+		path      = Cmd_Argv( 1 );
+		extension = "";
+		flags     = og::LF_DIRS | og::LF_CHECK_ARCHIVED;
+	}
+	else {
+		path      = Cmd_Argv( 1 );
+		extension = Cmd_Argv( 2 );
+		flags     = og::LF_DEFAULT;
+	}
+
+	Com_Printf( "Directory of %s %s\n", path, extension );
+	Com_Printf( "---------------\n" );
+
+	if( og::FileList * files = og::FS->GetFileList( path, extension, flags ) ) {
+		for( int i = 0; i < files->Num(); i++ ) {
+			Com_Printf( "%s\n", files->GetName( i ) );
+		}
+
+		og::FS->FreeFileList( files );
+	}
+}
+/*
+================
+FS_NewDir_f
+================
+*/
+#if 0
+void FS_NewDir_f( void ) {
+	char	*filter;
+	char	**dirnames;
+	int		ndirs;
+	int		i;
+
+	if ( Cmd_Argc() < 2 ) {
+		Com_Printf( "usage: fdir <filter>\n" );
+		Com_Printf( "example: fdir *q3dm*.bsp\n");
+		return;
+	}
+
+	filter = Cmd_Argv( 1 );
+
+	Com_Printf( "---------------\n" );
+
+	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, false );
+
+	FS_SortFileList(dirnames, ndirs);
+
+	for ( i = 0; i < ndirs; i++ ) {
+		FS_ConvertPath(dirnames[i]);
+		Com_Printf( "%s\n", dirnames[i] );
+	}
+	Com_Printf( "%d files listed\n", ndirs );
+	FS_FreeFileList( dirnames );
+}
+#endif
+/*
+============
+FS_Path_f
+============
+*/
+static void FS_Path_f( void ) {
+#if 0
+	searchpath_t	*s;
+	int				i;
+
+	Com_Printf ("Current search path:\n");
+	for (s = fs_searchpaths; s; s = s->next) {
+		if (s->pack) {
+			Com_Printf ("%s (%i files)\n", s->pack->pakFilename, s->pack->numfiles);
+			if ( fs_numServerPaks ) {
+				if ( !FS_PakIsPure(s->pack) ) {
+					Com_Printf( "    not on the pure list\n" );
+				} else {
+					Com_Printf( "    on the pure list\n" );
+				}
+			}
+		} else {
+			Com_Printf ("%s%c%s\n", s->dir->path, PATH_SEP, s->dir->gamedir );
+		}
+	}
+
+
+	Com_Printf( "\n" );
+	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) {
+		if ( fsh[i].handleFiles.file.o ) {
+			Com_Printf( "handle %i: %s\n", i, fsh[i].name );
+		}
+	}
+#endif
+}
+/*
+==============
+FS_TouchFile_f
+==============
+*/
+static void FS_TouchFile_f( void ) {
+	og::File *f;
+
+	if ( Cmd_Argc() != 2 ) {
+		Com_Printf( "Usage: touchFile <file>\n" );
+		return;
+	}
+
+	f = og::FS->OpenRead( Cmd_Argv( 1 ) );
+	if ( f ) {
+		f->Close();
+	}
+}
+/*
+============
+FS_Which_f
+============
+*/
+static void FS_Which_f( void ) {
+	char *filename;
+
+	filename = Cmd_Argv( 1 );
+
+	if( !filename[0] ) {
+		Com_Printf( "Usage: which <file>\n" );
+		return;
+	}
+
+	// qpaths are not supposed to have a leading slash
+	if( filename[0] == '/' || filename[0] == '\\' ) {
+		filename++;
+	}
+
+	og::File *f = og::FS->OpenRead( filename );
+
+	/* Fixme Pak files in homepath or apppath too? */
+	if( f ) {
+		og::String pakFile = fs_basepath->string;
+
+		pakFile += f->GetPakFileName();
+		pakFile.ToForwardSlashes();
+
+		if( !pakFile.IsEmpty() ) {
+			Com_Printf( "File \"%s\" found in \"%s%s\"\n", filename, fs_basepath->string, pakFile.c_str() );
+		}
+		else {
+			og::String pathName = f->GetFullPath();
+			pathName.StripTrailingOnce( f->GetFileName() );
+			Com_Printf( "File \"%s\" found at \"%s\"\n", filename, pathName.c_str() );
+		}
+		return;
+	}
+
+	Com_Printf( "File not found: \"%s\"\n", filename );
+}
+/*
+================
+FS_Startup
+================
+*/
+static void FS_Startup( const char *gameName ) {
+	const char *homePath;
+
+	Com_Printf( "----- FS_Startup -----\n" );
+
+	fs_packFiles = 0;
+
+	fs_debug    = Cvar_Get( "fs_debug", "0", 0 );
+	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT | CVAR_PROTECTED );
+	fs_basegame = Cvar_Get( "fs_basegame", "", CVAR_INIT );
+	homePath    = Sys_DefaultHomePath();
+	if( !homePath || !homePath[0] ) {
+#if defined(DEDICATED)
+		homePath = fs_basepath->string;
+#else
+		Com_Error(ERR_FATAL, "FS_Startup: Default home path is empty.");
+#endif
+	}
+
+	fs_homepath   = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED );
+	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+
+	og::FileSystem::Prepare();
+
+//	og::FileSystem::SetEXEPath( Sys_BinaryPath() );
+
+	// add search path elements in reverse priority order
+	if( fs_basepath->string[0] ) {
+		og::FileSystem::SetBasePath( fs_basepath->string );
+	}
+
+	// fs_homepath is somewhat particular to *nix systems, only add if relevant
+
+#ifdef MACOS_X
+	fs_apppath = Cvar_Get( "fs_apppath", Sys_DefaultAppPath(), CVAR_INIT | CVAR_PROTECTED );
+	// Make MacOSX also include the base path included with the .app bundle
+	if( fs_apppath->string[0] )
+		og::FileSystem::AddSearchPath( fs_apppath->string );
+
+#endif
+
+	// NOTE: same filtering below for mods and basegame
+	if( fs_homepath->string[0] && Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
+		og::FileSystem::MakePath( fs_homepath->string );
+		og::FileSystem::SetSavePath( fs_homepath->string );
+	} else {
+		Com_Error(ERR_FATAL, "FS_Startup: No save path set.");
+	}
+
+	fs_initialized = og::FileSystem::Init( ".pk3", gameName );
+	if( !fs_initialized ) {
+		Com_Error( ERR_FATAL, "FS_Startup: Could not init filesystem" );
+	}
+
+	// check for additional game folder for mods
+	if( fs_gamedirvar->string[0] && Q_stricmp( fs_gamedirvar->string, gameName ) ) {
+		if( !og::FileSystem::ChangeMod( fs_gamedirvar->string, fs_basegame->string ) )
+			Com_Error( ERR_FATAL, "Could not change mod" );
+	}
+
+	// if we can't find default.cfg, assume that the paths are
+	// busted and error out now, rather than getting an unreadable
+	// graphics screen when the font fails to load
+	if( !og::FS->FileExists( "default.cfg" ) ) {
+		Com_Error(ERR_FATAL, "FS_Startup: Couldn't load default.cfg - I am missing essential files!" );
+	}
+
+	// add our commands
+	Cmd_AddCommand ("path", FS_Path_f);
+	Cmd_AddCommand ("dir", FS_Dir_f );
+	//Cmd_AddCommand ("fdir", FS_NewDir_f );
+	Cmd_AddCommand ("touchFile", FS_TouchFile_f );
+	Cmd_AddCommand ("which", FS_Which_f );
+ 
+	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
+	// reorder the pure pk3 files according to server order
+//	FS_ReorderPurePaks();
+
+	// print the current search paths
+//	FS_Path_f();
+
+	fs_gamedirvar->modified = false; // We just loaded, it's not modified
+
+	Com_Printf( "----------------------\n" );
+
+	//Com_Printf( "%d files in pk3 files\n", fs_packFiles );
+}
+/*
+================
+FS_InitFilesystem
+
+Called only at inital startup, not when the filesystem
+is resetting due to a game change
+================
+*/
+void FS_InitFilesystem( void ) {
+	// allow command line parms to override our defaults
+	// we have to specially handle this, because normal command
+	// line variable sets don't happen until after the filesystem
+	// has already been initialized
+	Com_StartupVariable( "fs_basepath" );
+	Com_StartupVariable( "fs_homepath" );
+	Com_StartupVariable( "fs_game" );
+
+	if( !FS_FilenameCompare(Cvar_VariableString( "fs_game" ), com_basegame->string ) )
+		Cvar_Set( "fs_game", "" );
+
+	// try to start up normally
+	FS_Startup( com_basegame->string );
+
+	// if we can't find default.cfg, assume that the paths are
+	// busted and error out now, rather than getting an unreadable
+	// graphics screen when the font fails to load
+	if( !og::FS->FileExists( "default.cfg" ) ) {
+		Com_Error(ERR_FATAL, "FS_InitFilesystem: Couldn't load default.cfg - I am missing essential files!" );
+	}
+
+	lastValidBase = fs_basepath->string;
+	lastValidBase.CapLength(MAX_OSPATH-1);
+	lastValidGame = fs_gamedirvar->string;
+	lastValidGame.CapLength(MAX_OSPATH-1);
+}
+/*
+================
+FS_Restart
+================
+*/
+void FS_Restart( int checksumFeed ) {
+	// free anything we currently have loaded
+	FS_Shutdown();
+
+	// set the checksum feed
+	fs_checksumFeed = checksumFeed;
+
+	// clear pak references
+//	FS_ClearPakReferences(0);
+
+	// try to start up normally
+	FS_Startup( com_basegame->string );
+
+	// if we can't find default.cfg, assume that the paths are
+	// busted and error out now, rather than getting an unreadable
+	// graphics screen when the font fails to load
+	if( !og::FS->FileExists( "default.cfg" ) ) {
+		// this might happen when connecting to a pure server not using BASEGAME/pak0.pk3
+		// (for instance a TA demo server)
+		if (!lastValidBase.IsEmpty()) {
+			//FS_PureServerSetLoadedPaks("", "");
+			Cvar_Set("fs_basepath", lastValidBase.c_str());
+			Cvar_Set("fs_game", lastValidGame.c_str());
+			lastValidBase.Clear();
+			lastValidGame.Clear();
+			FS_Restart(checksumFeed);
+			Com_Error( ERR_DROP, "FS_Restart: Invalid game folder" );
+			return;
+		}
+		Com_Error( ERR_FATAL, "FS_Restart: Couldn't load default.cfg - I am missing essential files!" );
+	}
+
+	if ( lastValidGame.Icmp(fs_gamedirvar->string) ) {
+		// skip the q3config.cfg if "safe" is on the command line
+		if ( !Com_SafeMode() ) {
+			Cbuf_AddText ("exec " Q3CONFIG_CFG "\n");
+		}
+	}
+
+	lastValidBase = fs_basepath->string;
+	lastValidBase.CapLength(MAX_OSPATH-1);
+	lastValidGame = fs_gamedirvar->string;
+	lastValidGame.CapLength(MAX_OSPATH-1);
+}
+/*
+=================
+FS_ConditionalRestart
+restart if necessary
+=================
+*/
+bool FS_ConditionalRestart( int checksumFeed, bool disconnect ) {
+	if( fs_gamedirvar->modified ) {
+		Com_GameRestart( checksumFeed, disconnect );
+		return true;
+	}
+
+	else if( checksumFeed != fs_checksumFeed ) {
+		FS_Restart( checksumFeed );
+	}
+
+	return false;
+}
+/*
+================
+FS_CheckDirTraversal
+
+Check whether the string contains stuff like "../" to prevent directory traversal bugs
+and return true if it does.
+================
+*/
+bool FS_CheckDirTraversal( const char *checkdir ) {
+	if( strstr( checkdir, "../" ) || strstr( checkdir, "..\\" ) )
+		return true;
+
+	return false;
+}
+void FS_FilenameCompletion( const char *dir, const char *ext, bool stripExt, bool removeDir, callbackFunc_t callback ) {
+	if( og::FileList *files = og::FS->GetFileList( dir, ext, ( removeDir ? og::LF_DEFAULT | og::LF_REMOVE_DIR : og::LF_DEFAULT ) ) ) {
+		for( int i = 0; i < files->Num(); i++ ) {
+			og::String filename = files->GetName( i );
+
+			if( stripExt ) {
+				filename.StripFileExtension();
+			}
+
+			callback( filename.c_str() );
+		}
+
+		og::FS->FreeFileList( files );
+	}
+}
+void FS_ModListCompletion( callbackFunc_t callback ) {
+	callback( BASEGAME );
+	if( og::ModList * mods = og::FS->GetModList() ) {
+		for( int i = 0; i < mods->Num(); i++ ) {
+			callback( mods->GetDirectory( i ) );
+		}
+
+		og::FS->FreeModList( mods );
+	}
+}
+bool og::User::IsPakFileAllowed( og::PakFile *pakFile ) {
+	pakFiles.Append( pakFile->GetFilename() );
+	Com_Printf( "Adding file '%s'\n", pakFile->GetFilename() );
+	return true;
 }

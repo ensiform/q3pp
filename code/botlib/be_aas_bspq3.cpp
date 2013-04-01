@@ -190,7 +190,7 @@ bool AAS_EntityCollision(int entnum,
 //===========================================================================
 bool AAS_inPVS(vec3_t p1, vec3_t p2)
 {
-	return botimport.inPVS(p1, p2);
+	return botimport.inPVS(p1, p2) != 0;
 } //end of the function AAS_InPVS
 //===========================================================================
 // returns true if in Potentially Visible Set

@@ -90,17 +90,17 @@ static const char *teamoverlay_names[] =
 };
 
 static void Preferences_SetMenuItems( void ) {
-	s_preferences.crosshair.curvalue		= (int)trap_Cvar_VariableValue( "cg_drawCrosshair" ) % NUM_CROSSHAIRS;
-	s_preferences.simpleitems.curvalue		= trap_Cvar_VariableValue( "cg_simpleItems" ) != 0;
-	s_preferences.brass.curvalue			= trap_Cvar_VariableValue( "cg_brassTime" ) != 0;
-	s_preferences.wallmarks.curvalue		= trap_Cvar_VariableValue( "cg_marks" ) != 0;
-	s_preferences.identifytarget.curvalue	= trap_Cvar_VariableValue( "cg_drawCrosshairNames" ) != 0;
-	s_preferences.dynamiclights.curvalue	= trap_Cvar_VariableValue( "r_dynamiclight" ) != 0;
-	s_preferences.highqualitysky.curvalue	= trap_Cvar_VariableValue ( "r_fastsky" ) == 0;
-	s_preferences.synceveryframe.curvalue	= trap_Cvar_VariableValue( "r_finish" ) != 0;
-	s_preferences.forcemodel.curvalue		= trap_Cvar_VariableValue( "cg_forcemodel" ) != 0;
-	s_preferences.drawteamoverlay.curvalue	= Com_Clamp( 0, 3, trap_Cvar_VariableValue( "cg_drawTeamOverlay" ) );
-	s_preferences.allowdownload.curvalue	= trap_Cvar_VariableValue( "cl_allowDownload" ) != 0;
+	s_preferences.crosshair.curvalue		= (int)cvarSystem->VariableValue( "cg_drawCrosshair" ) % NUM_CROSSHAIRS;
+	s_preferences.simpleitems.curvalue		= cvarSystem->VariableValue( "cg_simpleItems" ) != 0;
+	s_preferences.brass.curvalue			= cvarSystem->VariableValue( "cg_brassTime" ) != 0;
+	s_preferences.wallmarks.curvalue		= cvarSystem->VariableValue( "cg_marks" ) != 0;
+	s_preferences.identifytarget.curvalue	= cvarSystem->VariableValue( "cg_drawCrosshairNames" ) != 0;
+	s_preferences.dynamiclights.curvalue	= cvarSystem->VariableValue( "r_dynamiclight" ) != 0;
+	s_preferences.highqualitysky.curvalue	= cvarSystem->VariableValue ( "r_fastsky" ) == 0;
+	s_preferences.synceveryframe.curvalue	= cvarSystem->VariableValue( "r_finish" ) != 0;
+	s_preferences.forcemodel.curvalue		= cvarSystem->VariableValue( "cg_forcemodel" ) != 0;
+	s_preferences.drawteamoverlay.curvalue	= Com_Clamp( 0, 3, cvarSystem->VariableValue( "cg_drawTeamOverlay" ) );
+	s_preferences.allowdownload.curvalue	= cvarSystem->VariableValue( "cl_allowDownload" ) != 0;
 }
 
 
@@ -111,51 +111,51 @@ static void Preferences_Event( void* ptr, int notification ) {
 
 	switch( ((menucommon_s*)ptr)->id ) {
 	case ID_CROSSHAIR:
-		trap_Cvar_SetValue( "cg_drawCrosshair", s_preferences.crosshair.curvalue );
+		cvarSystem->SetValue( "cg_drawCrosshair", s_preferences.crosshair.curvalue );
 		break;
 
 	case ID_SIMPLEITEMS:
-		trap_Cvar_SetValue( "cg_simpleItems", s_preferences.simpleitems.curvalue );
+		cvarSystem->SetValue( "cg_simpleItems", s_preferences.simpleitems.curvalue );
 		break;
 
 	case ID_HIGHQUALITYSKY:
-		trap_Cvar_SetValue( "r_fastsky", !s_preferences.highqualitysky.curvalue );
+		cvarSystem->SetValue( "r_fastsky", !s_preferences.highqualitysky.curvalue );
 		break;
 
 	case ID_EJECTINGBRASS:
 		if ( s_preferences.brass.curvalue )
-			trap_Cvar_Reset( "cg_brassTime" );
+			cvarSystem->Reset( "cg_brassTime" );
 		else
-			trap_Cvar_SetValue( "cg_brassTime", 0 );
+			cvarSystem->SetValue( "cg_brassTime", 0 );
 		break;
 
 	case ID_WALLMARKS:
-		trap_Cvar_SetValue( "cg_marks", s_preferences.wallmarks.curvalue );
+		cvarSystem->SetValue( "cg_marks", s_preferences.wallmarks.curvalue );
 		break;
 
 	case ID_DYNAMICLIGHTS:
-		trap_Cvar_SetValue( "r_dynamiclight", s_preferences.dynamiclights.curvalue );
+		cvarSystem->SetValue( "r_dynamiclight", s_preferences.dynamiclights.curvalue );
 		break;		
 
 	case ID_IDENTIFYTARGET:
-		trap_Cvar_SetValue( "cg_drawCrosshairNames", s_preferences.identifytarget.curvalue );
+		cvarSystem->SetValue( "cg_drawCrosshairNames", s_preferences.identifytarget.curvalue );
 		break;
 
 	case ID_SYNCEVERYFRAME:
-		trap_Cvar_SetValue( "r_finish", s_preferences.synceveryframe.curvalue );
+		cvarSystem->SetValue( "r_finish", s_preferences.synceveryframe.curvalue );
 		break;
 
 	case ID_FORCEMODEL:
-		trap_Cvar_SetValue( "cg_forcemodel", s_preferences.forcemodel.curvalue );
+		cvarSystem->SetValue( "cg_forcemodel", s_preferences.forcemodel.curvalue );
 		break;
 
 	case ID_DRAWTEAMOVERLAY:
-		trap_Cvar_SetValue( "cg_drawTeamOverlay", s_preferences.drawteamoverlay.curvalue );
+		cvarSystem->SetValue( "cg_drawTeamOverlay", s_preferences.drawteamoverlay.curvalue );
 		break;
 
 	case ID_ALLOWDOWNLOAD:
-		trap_Cvar_SetValue( "cl_allowDownload", s_preferences.allowdownload.curvalue );
-		trap_Cvar_SetValue( "sv_allowDownload", s_preferences.allowdownload.curvalue );
+		cvarSystem->SetValue( "cl_allowDownload", s_preferences.allowdownload.curvalue );
+		cvarSystem->SetValue( "sv_allowDownload", s_preferences.allowdownload.curvalue );
 		break;
 
 	case ID_BACK:
@@ -395,12 +395,12 @@ Preferences_Cache
 void Preferences_Cache( void ) {
 	int		n;
 
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
 	for( n = 0; n < NUM_CROSSHAIRS; n++ ) {
-		s_preferences.crosshairShader[n] = trap_R_RegisterShaderNoMip( va("gfx/2d/crosshair%c", 'a' + n ) );
+		s_preferences.crosshairShader[n] = trap->re->RegisterShaderNoMip( va("gfx/2d/crosshair%c", 'a' + n ) );
 	}
 }
 

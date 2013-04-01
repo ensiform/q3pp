@@ -192,10 +192,10 @@ PlayerModel_SaveChanges
 */
 static void PlayerModel_SaveChanges( void )
 {
-	trap_Cvar_Set( "model", s_playermodel.modelskin );
-	trap_Cvar_Set( "headmodel", s_playermodel.modelskin );
-	trap_Cvar_Set( "team_model", s_playermodel.modelskin );
-	trap_Cvar_Set( "team_headmodel", s_playermodel.modelskin );
+	cvarSystem->Set( "model", s_playermodel.modelskin );
+	cvarSystem->Set( "headmodel", s_playermodel.modelskin );
+	cvarSystem->Set( "team_model", s_playermodel.modelskin );
+	cvarSystem->Set( "team_headmodel", s_playermodel.modelskin );
 }
 
 /*
@@ -247,7 +247,7 @@ static sfxHandle_t PlayerModel_MenuKey( int key )
 	{
 		case K_KP_LEFTARROW:
 		case K_LEFTARROW:
-			m = Menu_ItemAtCursor(&s_playermodel.menu);
+			m = (menucommon_s *)Menu_ItemAtCursor(&s_playermodel.menu);
 			picnum = m->id - ID_PLAYERPIC0;
 			if (picnum >= 0 && picnum <= 15)
 			{
@@ -271,7 +271,7 @@ static sfxHandle_t PlayerModel_MenuKey( int key )
 
 		case K_KP_RIGHTARROW:
 		case K_RIGHTARROW:
-			m = Menu_ItemAtCursor(&s_playermodel.menu);
+			m = (menucommon_s *)Menu_ItemAtCursor(&s_playermodel.menu);
 			picnum = m->id - ID_PLAYERPIC0;
 			if (picnum >= 0 && picnum <= 15)
 			{
@@ -355,7 +355,7 @@ static void PlayerModel_PicEvent( void* ptr, int event )
 
 		s_playermodel.selectedmodel = modelnum;
 
-		if( trap_MemoryRemaining() > LOW_MEMORY ) {
+		if( trap->MemoryRemaining() > LOW_MEMORY ) {
 			PlayerModel_UpdateModel();
 		}
 	}
@@ -372,7 +372,7 @@ static void PlayerModel_DrawPlayer( void *self )
 
 	b = (menubitmap_s*) self;
 
-	if( trap_MemoryRemaining() <= LOW_MEMORY ) {
+	if( trap->MemoryRemaining() <= LOW_MEMORY ) {
 		UI_DrawProportionalString( b->generic.x, b->generic.y + b->height / 2, "LOW MEMORY", UI_LEFT, color_red );
 		return;
 	}
@@ -387,65 +387,53 @@ PlayerModel_BuildList
 */
 static void PlayerModel_BuildList( void )
 {
-	int		numdirs;
-	int		numfiles;
-	char	dirlist[2048];
-	char	filelist[2048];
-	char	skinname[MAX_QPATH];
-	char*	dirptr;
-	char*	fileptr;
-	int		i;
-	int		j;
-	int		dirlen;
-	int		filelen;
-	bool precache;
-
-	precache = trap_Cvar_VariableValue("com_buildscript");
+	bool precache = ( cvarSystem->VariableValue( "com_buildscript" ) != 0 );
 
 	s_playermodel.modelpage = 0;
 	s_playermodel.nummodels = 0;
 
 	// iterate directory of all player models
-	numdirs = trap_FS_GetFileList("models/players", "/", dirlist, 2048 );
-	dirptr  = dirlist;
-	for (i=0; i<numdirs && s_playermodel.nummodels < MAX_PLAYERMODELS; i++,dirptr+=dirlen+1)
-	{
-		dirlen = strlen(dirptr);
-		
-		if (dirlen && dirptr[dirlen-1]=='/') dirptr[dirlen-1]='\0';
+	if( og::FileList * players = og::FS->GetFileList( "models/players", "",  og::LF_DIRS | og::LF_CHECK_ARCHIVED ) ) {
+		for( int i = 0; i < players->Num(); i++ ) {
+			if( s_playermodel.nummodels >= MAX_PLAYERMODELS )
+				break;
 
-		if (!strcmp(dirptr,".") || !strcmp(dirptr,".."))
-			continue;
-			
-		// iterate all skin files in directory
-		numfiles = trap_FS_GetFileList( va("models/players/%s",dirptr), "tga", filelist, 2048 );
-		fileptr  = filelist;
-		for (j=0; j<numfiles && s_playermodel.nummodels < MAX_PLAYERMODELS;j++,fileptr+=filelen+1)
-		{
-			filelen = strlen(fileptr);
+			if( og::FileList * skins = og::FS->GetFileList( players->GetName( i ), ".tga",  og::LF_DEFAULT | og::LF_REMOVE_DIR ) ) {
+				for( int j = 0; j < skins->Num(); j++ ) {
+					if( s_playermodel.nummodels >= MAX_PLAYERMODELS )
+						break;
 
-			COM_StripExtension(fileptr,skinname, sizeof(skinname));
+					og::String skinname = skins->GetName( j );
+					skinname.StripFileExtension();
 
-			// look for icon_????
-			if (!Q_stricmpn(skinname,"icon_",5))
-			{
-				Com_sprintf( s_playermodel.modelnames[s_playermodel.nummodels++],
-					sizeof( s_playermodel.modelnames[s_playermodel.nummodels] ),
-					"models/players/%s/%s", dirptr, skinname );
-				//if (s_playermodel.nummodels >= MAX_PLAYERMODELS)
-				//	return;
-			}
+					// look for icon_????
+					if( !skinname.IcmpPrefix( "icon_" ) ) {
+						Com_sprintf( s_playermodel.modelnames[s_playermodel.nummodels],
+							     sizeof( s_playermodel.modelnames[s_playermodel.nummodels] ),
+							     "%s%s", players->GetName( i ), skinname.c_str() );
+						trap->Print( s_playermodel.modelnames[s_playermodel.nummodels] );
+						trap->Print( "\n" );
+						s_playermodel.nummodels++;
+						// if (s_playermodel.nummodels >= MAX_PLAYERMODELS)
+						//	return;
+					}
 
-			if( precache ) {
-				trap_S_RegisterSound( va( "sound/player/announce/%s_wins.wav", skinname), false );
+					if( precache ) {
+						trap->si->RegisterSound( va( "sound/player/announce/%s_wins.wav", skinname.c_str() ), false );
+					}
+				}
+
+				og::FS->FreeFileList( skins );
 			}
 		}
-	}	
 
-	//APSFIXME - Degenerate no models case
+		og::FS->FreeFileList( players );
+	}
 
-	s_playermodel.numpages = s_playermodel.nummodels/MAX_MODELSPERPAGE;
-	if (s_playermodel.nummodels % MAX_MODELSPERPAGE)
+	// APSFIXME - Degenerate no models case
+
+	s_playermodel.numpages = s_playermodel.nummodels / MAX_MODELSPERPAGE;
+	if( s_playermodel.nummodels % MAX_MODELSPERPAGE )
 		s_playermodel.numpages++;
 }
 
@@ -463,11 +451,11 @@ static void PlayerModel_SetMenuItems( void )
 	char*			pdest;
 
 	// name
-	trap_Cvar_VariableStringBuffer( "name", s_playermodel.playername.string, 16 );
+	cvarSystem->VariableStringBuffer( "name", s_playermodel.playername.string, 16 );
 	Q_CleanStr( s_playermodel.playername.string );
 
 	// model
-	trap_Cvar_VariableStringBuffer( "model", s_playermodel.modelskin, 64 );
+	cvarSystem->VariableStringBuffer( "model", s_playermodel.modelskin, 64 );
 	
 	// use default skin if none is set
 	if (!strchr(s_playermodel.modelskin, '/')) {
@@ -715,12 +703,12 @@ void PlayerModel_Cache( void )
 	int	i;
 
 	for( i = 0; playermodel_artlist[i]; i++ ) {
-		trap_R_RegisterShaderNoMip( playermodel_artlist[i] );
+		trap->re->RegisterShaderNoMip( playermodel_artlist[i] );
 	}
 
 	PlayerModel_BuildList();
 	for( i = 0; i < s_playermodel.nummodels; i++ ) {
-		trap_R_RegisterShaderNoMip( s_playermodel.modelnames[i] );
+		trap->re->RegisterShaderNoMip( s_playermodel.modelnames[i] );
 	}
 }
 

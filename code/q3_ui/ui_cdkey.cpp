@@ -71,7 +71,7 @@ static void UI_CDKeyMenu_Event( void *ptr, int event ) {
 	switch( ((menucommon_s*)ptr)->id ) {
 	case ID_ACCEPT:
 		if( cdkeyMenuInfo.cdkey.field.buffer[0] ) {
-			trap_SetCDKey( cdkeyMenuInfo.cdkey.field.buffer );
+			trap->SetCDKey( cdkeyMenuInfo.cdkey.field.buffer );
 		}
 		UI_PopMenu();
 		break;
@@ -156,7 +156,7 @@ static void UI_CDKeyMenu_DrawKey( void *self ) {
 
 	// draw cursor if we have focus
 	if( focus ) {
-		if ( trap_Key_GetOverstrikeMode() ) {
+		if ( trap->Key_GetOverstrikeMode() ) {
 			c = 11;
 		} else {
 			c = 10;
@@ -187,7 +187,7 @@ UI_CDKeyMenu_Init
 ===============
 */
 static void UI_CDKeyMenu_Init( void ) {
-	trap_Cvar_Set( "ui_cdkeychecked", "1" );
+	cvarSystem->Set( "ui_cdkeychecked", "1" );
 
 	UI_CDKeyMenu_Cache();
 
@@ -249,8 +249,8 @@ static void UI_CDKeyMenu_Init( void ) {
 		Menu_AddItem( &cdkeyMenuInfo.menu, &cdkeyMenuInfo.back );
 	}
 
-	trap_GetCDKey( cdkeyMenuInfo.cdkey.field.buffer, cdkeyMenuInfo.cdkey.field.maxchars + 1 );
-	if( trap_VerifyCDKey( cdkeyMenuInfo.cdkey.field.buffer, NULL ) == false ) {
+	trap->GetCDKey( cdkeyMenuInfo.cdkey.field.buffer, cdkeyMenuInfo.cdkey.field.maxchars + 1 );
+	if( trap->VerifyCDKey( cdkeyMenuInfo.cdkey.field.buffer, NULL ) == false ) {
 		cdkeyMenuInfo.cdkey.field.buffer[0] = 0;
 	}
 }
@@ -262,11 +262,11 @@ UI_CDKeyMenu_Cache
 =================
 */
 void UI_CDKeyMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_ACCEPT0 );
-	trap_R_RegisterShaderNoMip( ART_ACCEPT1 );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FRAME );
+	trap->re->RegisterShaderNoMip( ART_ACCEPT0 );
+	trap->re->RegisterShaderNoMip( ART_ACCEPT1 );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAME );
 }
 
 

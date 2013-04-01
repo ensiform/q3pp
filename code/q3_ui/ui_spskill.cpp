@@ -111,20 +111,20 @@ static void UI_SPSkillMenu_SkillEvent( void *ptr, int notification ) {
 	if (notification != QM_ACTIVATED)
 		return;
 
-	SetSkillColor( (int)trap_Cvar_VariableValue( "g_spSkill" ), color_red );
+	SetSkillColor( (int)cvarSystem->VariableValue( "g_spSkill" ), color_red );
 
 	id = ((menucommon_s*)ptr)->id;
 	skill = id - ID_BABY + 1;
-	trap_Cvar_SetValue( "g_spSkill", skill );
+	cvarSystem->SetValue( "g_spSkill", skill );
 
 	SetSkillColor( skill, color_white );
 	skillMenuInfo.art_skillPic.shader = skillMenuInfo.skillpics[skill - 1];
 
 	if( id == ID_NIGHTMARE ) {
-		trap_S_StartLocalSound( skillMenuInfo.nightmareSound, CHAN_ANNOUNCER );
+		trap->si->StartLocalSound( skillMenuInfo.nightmareSound, CHAN_ANNOUNCER );
 	}
 	else {
-		trap_S_StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
+		trap->si->StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
 	}
 }
 
@@ -152,7 +152,7 @@ static void UI_SPSkillMenu_BackEvent( void* ptr, int notification ) {
 		return;
 	}
 
-	trap_S_StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
+	trap->si->StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
 	UI_PopMenu();
 }
 
@@ -164,7 +164,7 @@ UI_SPSkillMenu_Key
 */
 static sfxHandle_t UI_SPSkillMenu_Key( int key ) {
 	if( key == K_MOUSE2 || key == K_ESCAPE ) {
-		trap_S_StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
+		trap->si->StartLocalSound( skillMenuInfo.silenceSound, CHAN_ANNOUNCER );
 	}
 	return Menu_DefaultKey( &skillMenuInfo.menu, key );
 }
@@ -176,19 +176,19 @@ UI_SPSkillMenu_Cache
 =================
 */
 void UI_SPSkillMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_FRAME );
-	trap_R_RegisterShaderNoMip( ART_BACK );
-	trap_R_RegisterShaderNoMip( ART_BACK_FOCUS );
-	trap_R_RegisterShaderNoMip( ART_FIGHT );
-	trap_R_RegisterShaderNoMip( ART_FIGHT_FOCUS );
-	skillMenuInfo.skillpics[0] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE1 );
-	skillMenuInfo.skillpics[1] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE2 );
-	skillMenuInfo.skillpics[2] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE3 );
-	skillMenuInfo.skillpics[3] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE4 );
-	skillMenuInfo.skillpics[4] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE5 );
+	trap->re->RegisterShaderNoMip( ART_FRAME );
+	trap->re->RegisterShaderNoMip( ART_BACK );
+	trap->re->RegisterShaderNoMip( ART_BACK_FOCUS );
+	trap->re->RegisterShaderNoMip( ART_FIGHT );
+	trap->re->RegisterShaderNoMip( ART_FIGHT_FOCUS );
+	skillMenuInfo.skillpics[0] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE1 );
+	skillMenuInfo.skillpics[1] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE2 );
+	skillMenuInfo.skillpics[2] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE3 );
+	skillMenuInfo.skillpics[3] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE4 );
+	skillMenuInfo.skillpics[4] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE5 );
 
-	skillMenuInfo.nightmareSound = trap_S_RegisterSound( "sound/misc/nightmare.wav", false );
-	skillMenuInfo.silenceSound = trap_S_RegisterSound( "sound/misc/silence.wav", false );
+	skillMenuInfo.nightmareSound = trap->si->RegisterSound( "sound/misc/nightmare.wav", false );
+	skillMenuInfo.silenceSound = trap->si->RegisterSound( "sound/misc/silence.wav", false );
 }
 
 
@@ -312,11 +312,11 @@ static void UI_SPSkillMenu_Init( void ) {
 	Menu_AddItem( &skillMenuInfo.menu, ( void * )&skillMenuInfo.item_back );
 	Menu_AddItem( &skillMenuInfo.menu, ( void * )&skillMenuInfo.item_fight );
 
-	skill = (int)Com_Clamp( 1, 5, trap_Cvar_VariableValue( "g_spSkill" ) );
+	skill = (int)Com_Clamp( 1, 5, cvarSystem->VariableValue( "g_spSkill" ) );
 	SetSkillColor( skill, color_white );
 	skillMenuInfo.art_skillPic.shader = skillMenuInfo.skillpics[skill - 1];
 	if( skill == 5 ) {
-		trap_S_StartLocalSound( skillMenuInfo.nightmareSound, CHAN_ANNOUNCER );
+		trap->si->StartLocalSound( skillMenuInfo.nightmareSound, CHAN_ANNOUNCER );
 	}
 }
 

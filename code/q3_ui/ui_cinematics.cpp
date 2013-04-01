@@ -101,12 +101,12 @@ static void UI_CinematicsMenu_Event( void *ptr, int event ) {
 		return;
 
 	n = ((menucommon_s*)ptr)->id - ID_CIN_IDLOGO;
-	trap_Cvar_Set( "nextmap", va( "ui_cinematics %i", n ) );
+	cvarSystem->Set( "nextmap", va( "ui_cinematics %i", n ) );
 	if( uis.demoversion && ((menucommon_s*)ptr)->id == ID_CIN_END ) {
-		trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic demoEnd.RoQ 1\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect; cinematic demoEnd.RoQ 1\n" );
 	}
 	else {
-		trap_Cmd_ExecuteText( EXEC_APPEND, va( "disconnect; cinematic %s.RoQ\n", cinematics[n] ) );
+		trap->Cmd_ExecuteText( EXEC_APPEND, va( "disconnect; cinematic %s.RoQ\n", cinematics[n] ) );
 	}
 }
 
@@ -318,10 +318,10 @@ UI_CinematicsMenu_Cache
 =================
 */
 void UI_CinematicsMenu_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
 }
 
 

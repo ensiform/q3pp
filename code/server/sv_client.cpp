@@ -23,7 +23,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "server.h"
 
+#ifdef USE_DOWNLOADS
 static void SV_CloseDownload( client_t *cl );
+#endif
 
 /*
 =================
@@ -319,7 +321,7 @@ void SV_DirectConnect( netadr_t from ) {
 	int			challenge;
 	char		*password;
 	int			startIndex;
-	intptr_t		denied;
+	const char *denied;
 	int			count;
 	char		*ip;
 #ifdef LEGACY_PROTOCOL
@@ -546,13 +548,10 @@ gotnewcl:
 	Q_strncpyz( newcl->userinfo, userinfo, sizeof(newcl->userinfo) );
 
 	// get the game a chance to reject this connection or modify the userinfo
-	denied = VM_Call( gvm, GAME_CLIENT_CONNECT, clientNum, true, false ); // firstTime = true
+	denied = gameExport->ClientConnect( clientNum, true, false ); // firstTime = true
 	if ( denied ) {
-		// we can't just use VM_ArgPtr, because that is only valid inside a VM_Call
-		char *str = VM_ExplicitArgPtr( gvm, denied );
-
-		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", str );
-		Com_DPrintf ("Game rejected a connection: %s.\n", str);
+		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", denied );
+		Com_DPrintf ("Game rejected a connection: %s.\n", denied);
 		return;
 	}
 
@@ -609,7 +608,9 @@ void SV_FreeClient(client_t *client)
 #endif
 
 	SV_Netchan_FreeQueue(client);
+#ifdef USE_DOWNLOADS
 	SV_CloseDownload(client);
+#endif
 }
 
 /*
@@ -652,7 +653,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 
 	// call the prog function for removing a client
 	// this will remove the body, among other things
-	VM_Call( gvm, GAME_CLIENT_DISCONNECT, drop - svs.clients );
+	gameExport->ClientDisconnect( drop - svs.clients );
 
 	// add the disconnect command
 	SV_SendServerCommand( drop, "disconnect \"%s\"", reason);
@@ -793,7 +794,7 @@ void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd ) {
 		memset(&client->lastUsercmd, '\0', sizeof(client->lastUsercmd));
 
 	// call the game begin function
-	VM_Call( gvm, GAME_CLIENT_BEGIN, client - svs.clients );
+	gameExport->ClientBegin( client - svs.clients );
 }
 
 /*
@@ -804,6 +805,7 @@ CLIENT COMMAND EXECUTION
 ============================================================
 */
 
+#ifdef USE_DOWNLOADS
 /*
 ==================
 SV_CloseDownload
@@ -816,9 +818,9 @@ static void SV_CloseDownload( client_t *cl ) {
 
 	// EOF
 	if (cl->download) {
-		FS_FCloseFile( cl->download );
+		cl->download->Close();
 	}
-	cl->download = 0;
+	cl->download = NULL;
 	*cl->downloadName = 0;
 
 	// Free the temporary buffer space
@@ -830,6 +832,7 @@ static void SV_CloseDownload( client_t *cl ) {
 	}
 
 }
+
 
 /*
 ==================
@@ -1047,7 +1050,7 @@ int SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
 		curindex = (cl->downloadCurrentBlock % MAX_DOWNLOAD_WINDOW);
 
 		if (!cl->downloadBlocks[curindex])
-			cl->downloadBlocks[curindex] = Z_Malloc(MAX_DOWNLOAD_BLKSIZE);
+			cl->downloadBlocks[curindex] = (unsigned char *)Z_Malloc(MAX_DOWNLOAD_BLKSIZE);
 
 		cl->downloadBlockSize[curindex] = FS_Read( cl->downloadBlocks[curindex], MAX_DOWNLOAD_BLKSIZE, cl->download );
 
@@ -1113,6 +1116,7 @@ int SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
 
 	return 1;
 }
+#endif
 
 /*
 ==================
@@ -1147,7 +1151,7 @@ int SV_SendQueuedMessages(void)
 	return retval;
 }
 
-
+#if 0
 /*
 ==================
 SV_SendDownloadMessages
@@ -1185,6 +1189,7 @@ int SV_SendDownloadMessages(void)
 
 	return numDLs;
 }
+#endif
 
 /*
 =================
@@ -1211,6 +1216,7 @@ This routine would be a bit simpler with a goto but i abstained
 =================
 */
 static void SV_VerifyPaks_f( client_t *cl ) {
+#if 0
 	int nChkSum1, nChkSum2, nClientPaks, nServerPaks, i, j, nCurArg;
 	int nClientChkSum[1024];
 	int nServerChkSum[1024];
@@ -1357,6 +1363,7 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			SV_DropClient( cl, "Unpure client detected. Invalid .PK3 files referenced!" );
 		}
 	}
+#endif
 }
 
 /*
@@ -1482,7 +1489,7 @@ static void SV_UpdateUserinfo_f( client_t *cl ) {
 
 	SV_UserinfoChanged( cl );
 	// call prog code to allow overrides
-	VM_Call( gvm, GAME_CLIENT_USERINFO_CHANGED, cl - svs.clients );
+	gameExport->ClientUserinfoChanged( cl - svs.clients );
 }
 
 
@@ -1528,10 +1535,12 @@ static ucmd_t ucmds[] = {
 	{"disconnect", SV_Disconnect_f},
 	{"cp", SV_VerifyPaks_f},
 	{"vdr", SV_ResetPureClient_f},
+#ifdef USE_DOWNLOADS
 	{"download", SV_BeginDownload_f},
 	{"nextdl", SV_NextDownload_f},
 	{"stopdl", SV_StopDownload_f},
 	{"donedl", SV_DoneDownload_f},
+#endif
 
 #ifdef USE_VOIP
 	{"voip", SV_Voip_f},
@@ -1566,7 +1575,7 @@ void SV_ExecuteClientCommand( client_t *cl, const char *s, bool clientOK ) {
 		// pass unknown strings to the game
 		if (!u->name && sv.state == SS_GAME && (cl->state == CS_ACTIVE || cl->state == CS_PRIMED)) {
 			Cmd_Args_Sanitize();
-			VM_Call( gvm, GAME_CLIENT_COMMAND, cl - svs.clients );
+			gameExport->ClientCommand( cl - svs.clients );
 		}
 	}
 	else if (!bProcessed)
@@ -1646,7 +1655,7 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd) {
 		return;		// may have been kicked during the last usercmd
 	}
 
-	VM_Call( gvm, GAME_CLIENT_THINK, cl - svs.clients );
+	gameExport->ClientThink( cl - svs.clients );
 }
 
 /*
@@ -1835,8 +1844,10 @@ void SV_UserVoip(client_t *cl, msg_t *msg)
 			continue;  // client is ignoring everyone.
 		else if (client->ignoreVoipFromClient[sender])
 			continue;  // client is ignoring this talker.
+#ifdef USE_DOWNLOADS
 		else if (*cl->downloadName)   // !!! FIXME: possible to DoS?
 			continue;  // no VoIP allowed if downloading, to save bandwidth.
+#endif
 
 		if(Com_IsVoipTarget(recips, sizeof(recips), i))
 			flags |= VOIP_DIRECT;
@@ -1928,7 +1939,11 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// don't drop as long as previous command was a nextdl, after a dl is done, downloadName is set back to ""
 	// but we still need to read the next message to move to next download or send gamestate
 	// I don't like this hack though, it must have been working fine at some point, suspecting the fix is somewhere else
+#ifdef USE_DOWNLOADS
 	if ( serverId != sv.serverId && !*cl->downloadName && !strstr(cl->lastClientCommandString, "nextdl") ) {
+#else
+	if ( serverId != sv.serverId ) {
+#endif
 		if ( serverId >= sv.restartedServerId && serverId < sv.serverId ) { // TTimo - use a comparison here to catch multiple map_restart
 			// they just haven't caught the map_restart yet
 			Com_DPrintf("%s : ignoring pre map_restart / outdated client message\n", cl->name);

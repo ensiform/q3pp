@@ -88,7 +88,7 @@ static void LoadConfig_MenuEvent( void *ptr, int event ) {
 
 	switch ( ((menucommon_s*)ptr)->id ) {
 	case ID_GO:
-		trap_Cmd_ExecuteText( EXEC_APPEND, va( "exec %s\n", s_configs.list.itemnames[s_configs.list.curvalue] ) );
+		trap->Cmd_ExecuteText( EXEC_APPEND, va( "exec %s\n", s_configs.list.itemnames[s_configs.list.curvalue] ) );
 		UI_PopMenu();
 		break;
 
@@ -113,9 +113,11 @@ LoadConfig_MenuInit
 ===============
 */
 static void LoadConfig_MenuInit( void ) {
+#if 0
 	int		i;
 	int		len;
 	char	*configname;
+#endif
 
 	UI_LoadConfig_Cache();
 
@@ -196,6 +198,7 @@ static void LoadConfig_MenuInit( void ) {
 	s_configs.go.height				= 64;
 	s_configs.go.focuspic			= ART_FIGHT1;
 
+#if 0
 	// scan for configs
 	s_configs.list.generic.type		= MTYPE_SCROLLLIST;
 	s_configs.list.generic.flags	= QMF_PULSEIFFOCUS;
@@ -205,7 +208,7 @@ static void LoadConfig_MenuInit( void ) {
 	s_configs.list.generic.y		= 130;
 	s_configs.list.width			= 16;
 	s_configs.list.height			= 14;
-	s_configs.list.numitems			= trap_FS_GetFileList( "", "cfg", s_configs.names, NAMEBUFSIZE );
+	s_configs.list.numitems			= trap->FS_GetFileList( "", "cfg", s_configs.names, NAMEBUFSIZE );
 	s_configs.list.itemnames		= (const char **)s_configs.configlist;
 	s_configs.list.columns			= 3;
 
@@ -232,11 +235,12 @@ static void LoadConfig_MenuInit( void ) {
 
 		configname += len + 1;
 	}
+#endif
 
 	Menu_AddItem( &s_configs.menu, &s_configs.banner );
 	Menu_AddItem( &s_configs.menu, &s_configs.framel );
 	Menu_AddItem( &s_configs.menu, &s_configs.framer );
-	Menu_AddItem( &s_configs.menu, &s_configs.list );
+	//Menu_AddItem( &s_configs.menu, &s_configs.list );
 	Menu_AddItem( &s_configs.menu, &s_configs.arrows );
 	Menu_AddItem( &s_configs.menu, &s_configs.left );
 	Menu_AddItem( &s_configs.menu, &s_configs.right );
@@ -250,15 +254,15 @@ UI_LoadConfig_Cache
 =================
 */
 void UI_LoadConfig_Cache( void ) {
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT0 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT1 );
-	trap_R_RegisterShaderNoMip( ART_FRAMEL );
-	trap_R_RegisterShaderNoMip( ART_FRAMER );
-	trap_R_RegisterShaderNoMip( ART_ARROWS );
-	trap_R_RegisterShaderNoMip( ART_ARROWLEFT );
-	trap_R_RegisterShaderNoMip( ART_ARROWRIGHT );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT0 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT1 );
+	trap->re->RegisterShaderNoMip( ART_FRAMEL );
+	trap->re->RegisterShaderNoMip( ART_FRAMER );
+	trap->re->RegisterShaderNoMip( ART_ARROWS );
+	trap->re->RegisterShaderNoMip( ART_ARROWLEFT );
+	trap->re->RegisterShaderNoMip( ART_ARROWRIGHT );
 }
 
 

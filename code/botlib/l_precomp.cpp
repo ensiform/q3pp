@@ -669,7 +669,7 @@ void PC_AddBuiltinDefines(source_t *source)
 	struct builtin
 	{
 		char *string;
-		int builtin;
+		int value;
 	} builtin[] = {
 		{ "__LINE__",	BUILTIN_LINE },
 		{ "__FILE__",	BUILTIN_FILE },
@@ -686,7 +686,7 @@ void PC_AddBuiltinDefines(source_t *source)
 		define->name = (char *) GetMemory(strlen(builtin[i].string) + 1);
 		strcpy(define->name, builtin[i].string);
 		define->flags |= DEFINE_FIXED;
-		define->builtin = builtin[i].builtin;
+		define->builtin = builtin[i].value;
 		//add the define to the source
 #if DEFINEHASHING
 		PC_AddDefineToHash(define, source->definehash);
@@ -1333,7 +1333,7 @@ define_t *PC_DefineFromString(char *string)
 	strncpy(src.filename, "*extern", MAX_PATH);
 	src.scriptstack = script;
 #if DEFINEHASHING
-	src.definehash = GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
+	src.definehash = (define_t **)GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
 #endif //DEFINEHASHING
 	//create a define from the source
 	res = PC_Directive_define(&src);
@@ -1608,7 +1608,7 @@ int PC_Directive_endif(source_t *source)
 //============================================================================
 typedef struct operator_s
 {
-	int operator;
+	int _operator;
 	int priority;
 	int parentheses;
 	struct operator_s *prev, *next;
@@ -1915,7 +1915,7 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 				{
 					//o = (operator_t *) GetClearedMemory(sizeof(operator_t));
 					AllocOperator(o);
-					o->operator = t->subtype;
+					o->_operator = t->subtype;
 					o->priority = PC_OperatorPriority(t->subtype);
 					o->parentheses = parentheses;
 					o->next = NULL;
@@ -1970,8 +1970,8 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 				if (o->priority >= o->next->priority) break;
 			} //end if
 			//if the arity of the operator isn't equal to 1
-			if (o->operator != P_LOGIC_NOT
-					&& o->operator != P_BIN_NOT) v = v->next;
+			if (o->_operator != P_LOGIC_NOT
+					&& o->_operator != P_BIN_NOT) v = v->next;
 			//if there's no value or no next value
 			if (!v)
 			{
@@ -1986,16 +1986,16 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 #ifdef DEBUG_EVAL
 		if (integer)
 		{
-			Log_Write("operator %s, value1 = %d", PunctuationFromNum(source->scriptstack, o->operator), v1->intvalue);
+			Log_Write("operator %s, value1 = %d", PunctuationFromNum(source->scriptstack, o->_operator), v1->intvalue);
 			if (v2) Log_Write("value2 = %d", v2->intvalue);
 		} //end if
 		else
 		{
-			Log_Write("operator %s, value1 = %f", PunctuationFromNum(source->scriptstack, o->operator), v1->floatvalue);
+			Log_Write("operator %s, value1 = %f", PunctuationFromNum(source->scriptstack, o->_operator), v1->floatvalue);
 			if (v2) Log_Write("value2 = %f", v2->floatvalue);
 		} //end else
 #endif //DEBUG_EVAL
-		switch(o->operator)
+		switch(o->_operator)
 		{
 			case P_LOGIC_NOT:		v1->intvalue = !v1->intvalue;
 									v1->floatvalue = !v1->floatvalue; break;
@@ -2087,11 +2087,11 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 #endif //DEBUG_EVAL
 		if (error) break;
 		//if not an operator with arity 1
-		if (o->operator != P_LOGIC_NOT
-				&& o->operator != P_BIN_NOT)
+		if (o->_operator != P_LOGIC_NOT
+				&& o->_operator != P_BIN_NOT)
 		{
 			//remove the second value if not question mark operator
-			if (o->operator != P_QUESTIONMARK) v = v->next;
+			if (o->_operator != P_QUESTIONMARK) v = v->next;
 			//
 			if (v->prev) v->prev->next = v->next;
 			else firstvalue = v->next;
@@ -3010,7 +3010,7 @@ source_t *LoadSourceFile(const char *filename)
 	source->skip = 0;
 
 #if DEFINEHASHING
-	source->definehash = GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
+	source->definehash = (define_t **)GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
 #endif //DEFINEHASHING
 	PC_AddGlobalDefinesToSource(source);
 	return source;
@@ -3043,7 +3043,7 @@ source_t *LoadSourceMemory(char *ptr, int length, char *name)
 	source->skip = 0;
 
 #if DEFINEHASHING
-	source->definehash = GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
+	source->definehash = (define_t **)GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
 #endif //DEFINEHASHING
 	PC_AddGlobalDefinesToSource(source);
 	return source;

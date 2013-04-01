@@ -104,7 +104,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 		}
 
 		// if not line of sight, no sound
-		trap_Trace( &tr, client->ps.origin, NULL, NULL, ent->s.pos.trBase, ENTITYNUM_NONE, CONTENTS_SOLID );
+		trap->Trace( &tr, client->ps.origin, NULL, NULL, ent->s.pos.trBase, ENTITYNUM_NONE, CONTENTS_SOLID, false );
 		if ( tr.fraction != 1.0 ) {
 			continue;
 		}
@@ -130,7 +130,7 @@ int Pickup_PersistantPowerup( gentity_t *ent, gentity_t *other ) {
 	switch( ent->item->giTag ) {
 	case PW_GUARD:
 		clientNum = other->client->ps.clientNum;
-		trap_GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
+		trap->GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
 		handicap = atof( Info_ValueForKey( userinfo, "handicap" ) );
 		if( handicap<=0.0f || handicap>100.0f) {
 			handicap = 100.0f;
@@ -147,7 +147,7 @@ int Pickup_PersistantPowerup( gentity_t *ent, gentity_t *other ) {
 
 	case PW_SCOUT:
 		clientNum = other->client->ps.clientNum;
-		trap_GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
+		trap->GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
 		handicap = atof( Info_ValueForKey( userinfo, "handicap" ) );
 		if( handicap<=0.0f || handicap>100.0f) {
 			handicap = 100.0f;
@@ -158,7 +158,7 @@ int Pickup_PersistantPowerup( gentity_t *ent, gentity_t *other ) {
 
 	case PW_DOUBLER:
 		clientNum = other->client->ps.clientNum;
-		trap_GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
+		trap->GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
 		handicap = atof( Info_ValueForKey( userinfo, "handicap" ) );
 		if( handicap<=0.0f || handicap>100.0f) {
 			handicap = 100.0f;
@@ -167,7 +167,7 @@ int Pickup_PersistantPowerup( gentity_t *ent, gentity_t *other ) {
 		break;
 	case PW_AMMOREGEN:
 		clientNum = other->client->ps.clientNum;
-		trap_GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
+		trap->GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
 		handicap = atof( Info_ValueForKey( userinfo, "handicap" ) );
 		if( handicap<=0.0f || handicap>100.0f) {
 			handicap = 100.0f;
@@ -177,7 +177,7 @@ int Pickup_PersistantPowerup( gentity_t *ent, gentity_t *other ) {
 		break;
 	default:
 		clientNum = other->client->ps.clientNum;
-		trap_GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
+		trap->GetUserinfo( clientNum, userinfo, sizeof(userinfo) );
 		handicap = atof( Info_ValueForKey( userinfo, "handicap" ) );
 		if( handicap<=0.0f || handicap>100.0f) {
 			handicap = 100.0f;
@@ -371,7 +371,7 @@ void RespawnItem( gentity_t *ent ) {
 	ent->r.contents = CONTENTS_TRIGGER;
 	ent->s.eFlags &= ~EF_NODRAW;
 	ent->r.svFlags &= ~SVF_NOCLIENT;
-	trap_LinkEntity (ent);
+	trap->LinkEntity (ent);
 
 	if ( ent->item->giType == IT_POWERUP ) {
 		// play powerup spawn sound to all clients
@@ -547,7 +547,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		ent->nextthink = level.time + respawn * 1000;
 		ent->think = RespawnItem;
 	}
-	trap_LinkEntity( ent );
+	trap->LinkEntity( ent );
 }
 
 
@@ -598,7 +598,7 @@ gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
 
 	dropped->flags = FL_DROPPED_ITEM;
 
-	trap_LinkEntity (dropped);
+	trap->LinkEntity (dropped);
 
 	return dropped;
 }
@@ -669,7 +669,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 	} else {
 		// drop to floor
 		VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
-		trap_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
+		trap->Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID, false );
 		if ( tr.startsolid ) {
 			G_Printf ("FinishSpawningItem: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
 			G_FreeEntity( ent );
@@ -702,7 +702,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 	}
 
 
-	trap_LinkEntity (ent);
+	trap->LinkEntity (ent);
 }
 
 
@@ -851,7 +851,7 @@ void SaveRegisteredItems( void ) {
 	string[ bg_numItems ] = 0;
 
 	G_Printf( "%i items registered\n", count );
-	trap_SetConfigstring(CS_ITEMS, string);
+	trap->SetConfigstring(CS_ITEMS, string);
 }
 
 /*
@@ -864,7 +864,7 @@ int G_ItemDisabled( gitem_t *item ) {
 	char name[128];
 
 	Com_sprintf(name, sizeof(name), "disable_%s", item->classname);
-	return trap_Cvar_VariableIntegerValue( name );
+	return cvarSystem->VariableIntegerValue( name );
 }
 
 /*
@@ -976,8 +976,8 @@ void G_RunItem( gentity_t *ent ) {
 	} else {
 		mask = MASK_PLAYERSOLID & ~CONTENTS_BODY;//MASK_SOLID;
 	}
-	trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, 
-		ent->r.ownerNum, mask );
+	trap->Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, 
+		ent->r.ownerNum, mask, false );
 
 	VectorCopy( tr.endpos, ent->r.currentOrigin );
 
@@ -985,7 +985,7 @@ void G_RunItem( gentity_t *ent ) {
 		tr.fraction = 0;
 	}
 
-	trap_LinkEntity( ent );	// FIXME: avoid this for stationary?
+	trap->LinkEntity( ent );	// FIXME: avoid this for stationary?
 
 	// check think function
 	G_RunThink( ent );
@@ -995,7 +995,7 @@ void G_RunItem( gentity_t *ent ) {
 	}
 
 	// if it is in a nodrop volume, remove it
-	contents = trap_PointContents( ent->r.currentOrigin, -1 );
+	contents = trap->PointContents( ent->r.currentOrigin, -1 );
 	if ( contents & CONTENTS_NODROP ) {
 		if (ent->item && ent->item->giType == IT_TEAM) {
 			Team_FreeEntity(ent);

@@ -1324,7 +1324,7 @@ int FileLength(FILE *fp)
 script_t *LoadScriptFile(const char *filename)
 {
 #ifdef BOTLIB
-	fileHandle_t fp;
+	og::File *fp;
 	char pathname[MAX_QPATH];
 #else
 	FILE *fp;
@@ -1338,8 +1338,11 @@ script_t *LoadScriptFile(const char *filename)
 		Com_sprintf(pathname, sizeof(pathname), "%s/%s", basefolder, filename);
 	else
 		Com_sprintf(pathname, sizeof(pathname), "%s", filename);
-	length = botimport.FS_FOpenFile( pathname, &fp, FS_READ );
+
+	fp = og::FS->OpenRead( pathname );
 	if (!fp) return NULL;
+
+	length = fp->Size();
 #else
 	fp = fopen(filename, "rb");
 	if (!fp) return NULL;
@@ -1369,8 +1372,14 @@ script_t *LoadScriptFile(const char *filename)
 	SetScriptPunctuations(script, NULL);
 	//
 #ifdef BOTLIB
-	botimport.FS_Read(script->buffer, length, fp);
-	botimport.FS_FCloseFile(fp);
+	try {
+		fp->Read( script->buffer, length );
+	}
+	catch( og::FileReadWriteError &err ) {
+		err; // Shut up
+		botimport.Print( PRT_ERROR, "Can't read from file %s", filename );
+	}
+	fp->Close();
 #else
 	if (fread(script->buffer, length, 1, fp) != 1)
 	{

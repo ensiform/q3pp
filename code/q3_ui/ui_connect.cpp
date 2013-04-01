@@ -78,9 +78,9 @@ static void UI_DisplayDownloadInfo( const char *downloadName ) {
 	int style = UI_LEFT|UI_SMALLFONT|UI_DROPSHADOW;
 	const char *s;
 
-	downloadSize = trap_Cvar_VariableValue( "cl_downloadSize" );
-	downloadCount = trap_Cvar_VariableValue( "cl_downloadCount" );
-	downloadTime = trap_Cvar_VariableValue( "cl_downloadTime" );
+	downloadSize = cvarSystem->VariableValue( "cl_downloadSize" );
+	downloadCount = cvarSystem->VariableValue( "cl_downloadCount" );
+	downloadTime = cvarSystem->VariableValue( "cl_downloadTime" );
 
 	leftWidth = UI_ProportionalStringWidth( dlText ) * UI_ProportionalSizeScale( style );
 	width = UI_ProportionalStringWidth( etaText ) * UI_ProportionalSizeScale( style );
@@ -161,7 +161,7 @@ to prevent it from blinking away too rapidly on local or lan games.
 */
 void UI_DrawConnectScreen( bool overlay ) {
 	char			*s;
-	uiClientState_t	cstate;
+	ogClientState	cstate;
 	char			info[MAX_INFO_VALUE];
 
 	Menu_Cache();
@@ -173,23 +173,23 @@ void UI_DrawConnectScreen( bool overlay ) {
 	}
 
 	// see what information we should display
-	trap_GetClientState( &cstate );
+	trap->GetClientState( &cstate );
 
 	info[0] = '\0';
-	if( trap_GetConfigString( CS_SERVERINFO, info, sizeof(info) ) ) {
+	if( trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) ) ) {
 		UI_DrawProportionalString( 320, 16, va( "Loading %s", Info_ValueForKey( info, "mapname" ) ), UI_BIGFONT|UI_CENTER|UI_DROPSHADOW, color_white );
 	}
 
-	UI_DrawProportionalString( 320, 64, va("Connecting to %s", cstate.servername), UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
+	UI_DrawProportionalString( 320, 64, va("Connecting to %s", cstate.serverName.c_str()), UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
 	//UI_DrawProportionalString( 320, 96, "Press Esc to abort", UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
 
 	// display global MOTD at bottom
 	UI_DrawProportionalString( SCREEN_WIDTH/2, SCREEN_HEIGHT-32, 
-		Info_ValueForKey( cstate.updateInfoString, "motd" ), UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
+		Info_ValueForKey( cstate.updateInfoString.c_str(), "motd" ), UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
 	
 	// print any server info (server full, bad version, etc)
 	if ( cstate.connState < CA_CONNECTED ) {
-		UI_DrawProportionalString_AutoWrapped( 320, 192, 630, 20, cstate.messageString, UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
+		UI_DrawProportionalString_AutoWrapped( 320, 192, 630, 20, cstate.messageString.c_str(), UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );
 	}
 
 #if 0
@@ -231,7 +231,7 @@ void UI_DrawConnectScreen( bool overlay ) {
 	case CA_CONNECTED: {
 		char downloadName[MAX_INFO_VALUE];
 
-			trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof(downloadName) );
+			cvarSystem->VariableStringBuffer( "cl_downloadName", downloadName, sizeof(downloadName) );
 			if (*downloadName) {
 				UI_DisplayDownloadInfo( downloadName );
 				return;
@@ -260,7 +260,7 @@ UI_KeyConnect
 */
 void UI_KeyConnect( int key ) {
 	if ( key == K_ESCAPE ) {
-		trap_Cmd_ExecuteText( EXEC_APPEND, "disconnect\n" );
+		trap->Cmd_ExecuteText( EXEC_APPEND, "disconnect\n" );
 		return;
 	}
 }

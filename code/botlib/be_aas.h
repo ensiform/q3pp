@@ -139,7 +139,7 @@ typedef struct aas_entityinfo_s
 	int		modelindex;		// model used
 	int		modelindex2;	// weapons, CTF flags, etc
 	int		frame;			// model frame number
-	int		event;			// impulse events -- muzzle flashes, footsteps, etc
+	int		_event;			// impulse events -- muzzle flashes, footsteps, etc
 	int		eventParm;		// even parameter
 	int		powerups;		// bit flags
 	int		weapon;			// determines weapon and flash model, etc

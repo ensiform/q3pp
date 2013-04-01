@@ -99,7 +99,7 @@ void TossClientItems( gentity_t *self ) {
 	if ( weapon > WP_MACHINEGUN && weapon != WP_GRAPPLING_HOOK && 
 		self->client->ps.ammo[ weapon ] ) {
 		// find the item type for this weapon
-		item = BG_FindItemForWeapon( weapon );
+		item = BG_FindItemForWeapon( (weapon_t)weapon );
 
 		// spawn the item
 		Drop_Item( self, item, 0 );
@@ -110,7 +110,7 @@ void TossClientItems( gentity_t *self ) {
 		angle = 45;
 		for ( i = 1 ; i < PW_NUM_POWERUPS ; i++ ) {
 			if ( self->client->ps.powerups[ i ] > level.time ) {
-				item = BG_FindItemForPowerup( i );
+				item = BG_FindItemForPowerup( (powerup_t)i );
 				if ( !item ) {
 					continue;
 				}
@@ -201,7 +201,7 @@ void TossClientPersistantPowerups( gentity_t *ent ) {
 	powerup->r.svFlags &= ~SVF_NOCLIENT;
 	powerup->s.eFlags &= ~EF_NODRAW;
 	powerup->r.contents = CONTENTS_TRIGGER;
-	trap_LinkEntity( powerup );
+	trap->LinkEntity( powerup );
 
 	ent->client->ps.stats[STAT_PERSISTANT_POWERUP] = 0;
 	ent->client->persistantPowerup = NULL;
@@ -611,7 +611,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	memset( self->client->ps.powerups, 0, sizeof(self->client->ps.powerups) );
 
 	// never gib in a nodrop
-	contents = trap_PointContents( self->r.currentOrigin, -1 );
+	contents = trap->PointContents( self->r.currentOrigin, -1 );
 
 	if ( (self->health <= GIB_HEALTH && !(contents & CONTENTS_NODROP) && g_blood.integer) || meansOfDeath == MOD_SUICIDE) {
 		// gib death
@@ -659,7 +659,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 #endif
 	}
 
-	trap_LinkEntity (self);
+	trap->LinkEntity (self);
 
 }
 
@@ -1069,7 +1069,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	VectorScale (midpoint, 0.5, midpoint);
 
 	VectorCopy(midpoint, dest);
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0 || tr.entityNum == targ->s.number)
 		return true;
@@ -1080,7 +1080,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmaxs[0];
 	dest[1] += offsetmaxs[1];
 	dest[2] += offsetmaxs[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1089,7 +1089,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmaxs[0];
 	dest[1] += offsetmins[1];
 	dest[2] += offsetmaxs[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1098,7 +1098,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmins[0];
 	dest[1] += offsetmaxs[1];
 	dest[2] += offsetmaxs[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1107,7 +1107,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmins[0];
 	dest[1] += offsetmins[1];
 	dest[2] += offsetmaxs[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1116,7 +1116,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmaxs[0];
 	dest[1] += offsetmaxs[1];
 	dest[2] += offsetmins[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1125,7 +1125,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmaxs[0];
 	dest[1] += offsetmins[1];
 	dest[2] += offsetmins[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1134,7 +1134,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmins[0];
 	dest[1] += offsetmaxs[1];
 	dest[2] += offsetmins[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1143,7 +1143,7 @@ bool CanDamage (gentity_t *targ, vec3_t origin) {
 	dest[0] += offsetmins[0];
 	dest[1] += offsetmins[2];
 	dest[2] += offsetmins[2];
-	trap_Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap->Trace(&tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID, false);
 
 	if (tr.fraction == 1.0)
 		return true;
@@ -1178,7 +1178,7 @@ bool G_RadiusDamage ( vec3_t origin, gentity_t *attacker, float damage, float ra
 		maxs[i] = origin[i] + radius;
 	}
 
-	numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
+	numListedEntities = trap->EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
 
 	for ( e = 0 ; e < numListedEntities ; e++ ) {
 		ent = &g_entities[entityList[ e ]];

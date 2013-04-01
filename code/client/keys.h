@@ -45,7 +45,7 @@ extern	int				anykeydown;
 extern	bool	chat_team;
 extern	int			chat_playerNum;
 
-void Key_WriteBindings( fileHandle_t f );
+void Key_WriteBindings( og::File *f );
 void Key_SetBinding( int keynum, const char *binding );
 char *Key_GetBinding( int keynum );
 bool Key_IsDown( int keynum );

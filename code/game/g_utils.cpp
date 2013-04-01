@@ -90,7 +90,7 @@ int G_FindConfigstringIndex( char *name, int start, int max, bool create ) {
 	}
 
 	for ( i=1 ; i<max ; i++ ) {
-		trap_GetConfigstring( start + i, s, sizeof( s ) );
+		trap->GetConfigstring( start + i, s, sizeof( s ) );
 		if ( !s[0] ) {
 			break;
 		}
@@ -107,7 +107,7 @@ int G_FindConfigstringIndex( char *name, int start, int max, bool create ) {
 		G_Error( "G_FindConfigstringIndex: overflow" );
 	}
 
-	trap_SetConfigstring( start + i, name );
+	trap->SetConfigstring( start + i, name );
 
 	return i;
 }
@@ -137,7 +137,7 @@ void G_TeamCommand( team_t team, char *cmd ) {
 	for ( i = 0 ; i < level.maxclients ; i++ ) {
 		if ( level.clients[i].pers.connected == CON_CONNECTED ) {
 			if ( level.clients[i].sess.sessionTeam == team ) {
-				trap_SendServerCommand( i, va("%s", cmd ));
+				trap->SendServerCommand( i, va("%s", cmd ));
 			}
 		}
 	}
@@ -242,7 +242,7 @@ void G_UseTargets( gentity_t *ent, gentity_t *activator ) {
 	if (ent->targetShaderName && ent->targetShaderNewName) {
 		float f = level.time * 0.001;
 		AddRemap(ent->targetShaderName, ent->targetShaderNewName, f);
-		trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
+		trap->SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
 	}
 
 	if ( !ent->target ) {
@@ -426,7 +426,7 @@ gentity_t *G_Spawn( void ) {
 	level.num_entities++;
 
 	// let the server system know that there are more entities
-	trap_LocateGameData( level.gentities, level.num_entities, sizeof( gentity_t ), 
+	trap->LocateGameData( level.gentities, level.num_entities, sizeof( gentity_t ), 
 		&level.clients[0].ps, sizeof( level.clients[0] ) );
 
 	G_InitGentity( e );
@@ -462,7 +462,7 @@ Marks the entity as free
 =================
 */
 void G_FreeEntity( gentity_t *ed ) {
-	trap_UnlinkEntity (ed);		// unlink from world
+	trap->UnlinkEntity (ed);		// unlink from world
 
 	if ( ed->neverFree ) {
 		return;
@@ -499,7 +499,7 @@ gentity_t *G_TempEntity( vec3_t origin, int event ) {
 	G_SetOrigin( e, snapped );
 
 	// find cluster for PVS
-	trap_LinkEntity( e );
+	trap->LinkEntity( e );
 
 	return e;
 }
@@ -530,7 +530,7 @@ void G_KillBox (gentity_t *ent) {
 
 	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
 	VectorAdd( ent->client->ps.origin, ent->r.maxs, maxs );
-	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+	num = trap->EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
 
 	for (i=0 ; i<num ; i++) {
 		hit = &g_entities[touch[i]];
@@ -571,10 +571,10 @@ G_AddEvent
 Adds an event+parm and twiddles the event counter
 ===============
 */
-void G_AddEvent( gentity_t *ent, int event, int eventParm ) {
+void G_AddEvent( gentity_t *ent, int _event, int eventParm ) {
 	int		bits;
 
-	if ( !event ) {
+	if ( !_event ) {
 		G_Printf( "G_AddEvent: zero event added for entity %i\n", ent->s.number );
 		return;
 	}
@@ -583,13 +583,13 @@ void G_AddEvent( gentity_t *ent, int event, int eventParm ) {
 	if ( ent->client ) {
 		bits = ent->client->ps.externalEvent & EV_EVENT_BITS;
 		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
-		ent->client->ps.externalEvent = event | bits;
+		ent->client->ps.externalEvent = _event | bits;
 		ent->client->ps.externalEventParm = eventParm;
 		ent->client->ps.externalEventTime = level.time;
 	} else {
-		bits = ent->s.event & EV_EVENT_BITS;
+		bits = ent->s._event & EV_EVENT_BITS;
 		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
-		ent->s.event = event | bits;
+		ent->s._event = _event | bits;
 		ent->s.eventParm = eventParm;
 	}
 	ent->eventTime = level.time;
@@ -662,5 +662,5 @@ int DebugLine(vec3_t start, vec3_t end, int color) {
 	VectorMA(points[2], -2, cross, points[2]);
 	VectorMA(points[3], 2, cross, points[3]);
 
-	return trap_DebugPolygonCreate(color, 4, points);
+	return trap->DebugPolygonCreate(color, 4, points);
 }

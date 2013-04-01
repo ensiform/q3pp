@@ -441,10 +441,12 @@ void Controls_GetConfig( void );
 void Controls_SetConfig(bool restart);
 void Controls_SetDefaults( void );
 
-int			trap_PC_AddGlobalDefine( char *define );
-int			trap_PC_LoadSource( const char *filename );
-int			trap_PC_FreeSource( int handle );
-int			trap_PC_ReadToken( int handle, pc_token_t *pc_token );
-int			trap_PC_SourceFileAndLine( int handle, char *filename, int *line );
+#if 0
+int			trap->PC_AddGlobalDefine( char *define );
+int			trap->PC_LoadSource( const char *filename );
+int			trap->PC_FreeSource( int handle );
+int			trap->PC_ReadToken( int handle, pc_token_t *pc_token );
+int			trap->PC_SourceFileAndLine( int handle, char *filename, int *line );
+#endif
 
 #endif

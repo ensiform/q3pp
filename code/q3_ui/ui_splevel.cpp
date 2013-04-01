@@ -140,7 +140,7 @@ static void PlayerIcon( const char *modelAndSkin, char *iconName, int iconNameMa
 
 	Com_sprintf(iconName, iconNameMaxSize, "models/players/%s/icon_%s.tga", model, skin );
 
-	if( !trap_R_RegisterShaderNoMip( iconName ) && Q_stricmp( skin, "default" ) != 0 ) {
+	if( !trap->re->RegisterShaderNoMip( iconName ) && Q_stricmp( skin, "default" ) != 0 ) {
 		Com_sprintf(iconName, iconNameMaxSize, "models/players/%s/icon_default.tga", model );
 	}
 }
@@ -155,7 +155,7 @@ static qhandle_t PlayerIconHandle( const char *modelAndSkin ) {
 	char	iconName[MAX_QPATH];
 
 	PlayerIcon( modelAndSkin, iconName, sizeof(iconName) );
-	return trap_R_RegisterShaderNoMip( iconName );
+	return trap->re->RegisterShaderNoMip( iconName );
 }
 
 
@@ -237,7 +237,7 @@ static void UI_SPLevelMenu_SetMenuArena( int n, int level, const char *arenaInfo
 	}
 
 	strcpy( levelMenuInfo.levelPicNames[n], va( "levelshots/%s.tga", map ) );
-	if( !trap_R_RegisterShaderNoMip( levelMenuInfo.levelPicNames[n] ) ) {
+	if( !trap->re->RegisterShaderNoMip( levelMenuInfo.levelPicNames[n] ) ) {
 		strcpy( levelMenuInfo.levelPicNames[n], ART_MAP_UNKNOWN );
 	}
 	levelMenuInfo.item_maps[n].shader = 0;
@@ -268,7 +268,7 @@ static void UI_SPLevelMenu_SetMenuItems( void ) {
 	}
 
 	if( selectedArena != -1 ) {
-		trap_Cvar_SetValue( "ui_spSelection", selectedArenaSet * ARENAS_PER_TIER + selectedArena );
+		cvarSystem->SetValue( "ui_spSelection", selectedArenaSet * ARENAS_PER_TIER + selectedArena );
 	}
 
 	if( selectedArenaSet == trainingTier ) {
@@ -369,9 +369,9 @@ static void UI_SPLevelMenu_ResetAction( bool result ) {
 	// clear game variables
 	UI_NewGame();
 	if ( UI_GetSpecialArenaInfo( "training" ) ) {
-		trap_Cvar_SetValue( "ui_spSelection", -4 );
+		cvarSystem->SetValue( "ui_spSelection", -4 );
 	} else {
-		trap_Cvar_SetValue( "ui_spSelection", 0 );
+		cvarSystem->SetValue( "ui_spSelection", 0 );
 	}
 
 	// make the level select menu re-initialize
@@ -407,7 +407,7 @@ static void UI_SPLevelMenu_LevelEvent( void* ptr, int notification ) {
 	levelMenuInfo.selectedArenaInfo = UI_GetArenaInfoByNumber( selectedArenaSet * ARENAS_PER_TIER + selectedArena );
 	UI_SPLevelMenu_SetBots();
 
-	trap_Cvar_SetValue( "ui_spSelection", selectedArenaSet * ARENAS_PER_TIER + selectedArena );
+	cvarSystem->SetValue( "ui_spSelection", selectedArenaSet * ARENAS_PER_TIER + selectedArena );
 }
 
 
@@ -476,7 +476,7 @@ static void UI_SPLevelMenu_AwardEvent( void* ptr, int notification ) {
 	}
 
 	n = ((menucommon_s*)ptr)->id - ID_AWARD1;
-	trap_S_StartLocalSound( levelMenuInfo.awardSounds[n], CHAN_ANNOUNCER );
+	trap->si->StartLocalSound( levelMenuInfo.awardSounds[n], CHAN_ANNOUNCER );
 }
 
 
@@ -558,12 +558,12 @@ static void UI_SPLevelMenu_MenuDraw( void ) {
 	}
 
 	// draw player name
-	trap_Cvar_VariableStringBuffer( "name", string, 32 );
+	cvarSystem->VariableStringBuffer( "name", string, 32 );
 	Q_CleanStr( string );
 	UI_DrawProportionalString( 320, PLAYER_Y, string, UI_CENTER|UI_SMALLFONT, color_orange );
 
 	// check for model changes
-	trap_Cvar_VariableStringBuffer( "model", buf, sizeof(buf) );
+	cvarSystem->VariableStringBuffer( "model", buf, sizeof(buf) );
 	if( Q_stricmp( buf, levelMenuInfo.playerModel ) != 0 ) {
 		Q_strncpyz( levelMenuInfo.playerModel, buf, sizeof(levelMenuInfo.playerModel) );
 		PlayerIcon( levelMenuInfo.playerModel, levelMenuInfo.playerPicName, sizeof(levelMenuInfo.playerPicName) );
@@ -620,7 +620,7 @@ static void UI_SPLevelMenu_MenuDraw( void ) {
 
 	// show levelshots for levels of current tier
 	Vector4Copy( color_white, color );
-	color[3] = 0.5+0.5*sin(uis.realtime/PULSE_DIVISOR);
+	color[3] = 0.5+0.5*sin((double)uis.realtime/PULSE_DIVISOR);
 	for ( n = 0; n < levelMenuInfo.numMaps; n++ ) {
 		x = levelMenuInfo.item_maps[n].generic.x;
 		y = levelMenuInfo.item_maps[n].generic.y;
@@ -633,15 +633,15 @@ static void UI_SPLevelMenu_MenuDraw( void ) {
 
 		if ( n == selectedArena ) {
 			if( Menu_ItemAtCursor( &levelMenuInfo.menu ) == &levelMenuInfo.item_maps[n] ) {
-				trap_R_SetColor( color );
+				trap->re->SetColor( color );
 			}
 			UI_DrawHandlePic( x-1, y-1, 130, 130 - 14, levelMenuInfo.levelSelectedPic ); 
-			trap_R_SetColor( NULL );
+			trap->re->SetColor( NULL );
 		}
 		else if( Menu_ItemAtCursor( &levelMenuInfo.menu ) == &levelMenuInfo.item_maps[n] ) {
-			trap_R_SetColor( color );
+			trap->re->SetColor( color );
 			UI_DrawHandlePic( x-31, y-30, 256, 256-27, levelMenuInfo.levelFocusPic); 
-			trap_R_SetColor( NULL );
+			trap->re->SetColor( NULL );
 		}
 	}
 
@@ -680,37 +680,37 @@ UI_SPLevelMenu_Cache
 void UI_SPLevelMenu_Cache( void ) {
 	int				n;
 
-	trap_R_RegisterShaderNoMip( ART_LEVELFRAME_FOCUS );
-	trap_R_RegisterShaderNoMip( ART_LEVELFRAME_SELECTED );
-	trap_R_RegisterShaderNoMip( ART_ARROW );
-	trap_R_RegisterShaderNoMip( ART_ARROW_FOCUS );
-	trap_R_RegisterShaderNoMip( ART_MAP_UNKNOWN );
-	trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE1 );
-	trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE2 );
-	trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE3 );
-	trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE4 );
-	trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE5 );
-	trap_R_RegisterShaderNoMip( ART_BACK0 );
-	trap_R_RegisterShaderNoMip( ART_BACK1 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT0 );
-	trap_R_RegisterShaderNoMip( ART_FIGHT1 );
-	trap_R_RegisterShaderNoMip( ART_RESET0 );
-	trap_R_RegisterShaderNoMip( ART_RESET1 );
-	trap_R_RegisterShaderNoMip( ART_CUSTOM0 );
-	trap_R_RegisterShaderNoMip( ART_CUSTOM1 );
+	trap->re->RegisterShaderNoMip( ART_LEVELFRAME_FOCUS );
+	trap->re->RegisterShaderNoMip( ART_LEVELFRAME_SELECTED );
+	trap->re->RegisterShaderNoMip( ART_ARROW );
+	trap->re->RegisterShaderNoMip( ART_ARROW_FOCUS );
+	trap->re->RegisterShaderNoMip( ART_MAP_UNKNOWN );
+	trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE1 );
+	trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE2 );
+	trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE3 );
+	trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE4 );
+	trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE5 );
+	trap->re->RegisterShaderNoMip( ART_BACK0 );
+	trap->re->RegisterShaderNoMip( ART_BACK1 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT0 );
+	trap->re->RegisterShaderNoMip( ART_FIGHT1 );
+	trap->re->RegisterShaderNoMip( ART_RESET0 );
+	trap->re->RegisterShaderNoMip( ART_RESET1 );
+	trap->re->RegisterShaderNoMip( ART_CUSTOM0 );
+	trap->re->RegisterShaderNoMip( ART_CUSTOM1 );
 
 	for( n = 0; n < 6; n++ ) {
-		trap_R_RegisterShaderNoMip( ui_medalPicNames[n] );
-		levelMenuInfo.awardSounds[n] = trap_S_RegisterSound( ui_medalSounds[n], false );
+		trap->re->RegisterShaderNoMip( ui_medalPicNames[n] );
+		levelMenuInfo.awardSounds[n] = trap->si->RegisterSound( ui_medalSounds[n], false );
 	}
 
-	levelMenuInfo.levelSelectedPic = trap_R_RegisterShaderNoMip( ART_LEVELFRAME_SELECTED );
-	levelMenuInfo.levelFocusPic = trap_R_RegisterShaderNoMip( ART_LEVELFRAME_FOCUS );
-	levelMenuInfo.levelCompletePic[0] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE1 );
-	levelMenuInfo.levelCompletePic[1] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE2 );
-	levelMenuInfo.levelCompletePic[2] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE3 );
-	levelMenuInfo.levelCompletePic[3] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE4 );
-	levelMenuInfo.levelCompletePic[4] = trap_R_RegisterShaderNoMip( ART_MAP_COMPLETE5 );
+	levelMenuInfo.levelSelectedPic = trap->re->RegisterShaderNoMip( ART_LEVELFRAME_SELECTED );
+	levelMenuInfo.levelFocusPic = trap->re->RegisterShaderNoMip( ART_LEVELFRAME_FOCUS );
+	levelMenuInfo.levelCompletePic[0] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE1 );
+	levelMenuInfo.levelCompletePic[1] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE2 );
+	levelMenuInfo.levelCompletePic[2] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE3 );
+	levelMenuInfo.levelCompletePic[3] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE4 );
+	levelMenuInfo.levelCompletePic[4] = trap->re->RegisterShaderNoMip( ART_MAP_COMPLETE5 );
 }
 
 
@@ -726,9 +726,9 @@ static void UI_SPLevelMenu_Init( void ) {
 	int		count;
 	char	buf[MAX_QPATH];
 
-	skill = (int)trap_Cvar_VariableValue( "g_spSkill" );
+	skill = (int)cvarSystem->VariableValue( "g_spSkill" );
 	if( skill < 1 || skill > 5 ) {
-		trap_Cvar_Set( "g_spSkill", "2" );
+		cvarSystem->Set( "g_spSkill", "2" );
 	}
 
 	memset( &levelMenuInfo, 0, sizeof(levelMenuInfo) );
@@ -807,7 +807,7 @@ static void UI_SPLevelMenu_Init( void ) {
 	levelMenuInfo.item_rightarrow.height			= 114;
 	levelMenuInfo.item_rightarrow.focuspic			= ART_ARROW_FOCUS;
 
-	trap_Cvar_VariableStringBuffer( "model", levelMenuInfo.playerModel, sizeof(levelMenuInfo.playerModel) );
+	cvarSystem->VariableStringBuffer( "model", levelMenuInfo.playerModel, sizeof(levelMenuInfo.playerModel) );
 	PlayerIcon( levelMenuInfo.playerModel, levelMenuInfo.playerPicName, sizeof(levelMenuInfo.playerPicName) );
 	levelMenuInfo.item_player.generic.type			= MTYPE_BITMAP;
 	levelMenuInfo.item_player.generic.name			= levelMenuInfo.playerPicName;
@@ -923,7 +923,7 @@ static void UI_SPLevelMenu_Init( void ) {
 	Menu_AddItem( &levelMenuInfo.menu, &levelMenuInfo.item_next );
 	Menu_AddItem( &levelMenuInfo.menu, &levelMenuInfo.item_null );
 
-	trap_Cvar_VariableStringBuffer( "ui_spSelection", buf, sizeof(buf) );
+	cvarSystem->VariableStringBuffer( "ui_spSelection", buf, sizeof(buf) );
 	if( *buf ) {
 		n = atoi( buf );
 		selectedArenaSet = n / ARENAS_PER_TIER;
@@ -1000,7 +1000,7 @@ UI_SPLevelMenu_f
 =================
 */
 void UI_SPLevelMenu_f( void ) {
-	trap_Key_SetCatcher( KEYCATCH_UI );
+	trap->Key_SetCatcher( KEYCATCH_UI );
 	uis.menusp = 0;
 	UI_SPLevelMenu();
 }
