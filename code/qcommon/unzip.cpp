@@ -680,18 +680,13 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 
         if (lSeek!=0)
         {
-            if (ZSEEK(s->z_filefunc, s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
-                lSeek=0;
-            else
+            if (ZSEEK(s->z_filefunc, s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR)!=0)
                 err=UNZ_ERRNO;
         }
         if ((file_info.size_file_comment>0) && (commentBufferSize>0))
             if (ZREAD(s->z_filefunc, s->filestream,szComment,uSizeRead)!=uSizeRead)
                 err=UNZ_ERRNO;
-        lSeek+=file_info.size_file_comment - uSizeRead;
     }
-    else
-        lSeek+=file_info.size_file_comment;
 
     if ((err==UNZ_OK) && (pfile_info!=NULL))
         *pfile_info=file_info;
@@ -1085,13 +1080,12 @@ extern int ZEXPORT unzOpenCurrentFile3 (unzFile file, int* method, int* level, i
       pfile_in_zip_read_info->stream.next_in = (Bytef *)0;
       pfile_in_zip_read_info->stream.avail_in = 0;
 
-      err=inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS);
-      if (err == Z_OK)
+      if (inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS) == Z_OK)
         pfile_in_zip_read_info->stream_initialised=1;
       else
       {
         TRYFREE(pfile_in_zip_read_info);
-        return err;
+        return UNZ_INTERNALERROR;
       }
         /* windowBits is passed < 0 to tell that there is no zlib header.
          * Note that in this case inflate *requires* an extra "dummy" byte
@@ -1138,7 +1132,7 @@ extern int ZEXPORT unzOpenCurrentFile3 (unzFile file, int* method, int* level, i
 #    endif
 
 
-    return UNZ_OK;
+    return err;
 }
 
 extern int ZEXPORT unzOpenCurrentFile (unzFile file)

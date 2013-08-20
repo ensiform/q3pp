@@ -1636,8 +1636,6 @@ static bool ParseShader( char **text )
 			a = atof( token );
 			VectorScale( tr.sunLight, a, tr.sunLight);
 
-			VectorSet( tr.sunAmbient, 0.0f, 0.0f, 0.0f);
-
 			token = COM_ParseExt( text, false );
 			a = atof( token );
 			a = a / 180 * M_PI;
@@ -1656,7 +1654,7 @@ static bool ParseShader( char **text )
 				tr.mapLightScale = atof(token);
 
 				token = COM_ParseExt( text, false );
-				VectorScale( tr.sunLight, atof(token), tr.sunAmbient );
+				tr.sunShadowScale = atof(token);
 			}
 
 			SkipRestOfLine( text );
@@ -2493,6 +2491,30 @@ static int CollapseStagesToGLSL(void)
 	if (numStages == i && i >= 2 && CollapseMultitexture())
 		numStages--;
 
+	// convert any remaining lightmap stages to a lighting pass with a white texture
+	// only do this with r_sunlightMode non-zero, as it's only for correct shadows.
+	if (r_sunlightMode->integer)
+	{
+		for (i = 0; i < MAX_SHADER_STAGES; i++)
+		{
+			shaderStage_t *pStage = &stages[i];
+
+			if (!pStage->active)
+				continue;
+
+			if (pStage->bundle[TB_DIFFUSEMAP].isLightmap)
+			{
+				pStage->glslShaderGroup = tr.lightallShader;
+				pStage->glslShaderIndex = LIGHTDEF_USE_LIGHTMAP;
+				if (r_deluxeMapping->integer && tr.worldDeluxeMapping)
+					pStage->glslShaderIndex |= LIGHTDEF_USE_DELUXEMAP;
+				pStage->bundle[TB_LIGHTMAP] = pStage->bundle[TB_DIFFUSEMAP];
+				pStage->bundle[TB_DIFFUSEMAP].image[0] = tr.whiteImage;
+				pStage->bundle[TB_DIFFUSEMAP].isLightmap = qfalse;
+			}
+		}
+	}
+
 	return numStages;
 }
 
@@ -2907,7 +2929,6 @@ static shader_t *FinishShader( void ) {
 	//
 	if ( stage > 1 && ( (r_vertexLight->integer && !r_uiFullScreen->integer) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
 		VertexLightingCollapse();
-		stage = 1;
 		hasLightmapStage = false;
 	}
 

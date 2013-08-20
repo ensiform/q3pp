@@ -90,15 +90,15 @@ char *Sys_DefaultHomePath( void )
 	TCHAR szPath[MAX_PATH];
 	GETFOLDERPATH qSHGetFolderPath;
 	HMODULE shfolder = LoadLibrary("shfolder.dll");
-	
+
+	if(shfolder == NULL)
+	{
+		Com_Printf("Unable to load SHFolder.dll\n");
+		return NULL;
+	}
+
 	if(!*homePath && com_homepath)
 	{
-		if(shfolder == NULL)
-		{
-			Com_Printf("Unable to load SHFolder.dll\n");
-			return NULL;
-		}
-
 		qSHGetFolderPath = (GETFOLDERPATH)GetProcAddress(shfolder, "SHGetFolderPathA");
 		if(qSHGetFolderPath == NULL)
 		{
@@ -121,10 +121,9 @@ char *Sys_DefaultHomePath( void )
 			Q_strcat(homePath, sizeof(homePath), com_homepath->string);
 		else
 			Q_strcat(homePath, sizeof(homePath), HOMEPATH_NAME_WIN);
-
-		FreeLibrary(shfolder);
 	}
 
+	FreeLibrary(shfolder);
 	return homePath;
 }
 

@@ -148,9 +148,9 @@ static void DrawTris (shaderCommands_t *input) {
 		GLSL_VertexAttribsState(ATTR_POSITION);
 		GLSL_BindProgram(sp);
 		
-		GLSL_SetUniformMatrix16(sp, TEXTURECOLOR_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		VectorSet4(color, 1, 1, 1, 1);
-		GLSL_SetUniformVec4(sp, TEXTURECOLOR_UNIFORM_COLOR, color);
+		GLSL_SetUniformVec4(sp, UNIFORM_COLOR, color);
 
 		if (input->multiDrawPrimitives)
 		{
@@ -369,28 +369,28 @@ static void ProjectDlightTexture( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMatrix16(sp, DLIGHT_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
-		GLSL_SetUniformFloat(sp, DLIGHT_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 		
-		GLSL_SetUniformInt(sp, DLIGHT_UNIFORM_DEFORMGEN, deformGen);
+		GLSL_SetUniformInt(sp, UNIFORM_DEFORMGEN, deformGen);
 		if (deformGen != DGEN_NONE)
 		{
-			GLSL_SetUniformFloat5(sp, DLIGHT_UNIFORM_DEFORMPARAMS, deformParams);
-			GLSL_SetUniformFloat(sp, DLIGHT_UNIFORM_TIME, tess.shaderTime);
+			GLSL_SetUniformFloat5(sp, UNIFORM_DEFORMPARAMS, deformParams);
+			GLSL_SetUniformFloat(sp, UNIFORM_TIME, tess.shaderTime);
 		}
 
 		vector[0] = dl->color[0];
 		vector[1] = dl->color[1];
 		vector[2] = dl->color[2];
 		vector[3] = 1.0f;
-		GLSL_SetUniformVec4(sp, DLIGHT_UNIFORM_COLOR, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_COLOR, vector);
 
 		vector[0] = origin[0];
 		vector[1] = origin[1];
 		vector[2] = origin[2];
 		vector[3] = scale;
-		GLSL_SetUniformVec4(sp, DLIGHT_UNIFORM_DLIGHTINFO, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_DLIGHTINFO, vector);
 	  
 		GL_Bind( tr.dlightImage );
 
@@ -772,28 +772,28 @@ static void ForwardDlight( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
 
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_DEFORMGEN, deformGen);
+		GLSL_SetUniformInt(sp, UNIFORM_DEFORMGEN, deformGen);
 		if (deformGen != DGEN_NONE)
 		{
-			GLSL_SetUniformFloat5(sp, GENERIC_UNIFORM_DEFORMPARAMS, deformParams);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_TIME, tess.shaderTime);
+			GLSL_SetUniformFloat5(sp, UNIFORM_DEFORMPARAMS, deformParams);
+			GLSL_SetUniformFloat(sp, UNIFORM_TIME, tess.shaderTime);
 		}
 
 		if ( input->fogNum ) {
 			vec4_t fogColorMask;
 
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDISTANCE, fogDistanceVector);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDEPTH, fogDepthVector);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_FOGEYET, eyeT);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGDISTANCE, fogDistanceVector);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGDEPTH, fogDepthVector);
+			GLSL_SetUniformFloat(sp, UNIFORM_FOGEYET, eyeT);
 
 			ComputeFogColorMask(pStage, fogColorMask);
 
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGCOLORMASK, fogColorMask);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGCOLORMASK, fogColorMask);
 		}
 
 		{
@@ -802,36 +802,36 @@ static void ForwardDlight( void ) {
 
 			ComputeShaderColors(pStage, baseColor, vertColor);
 
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_BASECOLOR, baseColor);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_VERTCOLOR, vertColor);
+			GLSL_SetUniformVec4(sp, UNIFORM_BASECOLOR, baseColor);
+			GLSL_SetUniformVec4(sp, UNIFORM_VERTCOLOR, vertColor);
 		}
 
 		if (pStage->alphaGen == AGEN_PORTAL)
 		{
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_PORTALRANGE, tess.shader->portalRange);
+			GLSL_SetUniformFloat(sp, UNIFORM_PORTALRANGE, tess.shader->portalRange);
 		}
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_COLORGEN, pStage->rgbGen);
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_ALPHAGEN, pStage->alphaGen);
+		GLSL_SetUniformInt(sp, UNIFORM_COLORGEN, pStage->rgbGen);
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHAGEN, pStage->alphaGen);
 
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_DIRECTEDLIGHT, dl->color);
+		GLSL_SetUniformVec3(sp, UNIFORM_DIRECTEDLIGHT, dl->color);
 
 		VectorSet(vector, 0, 0, 0);
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_AMBIENTLIGHT, vector);
+		GLSL_SetUniformVec3(sp, UNIFORM_AMBIENTLIGHT, vector);
 
 		VectorCopy(dl->origin, vector);
 		vector[3] = 1.0f;
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_LIGHTORIGIN, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_LIGHTORIGIN, vector);
 
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_LIGHTRADIUS, radius);
+		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, radius);
 
-		GLSL_SetUniformVec2(sp, GENERIC_UNIFORM_MATERIALINFO, pStage->materialInfo);
+		GLSL_SetUniformVec2(sp, UNIFORM_MATERIALINFO, pStage->materialInfo);
 		
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
 		if (pStage->bundle[TB_DIFFUSEMAP].image[0])
 			R_BindAnimatedImageToTMU( &pStage->bundle[TB_DIFFUSEMAP], TB_DIFFUSEMAP);
@@ -852,215 +852,12 @@ static void ForwardDlight( void ) {
 		ComputeTexMatrix( pStage, TB_DIFFUSEMAP, matrix );
 		
 		VectorSet4(vector, matrix[0], matrix[1], matrix[4], matrix[5]);
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXMATRIX, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_DIFFUSETEXMATRIX, vector);
 
 		VectorSet4(vector, matrix[8], matrix[9], matrix[12], matrix[13]);
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXOFFTURB, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_DIFFUSETEXOFFTURB, vector);
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TCGEN0, pStage->bundle[0].tcGen);
-
-		//
-		// draw
-		//
-
-		if (input->multiDrawPrimitives)
-		{
-			R_DrawMultiElementsVBO(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVBO(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-		}
-
-		backEnd.pc.c_totalIndexes += tess.numIndexes;
-		backEnd.pc.c_dlightIndexes += tess.numIndexes;
-	}
-}
-
-
-static void ForwardSunlight( void ) {
-//	int		l;
-	//vec3_t	origin;
-	//float	scale;
-	int stage;
-	int stageGlState[2];
-	bool alphaOverride = false;
-
-	int deformGen;
-	vec5_t deformParams;
-	
-	vec4_t fogDistanceVector, fogDepthVector = {0, 0, 0, 0};
-	float eyeT = 0;
-
-	shaderCommands_t *input = &tess;
-	
-	ComputeDeformValues(&deformGen, deformParams);
-
-	ComputeFogValues(fogDistanceVector, fogDepthVector, &eyeT);
-
-	// deal with vertex alpha blended surfaces
-	if (input->xstages[0] && input->xstages[1] && 
-		(input->xstages[1]->alphaGen == AGEN_VERTEX || input->xstages[1]->alphaGen == AGEN_ONE_MINUS_VERTEX))
-	{
-		stageGlState[0] = input->xstages[0]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
-
-		if (stageGlState[0] == 0 || stageGlState[0] == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO))
-		{
-			stageGlState[1] = input->xstages[1]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
-
-			if (stageGlState[1] == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA))
-			{
-				alphaOverride = true;
-				stageGlState[0] = GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-				stageGlState[1] = GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-			}
-			else if (stageGlState[1] == (GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_SRC_ALPHA))
-			{
-				alphaOverride = true;
-				stageGlState[0] = GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-				stageGlState[1] = GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-			}
-		}
-	}
-
-	if (!alphaOverride)
-	{
-		stageGlState[0] =
-		stageGlState[1] = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-	}
-
-	for ( stage = 0; stage < 2 /*MAX_SHADER_STAGES */; stage++ )
-	{
-		shaderStage_t *pStage = input->xstages[stage];
-		shaderProgram_t *sp;
-		vec4_t vector;
-		matrix_t matrix;
-
-		if ( !pStage )
-		{
-			break;
-		}
-
-		//VectorCopy( dl->transformed, origin );
-
-		//if (pStage->glslShaderGroup == tr.lightallShader)
-		{
-			int index = pStage->glslShaderIndex;
-
-			index &= ~(LIGHTDEF_LIGHTTYPE_MASK | LIGHTDEF_USE_DELUXEMAP);
-			index |= LIGHTDEF_USE_LIGHT_VECTOR | LIGHTDEF_USE_SHADOWMAP;
-
-			if (backEnd.currentEntity && backEnd.currentEntity != &tr.worldEntity)
-			{
-				index |= LIGHTDEF_ENTITY;
-			}
-
-			sp = &tr.lightallShader[index];
-		}
-
-		backEnd.pc.c_lightallDraws++;
-
-		GLSL_BindProgram(sp);
-
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
-
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
-
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_DEFORMGEN, deformGen);
-		if (deformGen != DGEN_NONE)
-		{
-			GLSL_SetUniformFloat5(sp, GENERIC_UNIFORM_DEFORMPARAMS, deformParams);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_TIME, tess.shaderTime);
-		}
-
-		if ( input->fogNum ) {
-			vec4_t fogColorMask;
-
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDISTANCE, fogDistanceVector);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDEPTH, fogDepthVector);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_FOGEYET, eyeT);
-
-			ComputeFogColorMask(pStage, fogColorMask);
-
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGCOLORMASK, fogColorMask);
-		}
-
-		{
-			vec4_t baseColor;
-			vec4_t vertColor;
-
-			ComputeShaderColors(pStage, baseColor, vertColor);
-
-			if (alphaOverride)
-			{
-				if (input->xstages[1]->alphaGen == AGEN_VERTEX)
-				{
-					baseColor[3] = 0.0f;
-					vertColor[3] = 1.0f;
-				}
-				else if (input->xstages[1]->alphaGen == AGEN_ONE_MINUS_VERTEX)
-				{
-					baseColor[3] = 1.0f;
-					vertColor[3] = -1.0f;
-				}
-			}
-
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_BASECOLOR, baseColor);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_VERTCOLOR, vertColor);
-		}
-
-		if (pStage->alphaGen == AGEN_PORTAL)
-		{
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_PORTALRANGE, tess.shader->portalRange);
-		}
-
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_COLORGEN, pStage->rgbGen);
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_ALPHAGEN, pStage->alphaGen);
-
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_DIRECTEDLIGHT, backEnd.refdef.sunCol);
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_AMBIENTLIGHT,  backEnd.refdef.sunAmbCol);
-
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_LIGHTORIGIN, backEnd.refdef.sunDir);
-
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_LIGHTRADIUS, 9999999999.9f);
-
-		GLSL_SetUniformVec2(sp, GENERIC_UNIFORM_MATERIALINFO, pStage->materialInfo);
-		
-		GL_State( stageGlState[stage] );
-
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
-
-		if (pStage->bundle[TB_DIFFUSEMAP].image[0])
-			R_BindAnimatedImageToTMU( &pStage->bundle[TB_DIFFUSEMAP], TB_DIFFUSEMAP);
-
-		if (pStage->bundle[TB_NORMALMAP].image[0])
-			R_BindAnimatedImageToTMU( &pStage->bundle[TB_NORMALMAP], TB_NORMALMAP);
-
-		if (pStage->bundle[TB_SPECULARMAP].image[0])
-			R_BindAnimatedImageToTMU( &pStage->bundle[TB_SPECULARMAP], TB_SPECULARMAP);
-
-		/*
-		{
-			GL_BindToTMU(tr.sunShadowDepthImage[0], TB_SHADOWMAP);
-			GL_BindToTMU(tr.sunShadowDepthImage[1], TB_SHADOWMAP2);
-			GL_BindToTMU(tr.sunShadowDepthImage[2], TB_SHADOWMAP3);
-			GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_SHADOWMVP, backEnd.refdef.sunShadowMvp[0]);
-			GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_SHADOWMVP2, backEnd.refdef.sunShadowMvp[1]);
-			GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_SHADOWMVP3, backEnd.refdef.sunShadowMvp[2]);
-		}
-		*/
-		GL_BindToTMU(tr.screenShadowImage, TB_SHADOWMAP);
-
-		ComputeTexMatrix( pStage, TB_DIFFUSEMAP, matrix );
-
-		VectorSet4(vector, matrix[0], matrix[1], matrix[4], matrix[5]);
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXMATRIX, vector);
-
-		VectorSet4(vector, matrix[8], matrix[9], matrix[12], matrix[13]);
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXOFFTURB, vector);
-
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TCGEN0, pStage->bundle[0].tcGen);
+		GLSL_SetUniformInt(sp, UNIFORM_TCGEN0, pStage->bundle[0].tcGen);
 
 		//
 		// draw
@@ -1114,22 +911,22 @@ static void ProjectPshadowVBOGLSL( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMatrix16(sp, PSHADOW_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
 		VectorCopy(origin, vector);
 		vector[3] = 1.0f;
-		GLSL_SetUniformVec4(sp, PSHADOW_UNIFORM_LIGHTORIGIN, vector);
+		GLSL_SetUniformVec4(sp, UNIFORM_LIGHTORIGIN, vector);
 
 		VectorScale(ps->lightViewAxis[0], 1.0f / ps->viewRadius, vector);
-		GLSL_SetUniformVec3(sp, PSHADOW_UNIFORM_LIGHTFORWARD, vector);
+		GLSL_SetUniformVec3(sp, UNIFORM_LIGHTFORWARD, vector);
 
 		VectorScale(ps->lightViewAxis[1], 1.0f / ps->viewRadius, vector);
-		GLSL_SetUniformVec3(sp, PSHADOW_UNIFORM_LIGHTRIGHT, vector);
+		GLSL_SetUniformVec3(sp, UNIFORM_LIGHTRIGHT, vector);
 
 		VectorScale(ps->lightViewAxis[2], 1.0f / ps->viewRadius, vector);
-		GLSL_SetUniformVec3(sp, PSHADOW_UNIFORM_LIGHTUP, vector);
+		GLSL_SetUniformVec3(sp, UNIFORM_LIGHTUP, vector);
 
-		GLSL_SetUniformFloat(sp, PSHADOW_UNIFORM_LIGHTRADIUS, radius);
+		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, radius);
 	  
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
@@ -1194,28 +991,28 @@ static void RB_FogPass( void ) {
 
 	fog = tr.world->fogs + tess.fogNum;
 
-	GLSL_SetUniformMatrix16(sp, FOGPASS_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
-	GLSL_SetUniformFloat(sp, FOGPASS_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+	GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 	
-	GLSL_SetUniformInt(sp, FOGPASS_UNIFORM_DEFORMGEN, deformGen);
+	GLSL_SetUniformInt(sp, UNIFORM_DEFORMGEN, deformGen);
 	if (deformGen != DGEN_NONE)
 	{
-		GLSL_SetUniformFloat5(sp, FOGPASS_UNIFORM_DEFORMPARAMS, deformParams);
-		GLSL_SetUniformFloat(sp, FOGPASS_UNIFORM_TIME, tess.shaderTime);
+		GLSL_SetUniformFloat5(sp, UNIFORM_DEFORMPARAMS, deformParams);
+		GLSL_SetUniformFloat(sp, UNIFORM_TIME, tess.shaderTime);
 	}
 
 	color[0] = ((unsigned char *)(&fog->colorInt))[0] / 255.0f;
 	color[1] = ((unsigned char *)(&fog->colorInt))[1] / 255.0f;
 	color[2] = ((unsigned char *)(&fog->colorInt))[2] / 255.0f;
 	color[3] = ((unsigned char *)(&fog->colorInt))[3] / 255.0f;
-	GLSL_SetUniformVec4(sp, FOGPASS_UNIFORM_COLOR, color);
+	GLSL_SetUniformVec4(sp, UNIFORM_COLOR, color);
 
 	ComputeFogValues(fogDistanceVector, fogDepthVector, &eyeT);
 
-	GLSL_SetUniformVec4(sp, FOGPASS_UNIFORM_FOGDISTANCE, fogDistanceVector);
-	GLSL_SetUniformVec4(sp, FOGPASS_UNIFORM_FOGDEPTH, fogDepthVector);
-	GLSL_SetUniformFloat(sp, FOGPASS_UNIFORM_FOGEYET, eyeT);
+	GLSL_SetUniformVec4(sp, UNIFORM_FOGDISTANCE, fogDistanceVector);
+	GLSL_SetUniformVec4(sp, UNIFORM_FOGDEPTH, fogDepthVector);
+	GLSL_SetUniformFloat(sp, UNIFORM_FOGEYET, eyeT);
 
 	if ( tess.shader->fogPass == FP_EQUAL ) {
 		GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
@@ -1329,6 +1126,11 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				index |= LIGHTDEF_ENTITY;
 			}
 
+			if (r_sunlightMode->integer && (backEnd.viewParms.flags & VPF_USESUNLIGHT) && (index & LIGHTDEF_LIGHTTYPE_MASK))
+			{
+				index |= LIGHTDEF_USE_SHADOWMAP;
+			}
+
 			if (r_lightmap->integer && index & LIGHTDEF_USE_LIGHTMAP)
 			{
 				index = LIGHTDEF_USE_LIGHTMAP;
@@ -1350,22 +1152,22 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
-		GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
 
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 		
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_DEFORMGEN, deformGen);
+		GLSL_SetUniformInt(sp, UNIFORM_DEFORMGEN, deformGen);
 		if (deformGen != DGEN_NONE)
 		{
-			GLSL_SetUniformFloat5(sp, GENERIC_UNIFORM_DEFORMPARAMS, deformParams);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_TIME, tess.shaderTime);
+			GLSL_SetUniformFloat5(sp, UNIFORM_DEFORMPARAMS, deformParams);
+			GLSL_SetUniformFloat(sp, UNIFORM_TIME, tess.shaderTime);
 		}
 
 		if ( input->fogNum ) {
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDISTANCE, fogDistanceVector);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGDEPTH, fogDepthVector);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_FOGEYET, eyeT);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGDISTANCE, fogDistanceVector);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGDEPTH, fogDepthVector);
+			GLSL_SetUniformFloat(sp, UNIFORM_FOGEYET, eyeT);
 		}
 
 		GL_State( pStage->stateBits );
@@ -1412,8 +1214,8 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				VectorScale(vertColor, backEnd.refdef.colorScale, vertColor);
 			}
 
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_BASECOLOR, baseColor);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_VERTCOLOR, vertColor);
+			GLSL_SetUniformVec4(sp, UNIFORM_BASECOLOR, baseColor);
+			GLSL_SetUniformVec4(sp, UNIFORM_VERTCOLOR, vertColor);
 		}
 
 		if (pStage->rgbGen == CGEN_LIGHTING_DIFFUSE)
@@ -1421,25 +1223,25 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			vec4_t vec;
 
 			VectorScale(backEnd.currentEntity->ambientLight, 1.0f / 255.0f, vec);
-			GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_AMBIENTLIGHT, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_AMBIENTLIGHT, vec);
 
 			VectorScale(backEnd.currentEntity->directedLight, 1.0f / 255.0f, vec);
-			GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_DIRECTEDLIGHT, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_DIRECTEDLIGHT, vec);
 			
 			VectorCopy(backEnd.currentEntity->lightDir, vec);
 			vec[3] = 0.0f;
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_LIGHTORIGIN, vec);
+			GLSL_SetUniformVec4(sp, UNIFORM_LIGHTORIGIN, vec);
 
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_LIGHTRADIUS, 999999.0f);
+			GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, 999999.0f);
 		}
 
 		if (pStage->alphaGen == AGEN_PORTAL)
 		{
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_PORTALRANGE, tess.shader->portalRange);
+			GLSL_SetUniformFloat(sp, UNIFORM_PORTALRANGE, tess.shader->portalRange);
 		}
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_COLORGEN, pStage->rgbGen);
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_ALPHAGEN, pStage->alphaGen);
+		GLSL_SetUniformInt(sp, UNIFORM_COLORGEN, pStage->rgbGen);
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHAGEN, pStage->alphaGen);
 
 		if ( input->fogNum )
 		{
@@ -1447,7 +1249,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 			ComputeFogColorMask(pStage, fogColorMask);
 
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_FOGCOLORMASK, fogColorMask);
+			GLSL_SetUniformVec4(sp, UNIFORM_FOGCOLORMASK, fogColorMask);
 		}
 
 		ComputeTexMatrix( pStage, TB_DIFFUSEMAP, matrix );
@@ -1455,28 +1257,28 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		{
 			vec4_t vector;
 			VectorSet4(vector, matrix[0], matrix[1], matrix[4], matrix[5]);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXMATRIX, vector);
+			GLSL_SetUniformVec4(sp, UNIFORM_DIFFUSETEXMATRIX, vector);
 
 			VectorSet4(vector, matrix[8], matrix[9], matrix[12], matrix[13]);
-			GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_DIFFUSETEXOFFTURB, vector);
+			GLSL_SetUniformVec4(sp, UNIFORM_DIFFUSETEXOFFTURB, vector);
 		}
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TCGEN0, pStage->bundle[0].tcGen);
+		GLSL_SetUniformInt(sp, UNIFORM_TCGEN0, pStage->bundle[0].tcGen);
 		if (pStage->bundle[0].tcGen == TCGEN_VECTOR)
 		{
 			vec3_t vec;
 
 			VectorCopy(pStage->bundle[0].tcGenVectors[0], vec);
-			GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_TCGEN0VECTOR0, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_TCGEN0VECTOR0, vec);
 			VectorCopy(pStage->bundle[0].tcGenVectors[1], vec);
-			GLSL_SetUniformVec3(sp, GENERIC_UNIFORM_TCGEN0VECTOR1, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_TCGEN0VECTOR1, vec);
 		}
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
-		GLSL_SetUniformVec2(sp, GENERIC_UNIFORM_MATERIALINFO, pStage->materialInfo);
+		GLSL_SetUniformVec2(sp, UNIFORM_MATERIALINFO, pStage->materialInfo);
 
-		//GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_MAPLIGHTSCALE, backEnd.refdef.mapLightScale);
+		//GLSL_SetUniformFloat(sp, UNIFORM_MAPLIGHTSCALE, backEnd.refdef.mapLightScale);
 
 		//
 		// do multitexture
@@ -1491,6 +1293,14 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		else if ( pStage->glslShaderGroup )
 		{
 			int i;
+
+			if ((backEnd.viewParms.flags & VPF_USESUNLIGHT) && (pStage->glslShaderIndex & LIGHTDEF_LIGHTTYPE_MASK))
+			{
+				GL_BindToTMU(tr.screenShadowImage, TB_SHADOWMAP);
+				GLSL_SetUniformVec3(sp, UNIFORM_PRIMARYLIGHTAMBIENT, backEnd.refdef.sunAmbCol);
+				GLSL_SetUniformVec3(sp, UNIFORM_PRIMARYLIGHTCOLOR,   backEnd.refdef.sunCol);
+				GLSL_SetUniformVec4(sp, UNIFORM_PRIMARYLIGHTORIGIN,  backEnd.refdef.sunDir);
+			}
 
 			if ((r_lightmap->integer == 1 || r_lightmap->integer == 2) && pStage->bundle[TB_LIGHTMAP].image[0])
 			{
@@ -1539,9 +1349,9 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			// lightmap/secondary pass
 			//
 			if ( r_lightmap->integer ) {
-				GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TEXTURE1ENV, GL_REPLACE);
+				GLSL_SetUniformInt(sp, UNIFORM_TEXTURE1ENV, GL_REPLACE);
 			} else {
-				GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TEXTURE1ENV, tess.shader->multitextureEnv);
+				GLSL_SetUniformInt(sp, UNIFORM_TEXTURE1ENV, tess.shader->multitextureEnv);
 			}
 
 			R_BindAnimatedImageToTMU( &pStage->bundle[1], 1 );
@@ -1558,7 +1368,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			else 
 				R_BindAnimatedImageToTMU( &pStage->bundle[0], 0 );
 
-			GLSL_SetUniformInt(sp, GENERIC_UNIFORM_TEXTURE1ENV, 0);
+			GLSL_SetUniformInt(sp, UNIFORM_TEXTURE1ENV, 0);
 		}
 
 		//
@@ -1599,23 +1409,23 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
-		GLSL_SetUniformMatrix16(sp, GENERIC_UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
+		GLSL_SetUniformMatrix16(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 
-		GLSL_SetUniformInt(sp, GENERIC_UNIFORM_DEFORMGEN, deformGen);
+		GLSL_SetUniformInt(sp, UNIFORM_DEFORMGEN, deformGen);
 		if (deformGen != DGEN_NONE)
 		{
-			GLSL_SetUniformFloat5(sp, GENERIC_UNIFORM_DEFORMPARAMS, deformParams);
-			GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_TIME, tess.shaderTime);
+			GLSL_SetUniformFloat5(sp, UNIFORM_DEFORMPARAMS, deformParams);
+			GLSL_SetUniformFloat(sp, UNIFORM_TIME, tess.shaderTime);
 		}
 
 		VectorCopy(backEnd.viewParms.or.origin, vector);
 		vector[3] = 1.0f;
-		GLSL_SetUniformVec4(sp, GENERIC_UNIFORM_LIGHTORIGIN, vector);
-		GLSL_SetUniformFloat(sp, GENERIC_UNIFORM_LIGHTRADIUS, backEnd.viewParms.zFar);
+		GLSL_SetUniformVec4(sp, UNIFORM_LIGHTORIGIN, vector);
+		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, backEnd.viewParms.zFar);
 
 		GL_State( 0 );
 
@@ -1780,12 +1590,6 @@ void RB_StageIteratorGeneric( void )
 		{
 			ProjectDlightTexture();
 		}
-	}
-
-	if ((backEnd.viewParms.flags & VPF_USESUNLIGHT) && tess.shader->sort <= SS_OPAQUE 
-	//if ((tr.sunShadows || r_forceSunlight->value > 0.0f) && tess.shader->sort <= SS_OPAQUE 
-	    && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) && tess.xstages[0]->glslShaderGroup == tr.lightallShader) {
-		ForwardSunlight();
 	}
 
 	//
