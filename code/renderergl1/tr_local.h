@@ -1328,7 +1328,7 @@ SKIES
 void R_BuildCloudData( shaderCommands_t *shader );
 void R_InitSkyTexCoords( float cloudLayerHeight );
 void R_DrawSkyBox( shaderCommands_t *shader );
-void RB_DrawSun( void );
+void RB_DrawSun( float scale, shader_t *shader );
 void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*
@@ -1594,8 +1594,6 @@ extern	int		max_polys;
 extern	int		max_polyverts;
 
 extern	backEndData_t	*backEndData;	// the second one may not be allocated
-
-extern	volatile renderCommandList_t	*renderCommandList;
 
 
 void *R_GetCommandBuffer( int bytes );

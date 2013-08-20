@@ -123,7 +123,7 @@ bool Sys_RandomBytes( byte *string, int len )
 	if( !fp )
 		return false;
 
-	if( !fread( string, sizeof( byte ), len, fp ) )
+	if( fread( string, sizeof( byte ), len, fp ) != len )
 	{
 		fclose( fp );
 		return false;

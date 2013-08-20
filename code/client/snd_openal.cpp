@@ -1876,6 +1876,7 @@ static void S_AL_MusicSourceFree( void )
 {
 	// Release the output musicSource
 	S_AL_SrcUnlock(musicSourceHandle);
+	S_AL_SrcKill(musicSourceHandle);
 	musicSource = 0;
 	musicSourceHandle = -1;
 }
@@ -1908,17 +1909,22 @@ S_AL_StopBackgroundTrack
 static
 void S_AL_StopBackgroundTrack( void )
 {
+	int		numBuffers;
+
 	if(!musicPlaying)
 		return;
 
 	// Stop playing
 	qalSourceStop(musicSource);
 
-	// De-queue the musicBuffers
-	qalSourceUnqueueBuffers(musicSource, NUM_MUSIC_BUFFERS, musicBuffers);
-
-	// Destroy the musicBuffers
-	qalDeleteBuffers(NUM_MUSIC_BUFFERS, musicBuffers);
+	// Un-queue any buffers, and delete them
+	qalGetSourcei( musicSource, AL_BUFFERS_PROCESSED, &numBuffers );
+	while( numBuffers-- )
+	{
+		ALuint buffer;
+		qalSourceUnqueueBuffers(musicSource, 1, &buffer);
+		qalDeleteBuffers(1, &buffer);
+	}
 
 	// Free the musicSource
 	S_AL_MusicSourceFree();
@@ -2125,6 +2131,8 @@ static cvar_t *s_alCapture;
 #define ALDRIVER_DEFAULT "OpenAL32.dll"
 #elif defined(MACOS_X)
 #define ALDRIVER_DEFAULT "/System/Library/Frameworks/OpenAL.framework/OpenAL"
+#elif defined(__OpenBSD__)
+#define ALDRIVER_DEFAULT "libopenal.so"
 #else
 #define ALDRIVER_DEFAULT "libopenal.so.1"
 #endif

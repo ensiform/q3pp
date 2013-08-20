@@ -192,14 +192,14 @@ void Con_Dump_f (void)
 
 	filename.DefaultFileExtension( ".txt" );
 
-	Com_Printf( "Dumped console text to %s.\n", filename.c_str() );
-
 	f = og::FS->OpenWrite( filename.c_str() );
 	if (!f)
 	{
 		Com_Printf( "ERROR: couldn't open %s.\n", filename.c_str() );
 		return;
 	}
+
+	Com_Printf ("Dumped console text to %s.\n", filename.c_str() );
 
 	// skip empty lines
 	for (l = con.current - con.totallines + 1 ; l <= con.current ; l++)
