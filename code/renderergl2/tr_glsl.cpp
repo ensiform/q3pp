@@ -657,7 +657,7 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 		}
 	}
 
-	program->uniformBuffer = ri.Malloc(size);
+	program->uniformBuffer = (char *)ri->Malloc(size);
 }
 
 void GLSL_FinishGPUShader(shaderProgram_t *program)
@@ -1181,7 +1181,7 @@ void GLSL_InitGPUShaders(void)
 
 	Q_strcat(extradefines, 1024, "#define USE_PCF\n#define USE_DISCARD\n");
 
-	if (!GLSL_InitGPUShader(&tr.pshadowShader, "pshadow", attribs, true, extradefines, true, fallbackShader_pshadow_vp, fallbackShader_pshadow_fp, PSHADOW_UNIFORM_COUNT))
+	if (!GLSL_InitGPUShader(&tr.pshadowShader, "pshadow", attribs, true, extradefines, true, fallbackShader_pshadow_vp, fallbackShader_pshadow_fp))
 	{
 		ri->Error(ERR_FATAL, "Could not load pshadow shader!");
 	}

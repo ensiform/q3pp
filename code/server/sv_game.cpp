@@ -404,7 +404,7 @@ void setupGameImport( void ) {
 	gameImport.DebugPolygonCreate    = BotImport_DebugPolygonCreate;
 	gameImport.DebugPolygonDelete    = BotImport_DebugPolygonDelete;
 	gameImport.Com_RealTime          = Com_RealTime;
-	gameImport.Sys_SnapVector        = Q_SnapVector;
+	gameImport.Sys_SnapVector        = Sys_SnapVector;
 	gameImport.BotLibSetup           = SV_BotLibSetup;
 	gameImport.BotLibShutdown        = SV_BotLibShutdown;
 	gameImport.BotGetSnapshotEntity  = SV_BotGetSnapshotEntity;

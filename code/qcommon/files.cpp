@@ -4525,6 +4525,40 @@ FS_Restart
 ================
 */
 void FS_Restart( int checksumFeed ) {
+	// set the checksum feed
+	fs_checksumFeed = checksumFeed;
+
+	// clear pak references
+//	FS_ClearPakReferences(0);
+
+	if( !og::FileSystem::ChangeMod( fs_gamedirvar->string, fs_basegame->string ) )
+		Com_Error( ERR_FATAL, "Could not change mod" );
+
+	// if we can't find default.cfg, assume that the paths are
+	// busted and error out now, rather than getting an unreadable
+	// graphics screen when the font fails to load
+	if( !og::FS->FileExists( "default.cfg" ) ) {
+		// this might happen when connecting to a pure server not using BASEGAME/pak0.pk3
+		// (for instance a TA demo server)
+		if (!lastValidBase.IsEmpty()) {
+			//FS_PureServerSetLoadedPaks("", "");
+			Cvar_Set("fs_basepath", lastValidBase.c_str());
+			Cvar_Set("fs_game", lastValidGame.c_str());
+			lastValidBase.Clear();
+			lastValidGame.Clear();
+			FS_Restart(checksumFeed);
+			Com_Error( ERR_DROP, "FS_Restart: Invalid game folder" );
+			return;
+		}
+		Com_Error( ERR_FATAL, "FS_Restart: Couldn't load default.cfg - I am missing essential files!" );
+	}
+
+	lastValidBase = fs_basepath->string;
+	lastValidBase.CapLength(MAX_OSPATH-1);
+	lastValidGame = fs_gamedirvar->string;
+	lastValidGame.CapLength(MAX_OSPATH-1);
+
+#if 0
 	// free anything we currently have loaded
 	FS_Shutdown();
 
@@ -4567,6 +4601,7 @@ void FS_Restart( int checksumFeed ) {
 	lastValidBase.CapLength(MAX_OSPATH-1);
 	lastValidGame = fs_gamedirvar->string;
 	lastValidGame.CapLength(MAX_OSPATH-1);
+#endif
 }
 /*
 =================

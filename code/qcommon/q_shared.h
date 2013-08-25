@@ -429,57 +429,17 @@ extern	vec3_t	axisDefault[3];
 
 int Q_isnan(float x);
 
-#if idx64
-  extern long qftolsse(float f);
-  extern int qvmftolsse(void);
-  extern void qsnapvectorsse(vec3_t vec);
-
-  #define Q_ftol qftolsse
-  #define Q_SnapVector qsnapvectorsse
-
-  extern int (*Q_VMftol)(void);
-#elif id386
-  extern "C" long QDECL qftolx87(float f);
-  extern "C" long QDECL qftolsse(float f);
-  extern "C" int QDECL qvmftolx87(void);
-  extern "C" int QDECL qvmftolsse(void);
-  extern "C" void QDECL qsnapvectorx87(vec3_t vec);
-  extern "C" void QDECL qsnapvectorsse(vec3_t vec);
-
-  extern long (QDECL *Q_ftol)(float f);
-  extern int (QDECL *Q_VMftol)(void);
-  extern void (QDECL *Q_SnapVector)(vec3_t vec);
+#if defined(_MSC_VER)
+static ID_INLINE long Q_ftol(float f)
+{
+	return (long)f;
+}
 #else
-  // Q_ftol must expand to a function name so the pluggable renderer can take
-  // its address
-  #define Q_ftol lrintf
-  #define Q_SnapVector(vec)\
-	do\
-	{\
-		vec3_t *temp = (vec);\
-		\
-		(*temp)[0] = round((*temp)[0]);\
-		(*temp)[1] = round((*temp)[1]);\
-		(*temp)[2] = round((*temp)[2]);\
-	} while(0)
+static ID_INLINE long Q_ftol(float f)
+{
+	return (long)f;
+}
 #endif
-/*
-// if your system does not have lrintf() and round() you can try this block. Please also open a bug report at bugzilla.icculus.org
-// or write a mail to the ioq3 mailing list.
-#else
-  #define Q_ftol(v) ((long) (v))
-  #define Q_round(v) do { if((v) < 0) (v) -= 0.5f; else (v) += 0.5f; (v) = Q_ftol((v)); } while(0)
-  #define Q_SnapVector(vec) \
-	do\
-	{\
-		vec3_t *temp = (vec);\
-		\
-		Q_round((*temp)[0]);\
-		Q_round((*temp)[1]);\
-		Q_round((*temp)[2]);\
-	} while(0)
-#endif
-*/
 
 #if idppc
 

@@ -3452,10 +3452,10 @@ void RE_LoadWorldMap( const char *name ) {
 					in++;
 				}
 
-				ri.FS_WriteFile(fileName, buffer, w->lightGridBounds[0] * w->lightGridBounds[1] * 3 + 18);
+				og::FS->StoreFile(fileName, buffer, w->lightGridBounds[0] * w->lightGridBounds[1] * 3 + 18);
 			}
 
-			ri.Free(buffer);
+			ri->Free(buffer);
 		}
 
 		for (i = 0; i < w->numWorldSurfaces; i++)
@@ -3535,7 +3535,7 @@ void RE_LoadWorldMap( const char *name ) {
 			}
 		}
 
-		ri.Free(primaryLightGrid);
+		ri->Free(primaryLightGrid);
 	}
 
 	// create static VBOS from the world

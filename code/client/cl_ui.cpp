@@ -818,7 +818,7 @@ void setupUiImport( void ) {
 	uiImport.SetCDKey          = CLUI_SetCDKey;
 	uiImport.VerifyCDKey       = CL_CDKeyValidate;
 	uiImport.Com_RealTime      = Com_RealTime;
-	uiImport.Sys_SnapVector    = Q_SnapVector;
+	uiImport.Sys_SnapVector    = Sys_SnapVector;
 	uiImport.CIN_PlayCinematic = CIN_PlayCinematic;
 	uiImport.CIN_StopCinematic = CIN_StopCinematic;
 	uiImport.CIN_RunCinematic  = CIN_RunCinematic;

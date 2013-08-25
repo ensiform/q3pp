@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "q_shared.h"
 #include "qcommon.h"
-#include <setjmp.h>
 #ifndef _WIN32
 #include <netinet/in.h>
 #include <sys/stat.h> // umask
@@ -45,8 +44,6 @@ int demo_protocols[] =
 
 int		com_argc;
 char	*com_argv[MAX_NUM_ARGVS+1];
-
-jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
 
 FILE *debuglogfile;
@@ -98,14 +95,6 @@ cvar_t	*com_legacyprotocol;
 cvar_t	*com_basegame;
 cvar_t  *com_homepath;
 cvar_t	*com_busyWait;
-
-#if idx64
-	int (*Q_VMftol)(void);
-#elif id386
-	long (QDECL *Q_ftol)(float f);
-	int (QDECL *Q_VMftol)(void);
-	void (QDECL *Q_SnapVector)(vec3_t vec);
-#endif
 
 // com_speeds times
 int		time_game;
@@ -308,39 +297,13 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	Q_vsnprintf (com_errorMessage, sizeof(com_errorMessage),fmt,argptr);
 	va_end (argptr);
 
-	if (code != ERR_DISCONNECT && code != ERR_NEED_CD)
+	if (code != ERR_DISCONNECT && code != ERR_NEED_CD) {
+		Cvar_Get("com_errorMessage", "", CVAR_ROM);
 		Cvar_Set("com_errorMessage", com_errorMessage);
+	}
 
-	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
-		SV_Shutdown( "Server disconnected" );
-		CL_Disconnect( true );
-		CL_FlushMemory( );
-		// make sure we can get at our local stuff
-//		FS_PureServerSetLoadedPaks("", "");
-		com_errorEntered = false;
-		longjmp (abortframe, -1);
-	} else if (code == ERR_DROP) {
-		Com_Printf ("********************\nERROR: %s\n********************\n", com_errorMessage);
-		SV_Shutdown (va("Server crashed: %s",  com_errorMessage));
-		CL_Disconnect( true );
-		CL_FlushMemory( );
-//		FS_PureServerSetLoadedPaks("", "");
-		com_errorEntered = false;
-		longjmp (abortframe, -1);
-	} else if ( code == ERR_NEED_CD ) {
-		SV_Shutdown( "Server didn't have CD" );
-		if ( com_cl_running && com_cl_running->integer ) {
-			CL_Disconnect( true );
-			CL_FlushMemory( );
-			CL_CDDialog();
-		} else {
-			Com_Printf("Server didn't have CD\n" );
-		}
-
-		//FS_PureServerSetLoadedPaks("", "");
-
-		com_errorEntered = false;
-		longjmp (abortframe, -1);
+	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT || code == ERR_DROP || code == ERR_NEED_CD ) {
+		throw code;
 	} else {
 		CL_Shutdown(va("Client fatal crashed: %s", com_errorMessage), true, true);
 		SV_Shutdown(va("Server fatal crashed: %s", com_errorMessage));
@@ -2481,7 +2444,7 @@ void Com_ReadCDKey( const char *filename ) {
 	char			buffer[33];
 	char			fbuffer[MAX_OSPATH];
 
-	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
+	Com_sprintf(fbuffer, sizeof(fbuffer), "q3key");
 
 	f = og::FS->OpenRead( fbuffer );
 	if ( !f ) {
@@ -2511,7 +2474,7 @@ void Com_AppendCDKey( const char *filename ) {
 	char			buffer[33];
 	char			fbuffer[MAX_OSPATH];
 
-	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
+	Com_sprintf(fbuffer, sizeof(fbuffer), "q3key");
 
 	f = og::FS->OpenRead( fbuffer );
 	if (!f) {
@@ -2545,7 +2508,7 @@ static void Com_WriteCDKey( const char *filename, const char *ikey ) {
 	mode_t			savedumask;
 #endif
 
-	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
+	Com_sprintf(fbuffer, sizeof(fbuffer), "q3key");
 
 	Q_strncpyz( key, ikey, 17 );
 
@@ -2599,53 +2562,6 @@ static void Com_DetectAltivec(void)
 
 /*
 =================
-Com_DetectSSE
-Find out whether we have SSE support for Q_ftol function
-=================
-*/
-
-#if id386 || idx64
-
-static void Com_DetectSSE(void)
-{
-#if !idx64
-	int feat;
-	
-	feat = Sys_GetProcessorFeatures();
-
-	if(feat & CF_SSE)
-	{
-		if(feat & CF_SSE2)
-			Q_SnapVector = qsnapvectorsse;
-		else
-			Q_SnapVector = qsnapvectorx87;
-
-		Q_ftol = qftolsse;
-#endif
-		Q_VMftol = qvmftolsse;
-
-		Com_Printf("Have SSE support\n");
-#if !idx64
-	}
-	else
-	{
-		Q_ftol = qftolx87;
-		Q_VMftol = qvmftolx87;
-		Q_SnapVector = qsnapvectorx87;
-
-		Com_Printf("No SSE support on this machine\n");
-	}
-#endif
-}
-
-#else
-
-#define Com_DetectSSE()
-
-#endif
-
-/*
-=================
 Com_InitRand
 Seed the random number generator, if possible with an OS supplied random seed.
 =================
@@ -2662,6 +2578,70 @@ static void Com_InitRand(void)
 
 /*
 =================
+Com_ErrorString
+Error string for the given error code (from Com_Error).
+=================
+*/
+static const char *Com_ErrorString ( int code )
+{
+	switch ( code )
+	{
+		case ERR_DISCONNECT:
+		// fallthrough
+		case ERR_SERVERDISCONNECT:
+			return "DISCONNECTED";
+
+		case ERR_DROP:
+			return "DROPPED";
+
+		default:
+			return "UNKNOWN";
+	}
+}
+
+/*
+=================
+Com_CatchError
+Handles freeing up of resources when Com_Error is called.
+=================
+*/
+static void Com_CatchError ( int code )
+{
+	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT ) {
+		SV_Shutdown( "Server disconnected" );
+		CL_Disconnect( true );
+		CL_FlushMemory( );
+		// make sure we can get at our local stuff
+		//FS_PureServerSetLoadedPaks( "", "" );
+		com_errorEntered = false;
+	} else if ( code == ERR_DROP ) {
+		Com_Printf ("********************\n"
+					"ERROR: %s\n"
+					"********************\n", com_errorMessage);
+		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
+		CL_Disconnect( true );
+		CL_FlushMemory( );
+		// make sure we can get at our local stuff
+		//FS_PureServerSetLoadedPaks( "", "" );
+		com_errorEntered = false;
+	} else if ( code == ERR_NEED_CD ) {
+		SV_Shutdown( "Server didn't have CD" );
+		if ( com_cl_running && com_cl_running->integer ) {
+			CL_Disconnect( true );
+			CL_FlushMemory( );
+			CL_CDDialog();
+		} else {
+			Com_Printf("Server didn't have CD\n" );
+		}
+
+		//FS_PureServerSetLoadedPaks("", "");
+
+		com_errorEntered = false;
+	}
+}
+
+/*
+=================
 Com_Init
 =================
 */
@@ -2671,212 +2651,214 @@ void Com_Init( char *commandLine ) {
 
 	Com_Printf( "%s %s %s\n", Q3_VERSION, PLATFORM_STRING, __DATE__ );
 
-	if ( setjmp (abortframe) ) {
-		Sys_Error ("Error during initialization");
-	}
-
-	// Clear queues
-	Com_Memset( &eventQueue[ 0 ], 0, MAX_QUEUED_EVENTS * sizeof( sysEvent_t ) );
-
-	// initialize the weak pseudo-random number generator for use later.
-	Com_InitRand();
-
-	// do this before anything else decides to push events
-	Com_InitPushEvent();
-
-	Com_InitSmallZoneMemory();
-	Cvar_Init ();
-
-	// prepare enough of the subsystems to handle
-	// cvar and command buffer management
-	Com_ParseCommandLine( commandLine );
-
-//	Swap_Init ();
-	Cbuf_Init ();
-
-	Com_DetectSSE();
-
-	// override anything from the config files with command line args
-	Com_StartupVariable( NULL );
-
-	// get the developer cvar set as early as possible
-	Com_StartupVariable( "developer" );
-
-	Com_InitZoneMemory();
-	Cmd_Init ();
-
-	// get the developer cvar set as early as possible
-	com_developer = Cvar_Get("developer", "0", CVAR_TEMP);
-
-	// done early so bind command exists
-	CL_InitKeyCommands();
-
-	com_standalone = Cvar_Get("com_standalone", "0", CVAR_ROM);
-	com_basegame = Cvar_Get("com_basegame", BASEGAME, CVAR_INIT);
-	com_homepath = Cvar_Get("com_homepath", "", CVAR_INIT);
-	
-	if(!com_basegame->string[0])
-		Cvar_ForceReset("com_basegame");
-
-	FS_InitFilesystem ();
-
-	Com_InitJournaling();
-
-	// Add some commands here already so users can use them from config files
-	Cmd_AddCommand ("setenv", Com_Setenv_f);
-	if (com_developer && com_developer->integer)
+	try
 	{
-		Cmd_AddCommand ("error", Com_Error_f);
-		Cmd_AddCommand ("crash", Com_Crash_f);
-		Cmd_AddCommand ("freeze", Com_Freeze_f);
-	}
-	Cmd_AddCommand ("quit", Com_Quit_f);
-	Cmd_AddCommand ("changeVectors", MSG_ReportChangeVectors_f );
-	Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
-	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteCfgName );
-	Cmd_AddCommand("game_restart", Com_GameRestart_f);
-	Cmd_SetCommandCompletionFunc( "game_restart", Com_CompleteModList );
+		// Clear queues
+		Com_Memset( &eventQueue[ 0 ], 0, MAX_QUEUED_EVENTS * sizeof( sysEvent_t ) );
 
-	Com_ExecuteCfg();
+		// initialize the weak pseudo-random number generator for use later.
+		Com_InitRand();
 
-	// override anything from the config files with command line args
-	Com_StartupVariable( NULL );
+		// do this before anything else decides to push events
+		Com_InitPushEvent();
 
-  // get dedicated here for proper hunk megs initialization
-#ifdef DEDICATED
-	com_dedicated = Cvar_Get ("dedicated", "1", CVAR_INIT);
-	Cvar_CheckRange( com_dedicated, 1, 2, true );
-#else
-	com_dedicated = Cvar_Get ("dedicated", "0", CVAR_LATCH);
-	Cvar_CheckRange( com_dedicated, 0, 2, true );
-#endif
-	// allocate the stack based hunk allocator
-	Com_InitHunkMemory();
+		Com_InitSmallZoneMemory();
+		Cvar_Init ();
 
-	// if any archived cvars are modified after this, we will trigger a writing
-	// of the config file
-	cvar_modifiedFlags &= ~CVAR_ARCHIVE;
+		// prepare enough of the subsystems to handle
+		// cvar and command buffer management
+		Com_ParseCommandLine( commandLine );
 
-	//
-	// init commands and vars
-	//
-	com_altivec = Cvar_Get ("com_altivec", "1", CVAR_ARCHIVE);
-	com_maxfps = Cvar_Get ("com_maxfps", "85", CVAR_ARCHIVE);
-	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
+	//	Swap_Init ();
+		Cbuf_Init ();
 
-	com_logfile = Cvar_Get ("logfile", "0", CVAR_TEMP );
+		// override anything from the config files with command line args
+		Com_StartupVariable( NULL );
 
-	com_timescale = Cvar_Get ("timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
-	com_fixedtime = Cvar_Get ("fixedtime", "0", CVAR_CHEAT);
-	com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
-	com_speeds = Cvar_Get ("com_speeds", "0", 0);
-	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
-	com_cameraMode = Cvar_Get ("com_cameraMode", "0", CVAR_CHEAT);
+		// get the developer cvar set as early as possible
+		Com_StartupVariable( "developer" );
 
-	cl_paused = Cvar_Get ("cl_paused", "0", CVAR_ROM);
-	sv_paused = Cvar_Get ("sv_paused", "0", CVAR_ROM);
-	cl_packetdelay = Cvar_Get ("cl_packetdelay", "0", CVAR_CHEAT);
-	sv_packetdelay = Cvar_Get ("sv_packetdelay", "0", CVAR_CHEAT);
-	com_sv_running = Cvar_Get ("sv_running", "0", CVAR_ROM);
-	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
-	com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
-	com_ansiColor = Cvar_Get( "com_ansiColor", "0", CVAR_ARCHIVE );
+		Com_InitZoneMemory();
+		Cmd_Init ();
 
-	com_unfocused = Cvar_Get( "com_unfocused", "0", CVAR_ROM );
-	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "0", CVAR_ARCHIVE );
-	com_minimized = Cvar_Get( "com_minimized", "0", CVAR_ROM );
-	com_maxfpsMinimized = Cvar_Get( "com_maxfpsMinimized", "0", CVAR_ARCHIVE );
-	com_abnormalExit = Cvar_Get( "com_abnormalExit", "0", CVAR_ROM );
-	com_busyWait = Cvar_Get("com_busyWait", "0", CVAR_ARCHIVE);
-	Cvar_Get("com_errorMessage", "", CVAR_ROM | CVAR_NORESTART);
-	Cvar_Get("com_errorCode", "", CVAR_ROM | CVAR_NORESTART);
+		// get the developer cvar set as early as possible
+		com_developer = Cvar_Get("developer", "0", CVAR_TEMP);
 
-	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
-	com_bootlogo = Cvar_Get("com_bootlogo", "1", CVAR_ARCHIVE);
+		// done early so bind command exists
+		CL_InitKeyCommands();
 
-	s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
-	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
-	com_gamename = Cvar_Get("com_gamename", GAMENAME_FOR_MASTER, CVAR_SERVERINFO | CVAR_INIT);
-	com_protocol = Cvar_Get("com_protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_INIT);
-#ifdef LEGACY_PROTOCOL
-	com_legacyprotocol = Cvar_Get("com_legacyprotocol", va("%i", PROTOCOL_LEGACY_VERSION), CVAR_INIT);
+		com_standalone = Cvar_Get("com_standalone", "0", CVAR_ROM);
+		com_basegame = Cvar_Get("com_basegame", BASEGAME, CVAR_INIT);
+		com_homepath = Cvar_Get("com_homepath", "", CVAR_INIT);
+	
+		if(!com_basegame->string[0])
+			Cvar_ForceReset("com_basegame");
 
-	// Keep for compatibility with old mods / mods that haven't updated yet.
-	if(com_legacyprotocol->integer > 0)
-		Cvar_Get("protocol", com_legacyprotocol->string, CVAR_ROM);
-	else
-#endif
-		Cvar_Get("protocol", com_protocol->string, CVAR_ROM);
+		FS_InitFilesystem ();
 
-	Sys_Init();
+		Com_InitJournaling();
 
-	if( Sys_WritePIDFile( ) ) {
-#ifndef DEDICATED
-		const char *message = "The last time " CLIENT_WINDOW_TITLE " ran, "
-			"it didn't exit properly. This may be due to inappropriate video "
-			"settings. Would you like to start with \"safe\" video settings?";
-
-		if( Sys_Dialog( DT_YES_NO, message, "Abnormal Exit" ) == DR_YES ) {
-			Cvar_Set( "com_abnormalExit", "1" );
+		// Add some commands here already so users can use them from config files
+		Cmd_AddCommand ("setenv", Com_Setenv_f);
+		if (com_developer && com_developer->integer)
+		{
+			Cmd_AddCommand ("error", Com_Error_f);
+			Cmd_AddCommand ("crash", Com_Crash_f);
+			Cmd_AddCommand ("freeze", Com_Freeze_f);
 		}
+		Cmd_AddCommand ("quit", Com_Quit_f);
+		Cmd_AddCommand ("changeVectors", MSG_ReportChangeVectors_f );
+		Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
+		Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteCfgName );
+		Cmd_AddCommand("game_restart", Com_GameRestart_f);
+		Cmd_SetCommandCompletionFunc( "game_restart", Com_CompleteModList );
+
+		Com_ExecuteCfg();
+
+		// override anything from the config files with command line args
+		Com_StartupVariable( NULL );
+
+	  // get dedicated here for proper hunk megs initialization
+#ifdef DEDICATED
+		com_dedicated = Cvar_Get ("dedicated", "1", CVAR_INIT);
+		Cvar_CheckRange( com_dedicated, 1, 2, true );
+#else
+		com_dedicated = Cvar_Get ("dedicated", "0", CVAR_LATCH);
+		Cvar_CheckRange( com_dedicated, 0, 2, true );
 #endif
-	}
+		// allocate the stack based hunk allocator
+		Com_InitHunkMemory();
 
-	// Pick a random port value
-	Com_RandomBytes( (byte*)&qport, sizeof(int) );
-	Netchan_Init( qport & 0xffff );
+		// if any archived cvars are modified after this, we will trigger a writing
+		// of the config file
+		cvar_modifiedFlags &= ~CVAR_ARCHIVE;
 
-	SV_Init();
+		//
+		// init commands and vars
+		//
+		com_altivec = Cvar_Get ("com_altivec", "1", CVAR_ARCHIVE);
+		com_maxfps = Cvar_Get ("com_maxfps", "85", CVAR_ARCHIVE);
+		com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
 
-	com_dedicated->modified = false;
+		com_logfile = Cvar_Get ("logfile", "0", CVAR_TEMP );
+
+		com_timescale = Cvar_Get ("timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
+		com_fixedtime = Cvar_Get ("fixedtime", "0", CVAR_CHEAT);
+		com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
+		com_speeds = Cvar_Get ("com_speeds", "0", 0);
+		com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
+		com_cameraMode = Cvar_Get ("com_cameraMode", "0", CVAR_CHEAT);
+
+		cl_paused = Cvar_Get ("cl_paused", "0", CVAR_ROM);
+		sv_paused = Cvar_Get ("sv_paused", "0", CVAR_ROM);
+		cl_packetdelay = Cvar_Get ("cl_packetdelay", "0", CVAR_CHEAT);
+		sv_packetdelay = Cvar_Get ("sv_packetdelay", "0", CVAR_CHEAT);
+		com_sv_running = Cvar_Get ("sv_running", "0", CVAR_ROM);
+		com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
+		com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
+		com_ansiColor = Cvar_Get( "com_ansiColor", "0", CVAR_ARCHIVE );
+
+		com_unfocused = Cvar_Get( "com_unfocused", "0", CVAR_ROM );
+		com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "0", CVAR_ARCHIVE );
+		com_minimized = Cvar_Get( "com_minimized", "0", CVAR_ROM );
+		com_maxfpsMinimized = Cvar_Get( "com_maxfpsMinimized", "0", CVAR_ARCHIVE );
+		com_abnormalExit = Cvar_Get( "com_abnormalExit", "0", CVAR_ROM );
+		com_busyWait = Cvar_Get("com_busyWait", "0", CVAR_ARCHIVE);
+		Cvar_Get("com_errorMessage", "", CVAR_ROM | CVAR_NORESTART);
+		Cvar_Get("com_errorCode", "", CVAR_ROM | CVAR_NORESTART);
+
+		com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
+		com_bootlogo = Cvar_Get("com_bootlogo", "1", CVAR_ARCHIVE);
+
+		s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
+		com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
+		com_gamename = Cvar_Get("com_gamename", GAMENAME_FOR_MASTER, CVAR_SERVERINFO | CVAR_INIT);
+		com_protocol = Cvar_Get("com_protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_INIT);
+#ifdef LEGACY_PROTOCOL
+		com_legacyprotocol = Cvar_Get("com_legacyprotocol", va("%i", PROTOCOL_LEGACY_VERSION), CVAR_INIT);
+
+		// Keep for compatibility with old mods / mods that haven't updated yet.
+		if(com_legacyprotocol->integer > 0)
+			Cvar_Get("protocol", com_legacyprotocol->string, CVAR_ROM);
+		else
+#endif
+			Cvar_Get("protocol", com_protocol->string, CVAR_ROM);
+
+		Sys_Init();
+
+		if( Sys_WritePIDFile( ) ) {
 #ifndef DEDICATED
-	CL_Init();
+			const char *message = "The last time " CLIENT_WINDOW_TITLE " ran, "
+				"it didn't exit properly. This may be due to inappropriate video "
+				"settings. Would you like to start with \"safe\" video settings?";
+
+			if( Sys_Dialog( DT_YES_NO, message, "Abnormal Exit" ) == DR_YES ) {
+				Cvar_Set( "com_abnormalExit", "1" );
+			}
+#endif
+		}
+
+		// Pick a random port value
+		Com_RandomBytes( (byte*)&qport, sizeof(int) );
+		Netchan_Init( qport & 0xffff );
+
+		SV_Init();
+
+		com_dedicated->modified = false;
+#ifndef DEDICATED
+		CL_Init();
 #endif
 
-	// set com_frameTime so that if a map is started on the
-	// command line it will still be able to count on com_frameTime
-	// being random enough for a serverid
-	com_frameTime = Com_Milliseconds();
+		// set com_frameTime so that if a map is started on the
+		// command line it will still be able to count on com_frameTime
+		// being random enough for a serverid
+		com_frameTime = Com_Milliseconds();
 
-	// add + commands from command line
-	if ( !Com_AddStartupCommands() ) {
-		// if the user didn't give any commands, run default action
-		if ( !com_dedicated->integer ) {
-			if( com_bootlogo->integer ) {
-				Cbuf_AddText ("cinematic idlogo.RoQ\n");
-				if( !com_introPlayed->integer ) {
-					Cvar_Set( com_introPlayed->name, "1" );
-					Cvar_Set( "nextmap", "cinematic intro.RoQ" );
+		// add + commands from command line
+		if ( !Com_AddStartupCommands() ) {
+			// if the user didn't give any commands, run default action
+			if ( !com_dedicated->integer ) {
+				if( com_bootlogo->integer ) {
+					Cbuf_AddText ("cinematic idlogo.RoQ\n");
+					if( !com_introPlayed->integer ) {
+						Cvar_Set( com_introPlayed->name, "1" );
+						Cvar_Set( "nextmap", "cinematic intro.RoQ" );
+					}
 				}
 			}
 		}
-	}
 
-	// start in full screen ui mode
-	Cvar_Set("r_uiFullScreen", "1");
+		// start in full screen ui mode
+		Cvar_Set("r_uiFullScreen", "1");
 
-	CL_StartHunkUsers( false );
+		CL_StartHunkUsers( false );
 
-	// make sure single player is off by default
-	Cvar_Set("ui_singlePlayerActive", "0");
+		// make sure single player is off by default
+		Cvar_Set("ui_singlePlayerActive", "0");
 
-	com_fullyInitialized = true;
+		com_fullyInitialized = true;
 
-	// always set the cvar, but only print the info if it makes sense.
-	Com_DetectAltivec();
+		// always set the cvar, but only print the info if it makes sense.
+		Com_DetectAltivec();
 #if idppc
-	Com_Printf ("Altivec support is %s\n", com_altivec->integer ? "enabled" : "disabled");
+		Com_Printf ("Altivec support is %s\n", com_altivec->integer ? "enabled" : "disabled");
 #endif
 
-/*
-	com_pipefile = Cvar_Get( "com_pipefile", "", CVAR_ARCHIVE|CVAR_LATCH );
-	if( com_pipefile->string[0] )
-	{
-		pipefile = FS_FCreateOpenPipeFile( com_pipefile->string );
-	}
-*/
+	/*
+		com_pipefile = Cvar_Get( "com_pipefile", "", CVAR_ARCHIVE|CVAR_LATCH );
+		if( com_pipefile->string[0] )
+		{
+			pipefile = FS_FCreateOpenPipeFile( com_pipefile->string );
+		}
+	*/
 
-	Com_Printf ("--- Common Initialization Complete ---\n");
+		Com_Printf ("--- Common Initialization Complete ---\n");
+	}
+	catch( const int code )
+	{
+		Com_CatchError (code);
+		Sys_Error ("Error during initialization: %s", Com_ErrorString (code));
+	}
 }
 
 #if 0
@@ -3095,203 +3077,204 @@ Com_Frame
 =================
 */
 void Com_Frame( void ) {
-
-	int		msec, minMsec;
-	int		timeVal, timeValSV;
-	static int	lastTime = 0, bias = 0;
+	try
+	{
+		int		msec, minMsec;
+		int		timeVal, timeValSV;
+		static int	lastTime = 0, bias = 0;
  
-	int		timeBeforeFirstEvents;
-	int		timeBeforeServer;
-	int		timeBeforeEvents;
-	int		timeBeforeClient;
-	int		timeAfter;
-  
+		int		timeBeforeFirstEvents;
+		int		timeBeforeServer;
+		int		timeBeforeEvents;
+		int		timeBeforeClient;
+		int		timeAfter;
 
-	if ( setjmp (abortframe) ) {
-		return;			// an ERR_DROP was thrown
-	}
+		timeBeforeFirstEvents =0;
+		timeBeforeServer =0;
+		timeBeforeEvents =0;
+		timeBeforeClient = 0;
+		timeAfter = 0;
 
-	timeBeforeFirstEvents =0;
-	timeBeforeServer =0;
-	timeBeforeEvents =0;
-	timeBeforeClient = 0;
-	timeAfter = 0;
+		// write config file if anything changed
+		Com_WriteConfiguration(); 
 
-	// write config file if anything changed
-	Com_WriteConfiguration(); 
+		//
+		// main event loop
+		//
+		if ( com_speeds->integer ) {
+			timeBeforeFirstEvents = Sys_Milliseconds ();
+		}
 
-	//
-	// main event loop
-	//
-	if ( com_speeds->integer ) {
-		timeBeforeFirstEvents = Sys_Milliseconds ();
-	}
-
-	// Figure out how much time we have
-	if(!com_timedemo->integer)
-	{
-		if(com_dedicated->integer)
-			minMsec = SV_FrameMsec();
-		else
+		// Figure out how much time we have
+		if(!com_timedemo->integer)
 		{
-			if(com_minimized->integer && com_maxfpsMinimized->integer > 0)
-				minMsec = 1000 / com_maxfpsMinimized->integer;
-			else if(com_unfocused->integer && com_maxfpsUnfocused->integer > 0)
-				minMsec = 1000 / com_maxfpsUnfocused->integer;
-			else if(com_maxfps->integer > 0)
-				minMsec = 1000 / com_maxfps->integer;
+			if(com_dedicated->integer)
+				minMsec = SV_FrameMsec();
 			else
-				minMsec = 1;
+			{
+				if(com_minimized->integer && com_maxfpsMinimized->integer > 0)
+					minMsec = 1000 / com_maxfpsMinimized->integer;
+				else if(com_unfocused->integer && com_maxfpsUnfocused->integer > 0)
+					minMsec = 1000 / com_maxfpsUnfocused->integer;
+				else if(com_maxfps->integer > 0)
+					minMsec = 1000 / com_maxfps->integer;
+				else
+					minMsec = 1;
 			
-			timeVal = com_frameTime - lastTime;
-			bias += timeVal - minMsec;
+				timeVal = com_frameTime - lastTime;
+				bias += timeVal - minMsec;
 			
-			if(bias > minMsec)
-				bias = minMsec;
+				if(bias > minMsec)
+					bias = minMsec;
 			
-			// Adjust minMsec if previous frame took too long to render so
-			// that framerate is stable at the requested value.
-			minMsec -= bias;
+				// Adjust minMsec if previous frame took too long to render so
+				// that framerate is stable at the requested value.
+				minMsec -= bias;
+			}
 		}
-	}
-	else
-		minMsec = 1;
+		else
+			minMsec = 1;
 
-	do
-	{
-		if(com_sv_running->integer)
+		do
 		{
-			timeValSV = SV_SendQueuedPackets();
+			if(com_sv_running->integer)
+			{
+				timeValSV = SV_SendQueuedPackets();
 			
-			timeVal = Com_TimeVal(minMsec);
+				timeVal = Com_TimeVal(minMsec);
 
-			if(timeValSV < timeVal)
-				timeVal = timeValSV;
-		}
-		else
-			timeVal = Com_TimeVal(minMsec);
+				if(timeValSV < timeVal)
+					timeVal = timeValSV;
+			}
+			else
+				timeVal = Com_TimeVal(minMsec);
 		
-		if(com_busyWait->integer || timeVal < 1)
-			NET_Sleep(0);
-		else
-			NET_Sleep(timeVal - 1);
-	} while(Com_TimeVal(minMsec));
+			if(com_busyWait->integer || timeVal < 1)
+				NET_Sleep(0);
+			else
+				NET_Sleep(timeVal - 1);
+		} while(Com_TimeVal(minMsec));
 	
-	lastTime = com_frameTime;
-	com_frameTime = Com_EventLoop();
+		lastTime = com_frameTime;
+		com_frameTime = Com_EventLoop();
 	
-	msec = com_frameTime - lastTime;
+		msec = com_frameTime - lastTime;
 
-	Cbuf_Execute ();
+		Cbuf_Execute ();
 
-	if (com_altivec->modified)
-	{
-		Com_DetectAltivec();
-		com_altivec->modified = false;
-	}
-
-	// mess with msec if needed
-	msec = Com_ModifyMsec(msec);
-
-	//
-	// server side
-	//
-	if ( com_speeds->integer ) {
-		timeBeforeServer = Sys_Milliseconds ();
-	}
-
-	SV_Frame( msec );
-
-	// if "dedicated" has been modified, start up
-	// or shut down the client system.
-	// Do this after the server may have started,
-	// but before the client tries to auto-connect
-	if ( com_dedicated->modified ) {
-		// get the latched value
-		Cvar_Get( "dedicated", "0", 0 );
-		com_dedicated->modified = false;
-		if ( !com_dedicated->integer ) {
-			SV_Shutdown( "dedicated set to 0" );
-			CL_FlushMemory();
+		if (com_altivec->modified)
+		{
+			Com_DetectAltivec();
+			com_altivec->modified = false;
 		}
-	}
+
+		// mess with msec if needed
+		msec = Com_ModifyMsec(msec);
+
+		//
+		// server side
+		//
+		if ( com_speeds->integer ) {
+			timeBeforeServer = Sys_Milliseconds ();
+		}
+
+		SV_Frame( msec );
+
+		// if "dedicated" has been modified, start up
+		// or shut down the client system.
+		// Do this after the server may have started,
+		// but before the client tries to auto-connect
+		if ( com_dedicated->modified ) {
+			// get the latched value
+			Cvar_Get( "dedicated", "0", 0 );
+			com_dedicated->modified = false;
+			if ( !com_dedicated->integer ) {
+				SV_Shutdown( "dedicated set to 0" );
+				CL_FlushMemory();
+			}
+		}
 
 #ifndef DEDICATED
-	//
-	// client system
-	//
-	//
-	// run event loop a second time to get server to client packets
-	// without a frame of latency
-	//
-	if ( com_speeds->integer ) {
-		timeBeforeEvents = Sys_Milliseconds ();
-	}
-	Com_EventLoop();
-	Cbuf_Execute ();
+		//
+		// client system
+		//
+		//
+		// run event loop a second time to get server to client packets
+		// without a frame of latency
+		//
+		if ( com_speeds->integer ) {
+			timeBeforeEvents = Sys_Milliseconds ();
+		}
+		Com_EventLoop();
+		Cbuf_Execute ();
 
 
-	//
-	// client side
-	//
-	if ( com_speeds->integer ) {
-		timeBeforeClient = Sys_Milliseconds ();
-	}
+		//
+		// client side
+		//
+		if ( com_speeds->integer ) {
+			timeBeforeClient = Sys_Milliseconds ();
+		}
 
-	CL_Frame( msec );
+		CL_Frame( msec );
 
-	if ( com_speeds->integer ) {
-		timeAfter = Sys_Milliseconds ();
-	}
+		if ( com_speeds->integer ) {
+			timeAfter = Sys_Milliseconds ();
+		}
 #else
-	if ( com_speeds->integer ) {
-		timeAfter = Sys_Milliseconds ();
-		timeBeforeEvents = timeAfter;
-		timeBeforeClient = timeAfter;
-	}
+		if ( com_speeds->integer ) {
+			timeAfter = Sys_Milliseconds ();
+			timeBeforeEvents = timeAfter;
+			timeBeforeClient = timeAfter;
+		}
 #endif
 
+		NET_FlushPacketQueue();
 
-	NET_FlushPacketQueue();
+		//
+		// report timing information
+		//
+		if ( com_speeds->integer ) {
+			int			all, sv, ev, cl;
 
-	//
-	// report timing information
-	//
-	if ( com_speeds->integer ) {
-		int			all, sv, ev, cl;
+			all = timeAfter - timeBeforeServer;
+			sv = timeBeforeEvents - timeBeforeServer;
+			ev = timeBeforeServer - timeBeforeFirstEvents + timeBeforeClient - timeBeforeEvents;
+			cl = timeAfter - timeBeforeClient;
+			sv -= time_game;
+			cl -= time_frontend + time_backend;
 
-		all = timeAfter - timeBeforeServer;
-		sv = timeBeforeEvents - timeBeforeServer;
-		ev = timeBeforeServer - timeBeforeFirstEvents + timeBeforeClient - timeBeforeEvents;
-		cl = timeAfter - timeBeforeClient;
-		sv -= time_game;
-		cl -= time_frontend + time_backend;
+			Com_Printf ("frame:%i all:%3i sv:%3i ev:%3i cl:%3i gm:%3i rf:%3i bk:%3i\n", 
+						 com_frameNumber, all, sv, ev, cl, time_game, time_frontend, time_backend );
+		}	
 
-		Com_Printf ("frame:%i all:%3i sv:%3i ev:%3i cl:%3i gm:%3i rf:%3i bk:%3i\n", 
-					 com_frameNumber, all, sv, ev, cl, time_game, time_frontend, time_backend );
-	}	
-
-	//
-	// trace optimization tracking
-	//
-	if ( com_showtrace->integer ) {
+		//
+		// trace optimization tracking
+		//
+		if ( com_showtrace->integer ) {
 	
-		extern	int c_traces, c_brush_traces, c_patch_traces;
-		extern	int	c_pointcontents;
+			extern	int c_traces, c_brush_traces, c_patch_traces;
+			extern	int	c_pointcontents;
 
-		Com_Printf ("%4i traces  (%ib %ip) %4i points\n", c_traces,
-			c_brush_traces, c_patch_traces, c_pointcontents);
-		c_traces = 0;
-		c_brush_traces = 0;
-		c_patch_traces = 0;
-		c_pointcontents = 0;
-	}
+			Com_Printf ("%4i traces  (%ib %ip) %4i points\n", c_traces,
+				c_brush_traces, c_patch_traces, c_pointcontents);
+			c_traces = 0;
+			c_brush_traces = 0;
+			c_patch_traces = 0;
+			c_pointcontents = 0;
+		}
 
 #if 0
-	Com_ReadFromPipe( );
+		Com_ReadFromPipe( );
 #endif
 
-	com_frameNumber++;
+		com_frameNumber++;
+	}
+	catch( const int code )
+	{
+		Com_CatchError (code);
+		Com_Printf ("%s\n", Com_ErrorString (code));
+	}
 }
 
 /*
@@ -3361,15 +3344,15 @@ static void FindMatches( const char *s ) {
 	}
 
 	// cut shortestMatch to the amount common with s
-	for ( i = 0 ; shortestMatch[i] ; i++ ) {
-		if ( i >= strlen( s ) ) {
+	for ( i = 0 ; s[i] ; i++ ) {
+		if ( tolower(shortestMatch[i]) != tolower(s[i]) ) {
 			shortestMatch[i] = 0;
 			break;
 		}
-
-		if ( tolower(shortestMatch[i]) != tolower(s[i]) ) {
-			shortestMatch[i] = 0;
-		}
+	}
+	if (!s[i])
+	{
+		shortestMatch[i] = 0;
 	}
 }
 

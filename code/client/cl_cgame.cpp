@@ -470,7 +470,7 @@ void setupCGameImport( void ) {
 	cgameImport.Key_SetCatcher              = CG_Key_SetCatcher;
 	cgameImport.Key_GetKey                  = Key_GetKey;
 	cgameImport.Com_RealTime                = Com_RealTime;
-	cgameImport.Sys_SnapVector              = Q_SnapVector;
+	cgameImport.Sys_SnapVector              = Sys_SnapVector;
 	cgameImport.CIN_PlayCinematic           = CIN_PlayCinematic;
 	cgameImport.CIN_StopCinematic           = CIN_StopCinematic;
 	cgameImport.CIN_RunCinematic            = CIN_RunCinematic;

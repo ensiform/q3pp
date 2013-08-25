@@ -890,6 +890,8 @@ NON-PORTABLE SYSTEM SERVICES
 
 void	Sys_Init (void);
 
+extern "C" void Sys_SnapVector(float *v);
+
 // general development dll loading for virtual machine testing
 //void	Sys_UnloadDll( void *dllHandle );
 
