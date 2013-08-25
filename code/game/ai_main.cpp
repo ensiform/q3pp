@@ -1646,7 +1646,7 @@ int BotInitLibrary(void) {
 	if (strlen(buf)) botlib->BotLibVarSet("homedir", buf);
 	//
 #ifdef MISSIONPACK
-	botlib->ai.BotLibDefine("MISSIONPACK");
+	botlib->PC_AddGlobalDefine("MISSIONPACK");
 #endif
 	//setup the bot library
 	return botlib->BotLibSetup();

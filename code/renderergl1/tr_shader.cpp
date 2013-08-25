@@ -2931,15 +2931,17 @@ static void ScanAndLoadShaderFiles( void )
 	// load and parse shader files
 	for ( i = 0; i < numShaderFiles; i++ )
 	{
-		ri->Printf( PRINT_DEVELOPER, "...loading '%s'\n", shaderFiles->GetName( i ) );
-		summand = og::FS->LoadFile( shaderFiles->GetName( i ), (byte **)&buffers[i] );
+		og::String filename = shaderFiles->GetName( i );
+
+		ri->Printf( PRINT_DEVELOPER, "...loading '%s'\n", filename.c_str() );
+		summand = og::FS->LoadFile( filename.c_str(), (byte **)&buffers[i] );
 		
 		if ( !buffers[i] )
-			ri->Error( ERR_DROP, "Couldn't load %s", shaderFiles->GetName( i ) );
+			ri->Error( ERR_DROP, "Couldn't load %s", filename.c_str() );
 		
 		// Do a simple check on the shader structure in that file to make sure one bad shader file cannot fuck up all other shaders.
 		p = buffers[i];
-		COM_BeginParseSession(filename);
+		COM_BeginParseSession(filename.c_str());
 		while(1)
 		{
 			token = COM_ParseExt(&p, true);
@@ -2954,7 +2956,7 @@ static void ScanAndLoadShaderFiles( void )
 			if(token[0] != '{' || token[1] != '\0')
 			{
 				ri->Printf(PRINT_WARNING, "WARNING: Ignoring shader file %s. Shader \"%s\" on line %d missing opening brace",
-							filename, shaderName, shaderLine);
+							filename.c_str(), shaderName, shaderLine);
 				if (token[0])
 				{
 					ri->Printf(PRINT_WARNING, " (found \"%s\" on line %d)", token, COM_GetCurrentParseLine());

@@ -2510,7 +2510,7 @@ static int CollapseStagesToGLSL(void)
 					pStage->glslShaderIndex |= LIGHTDEF_USE_DELUXEMAP;
 				pStage->bundle[TB_LIGHTMAP] = pStage->bundle[TB_DIFFUSEMAP];
 				pStage->bundle[TB_DIFFUSEMAP].image[0] = tr.whiteImage;
-				pStage->bundle[TB_DIFFUSEMAP].isLightmap = qfalse;
+				pStage->bundle[TB_DIFFUSEMAP].isLightmap = false;
 			}
 		}
 	}
@@ -3578,7 +3578,7 @@ static void ScanAndLoadShaderFiles( void )
 		
 		// Do a simple check on the shader structure in that file to make sure one bad shader file cannot fuck up all other shaders.
 		p = buffers[i];
-		COM_BeginParseSession(filename);
+		COM_BeginParseSession(filename.c_str());
 		while(1)
 		{
 			token = COM_ParseExt(&p, true);
@@ -3593,7 +3593,7 @@ static void ScanAndLoadShaderFiles( void )
 			if(token[0] != '{' || token[1] != '\0')
 			{
 				ri->Printf(PRINT_WARNING, "WARNING: Ignoring shader file %s. Shader \"%s\" on line %d missing opening brace",
-							filename, shaderName, shaderLine);
+							filename.c_str(), shaderName, shaderLine);
 				if (token[0])
 				{
 					ri->Printf(PRINT_WARNING, " (found \"%s\" on line %d)", token, COM_GetCurrentParseLine());
@@ -3607,7 +3607,7 @@ static void ScanAndLoadShaderFiles( void )
 			if(!SkipBracedSection(&p, 1))
 			{
 				ri->Printf(PRINT_WARNING, "WARNING: Ignoring shader file %s. Shader \"%s\" on line %d missing closing brace.\n",
-							filename, shaderName, shaderLine);
+							filename.c_str(), shaderName, shaderLine);
 				og::FS->FreeFile( (byte *)buffers[i] );
 				buffers[i] = NULL;
 				break;

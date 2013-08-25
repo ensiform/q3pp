@@ -223,7 +223,7 @@ static void CG_VoiceTellTarget_f( void ) {
 
 	trap->Cmd_Args( message, 128 );
 	Com_sprintf( command, 128, "vtell %i %s", clientNum, message );
-	trap->SendClientCommand( command );
+	trap->SendClientCommand( command, false );
 }
 
 static void CG_VoiceTellAttacker_f( void ) {
@@ -238,7 +238,7 @@ static void CG_VoiceTellAttacker_f( void ) {
 
 	trap->Cmd_Args( message, 128 );
 	Com_sprintf( command, 128, "vtell %i %s", clientNum, message );
-	trap->SendClientCommand( command );
+	trap->SendClientCommand( command, false );
 }
 
 static void CG_NextTeamMember_f( void ) {
@@ -285,7 +285,7 @@ static void CG_ConfirmOrder_f (void ) {
 	trap->SendConsoleCommand(va("cmd vtell %d %s\n", cgs.acceptLeader, VOICECHAT_YES));
 	trap->SendConsoleCommand("+button5; wait; -button5");
 	if (cg.time < cgs.acceptOrderTime) {
-		trap->SendClientCommand(va("teamtask %d\n", cgs.acceptTask));
+		trap->SendClientCommand(va("teamtask %d\n", cgs.acceptTask), false);
 		cgs.acceptOrderTime = 0;
 	}
 }
@@ -304,37 +304,37 @@ static void CG_TaskOffense_f (void ) {
 	} else {
 		trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONOFFENSE));
 	}
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_OFFENSE));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_OFFENSE), false);
 }
 
 static void CG_TaskDefense_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONDEFENSE));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_DEFENSE));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_DEFENSE), false);
 }
 
 static void CG_TaskPatrol_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONPATROL));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_PATROL));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_PATROL), false);
 }
 
 static void CG_TaskCamp_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONCAMPING));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_CAMP));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_CAMP), false);
 }
 
 static void CG_TaskFollow_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONFOLLOW));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_FOLLOW));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_FOLLOW), false);
 }
 
 static void CG_TaskRetrieve_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONRETURNFLAG));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_RETRIEVE));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_RETRIEVE), false);
 }
 
 static void CG_TaskEscort_f (void ) {
 	trap->SendConsoleCommand(va("cmd vsay_team %s\n", VOICECHAT_ONFOLLOWCARRIER));
-	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_ESCORT));
+	trap->SendClientCommand(va("teamtask %d\n", TEAMTASK_ESCORT), false);
 }
 
 static void CG_TaskOwnFlag_f (void ) {
@@ -371,7 +371,7 @@ static void CG_TaskSuicide_f (void ) {
 	}
 
 	Com_sprintf( command, 128, "tell %i suicide", clientNum );
-	trap->SendClientCommand( command );
+	trap->SendClientCommand( command, false );
 }
 
 

@@ -3362,7 +3362,7 @@ void RE_LoadWorldMap( const char *name ) {
 		w = &s_worldData;
 
 		lightGridSize = w->lightGridBounds[0] * w->lightGridBounds[1] * w->lightGridBounds[2];
-		primaryLightGrid = ri.Malloc(lightGridSize * sizeof(*primaryLightGrid));
+		primaryLightGrid = (uint8_t *)ri->Malloc(lightGridSize * sizeof(*primaryLightGrid));
 
 		memset(primaryLightGrid, 0, lightGridSize * sizeof(*primaryLightGrid));
 
@@ -3408,7 +3408,7 @@ void RE_LoadWorldMap( const char *name ) {
 		if (0)
 		{
 			int i;
-			byte *buffer = ri.Malloc(w->lightGridBounds[0] * w->lightGridBounds[1] * 3 + 18);
+			byte *buffer = (byte *)ri->Malloc(w->lightGridBounds[0] * w->lightGridBounds[1] * 3 + 18);
 			byte *out;
 			uint8_t *in;
 			char fileName[MAX_QPATH];

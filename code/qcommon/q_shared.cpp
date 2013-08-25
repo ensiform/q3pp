@@ -568,7 +568,7 @@ Skips until a matching close brace is found.
 Internal brace depths are properly skipped.
 =================
 */
-qboolean SkipBracedSection (char **program, int depth) {
+bool SkipBracedSection (char **program, int depth) {
 	char			*token;
 
 	do {

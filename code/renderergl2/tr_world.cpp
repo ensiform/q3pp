@@ -37,7 +37,7 @@ static bool	R_CullSurface( msurface_t *surf ) {
 	}
 
 	if ( *surf->data == SF_GRID && r_nocurves->integer ) {
-		return qtrue;
+		return true;
 	}
 
 	if (surf->cullinfo.type & CULLINFO_PLANE)
