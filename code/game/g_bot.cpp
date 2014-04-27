@@ -557,6 +557,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	botinfo = G_GetBotInfoByName( name );
 	if ( !botinfo ) {
 		G_Printf( S_COLOR_RED "Error: Bot '%s' not defined\n", name );
+		trap->BotFreeClient( clientNum );
 		return;
 	}
 
@@ -628,6 +629,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	s = Info_ValueForKey(botinfo, "aifile");
 	if (!*s ) {
 		trap->Print( S_COLOR_RED "Error: bot has no aifile specified\n" );
+		trap->BotFreeClient( clientNum );
 		return;
 	}
 	Info_SetValueForKey( userinfo, "characterfile", s );

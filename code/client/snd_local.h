@@ -58,6 +58,7 @@ typedef struct sfx_s {
 	bool		soundCompressed;		// not in Memory
 	int				soundCompressionMethod;	
 	int 			soundLength;
+	int			soundChannels;
 	char 			soundName[MAX_QPATH];
 	int				lastTimeUsed;
 	struct sfx_s	*next;

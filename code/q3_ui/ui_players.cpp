@@ -996,7 +996,7 @@ static bool UI_ParseAnimationFile( const char *filename, animation_t *animations
 			break;
 		}
 
-		Com_Printf( "unknown token '%s' is %s\n", token, filename );
+		Com_Printf( "unknown token '%s' in %s\n", token, filename );
 	}
 
 	// read information for each frame

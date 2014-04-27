@@ -1280,7 +1280,7 @@ int BotAIShutdownClient(int client, bool restart) {
 	}
 
 	botlib->ai.BotFreeMoveState(bs->ms);
-	//free the goal state`			
+	//free the goal state
 	botlib->ai.BotFreeGoalState(bs->gs);
 	//free the chat file
 	botlib->ai.BotFreeChatState(bs->cs);

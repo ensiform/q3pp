@@ -554,6 +554,7 @@ void	FS_Restart( int checksumFeed );
 
 bool FS_FindDll( const char *filename, og::String &path );
 
+// seek on a file (doesn't work for zip files!!!!!!!!)
 bool FS_CheckDirTraversal(const char *checkdir);
 //bool FS_idPak(char *pak, char *base, int numPaks);
 
@@ -892,21 +893,6 @@ void	Sys_Init (void);
 
 extern "C" void Sys_SnapVector(float *v);
 
-// general development dll loading for virtual machine testing
-//void	Sys_UnloadDll( void *dllHandle );
-
-void	Sys_UnloadGame( void );
-void	*Sys_GetGameAPI( void *parms );
-
-void	Sys_UnloadCGame( void );
-void	*Sys_GetCGameAPI( void );
-
-void	Sys_UnloadUI( void );
-void	*Sys_GetUIAPI( void );
-
-//bot libraries
-void	Sys_UnloadBotLib( void );
-void	*Sys_GetBotLibAPI( void *parms );
 
 char	*Sys_GetCurrentUser( void );
 

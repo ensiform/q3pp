@@ -197,7 +197,7 @@ typedef struct client_s {
 #endif
 
 	int				oldServerTime;
-	bool		csUpdated[MAX_CONFIGSTRINGS+1];	
+	bool			csUpdated[MAX_CONFIGSTRINGS];
 	
 #ifdef LEGACY_PROTOCOL
 	bool		compat;
