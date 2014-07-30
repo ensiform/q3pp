@@ -224,7 +224,8 @@ int Pickup_Ammo (gentity_t *ent, gentity_t *other)
 		quantity = ent->item->quantity;
 	}
 
-	Add_Ammo (other, ent->item->giTag, quantity);
+	if( other->client->ps.ammo[ent->item->giTag] < 200 )
+		Add_Ammo (other, ent->item->giTag, quantity);
 
 	return RESPAWN_AMMO;
 }
@@ -259,10 +260,11 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 	// add the weapon
 	other->client->ps.stats[STAT_WEAPONS] |= ( 1 << ent->item->giTag );
 
-	Add_Ammo( other, ent->item->giTag, quantity );
-
-	if (ent->item->giTag == WP_GRAPPLING_HOOK)
+	if( ent->item->giTag == WP_GAUNTLET || ent->item->giTag == WP_GRAPPLING_HOOK )
 		other->client->ps.ammo[ent->item->giTag] = -1; // unlimited ammo
+	else if( quantity > 0 && other->client->ps.ammo[ent->item->giTag] < 200 ) {
+		Add_Ammo( other, ent->item->giTag, quantity );
+	}
 
 	// team deathmatch has slow weapon respawns
 	if ( g_gametype.integer == GT_TEAM ) {
@@ -281,7 +283,7 @@ int Pickup_Health (gentity_t *ent, gentity_t *other) {
 
 	// small and mega healths will go over the max
 #ifdef MISSIONPACK
-	if( bg_itemlist[other->client->ps.stats[STAT_PERSISTANT_POWERUP]].giTag == PW_GUARD ) {
+	if( other->client && bg_itemlist[other->client->ps.stats[STAT_PERSISTANT_POWERUP]].giTag == PW_GUARD ) {
 		max = other->client->ps.stats[STAT_MAX_HEALTH];
 	}
 	else

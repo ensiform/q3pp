@@ -248,7 +248,9 @@ void Cmd_Give_f (gentity_t *ent)
 
 	if (give_all || Q_stricmp( name, "health") == 0)
 	{
-		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+		if( ent->health < ent->client->ps.stats[STAT_MAX_HEALTH] )
+			ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+
 		if (!give_all)
 			return;
 	}
@@ -263,22 +265,66 @@ void Cmd_Give_f (gentity_t *ent)
 
 	if (give_all || Q_stricmp(name, "ammo") == 0)
 	{
-		for ( i = 0 ; i < MAX_WEAPONS ; i++ ) {
-			ent->client->ps.ammo[i] = 999;
+		for( i = WP_MACHINEGUN; i < MAX_WEAPONS; i++ ) {
+			if( i != WP_GRAPPLING_HOOK )
+				ent->client->ps.ammo[i] = 999;
 		}
+
 		if (!give_all)
 			return;
 	}
 
 	if (give_all || Q_stricmp(name, "armor") == 0)
 	{
+#ifdef MISSIONPACK
+		if( bg_itemlist[ent->client->ps.stats[STAT_PERSISTANT_POWERUP]].giTag == PW_SCOUT )
+			return;
+#endif
+
 		ent->client->ps.stats[STAT_ARMOR] = 200;
 
 		if (!give_all)
 			return;
 	}
 
-	if (Q_stricmp(name, "excellent") == 0) {
+	// Quick 100s powerups without sound spam
+	if( Q_stricmp( name, "quad" ) == 0 ) {
+		ent->client->ps.powerups[PW_QUAD] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "haste" ) == 0 ) {
+		ent->client->ps.powerups[PW_HASTE] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "invis" ) == 0 ) {
+		ent->client->ps.powerups[PW_INVIS] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "fly" ) == 0 ) {
+		ent->client->ps.powerups[PW_FLIGHT] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "regen" ) == 0 ) {
+		ent->client->ps.powerups[PW_REGEN] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "suit" ) == 0 ) {
+		ent->client->ps.powerups[PW_BATTLESUIT] = level.time + 100 * 1000;
+		if( !give_all )
+			return;
+	}
+
+	if( Q_stricmp( name, "excellent" ) == 0 ) {
 		ent->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 		return;
 	}
@@ -306,11 +352,19 @@ void Cmd_Give_f (gentity_t *ent)
 			return;
 		}
 
+		if( it->giType == IT_TEAM ) {
+			return;
+		}
+
 		it_ent = G_Spawn();
 		VectorCopy( ent->r.currentOrigin, it_ent->s.origin );
 		it_ent->classname = it->classname;
 		G_SpawnItem (it_ent, it);
+		if ( !it_ent )
+			return;
 		FinishSpawningItem(it_ent );
+		if ( !it_ent )
+			return;
 		memset( &trace, 0, sizeof( trace ) );
 		Touch_Item (it_ent, ent, &trace);
 		if (it_ent->inuse) {
@@ -662,8 +716,9 @@ void Cmd_Team_f( gentity_t *ent ) {
 	int			oldTeam;
 	char		s[MAX_TOKEN_CHARS];
 
+	oldTeam = ent->client->sess.sessionTeam;
+
 	if ( trap->Cmd_Argc() != 2 ) {
-		oldTeam = ent->client->sess.sessionTeam;
 		switch ( oldTeam ) {
 		case TEAM_BLUE:
 			trap->SendServerCommand( ent-g_entities, "print \"Blue team\n\"" );
@@ -678,6 +733,18 @@ void Cmd_Team_f( gentity_t *ent ) {
 			trap->SendServerCommand( ent-g_entities, "print \"Spectator team\n\"" );
 			break;
 		}
+
+		return;
+	}
+
+#ifdef MISSIONPACK
+	if( g_singlePlayer.integer && ent->client->pers.localClient && oldTeam != TEAM_SPECTATOR ) {
+		trap->SendServerCommand( ent - g_entities, "print \"May not switch teams in single player.\n\"" );
+		return;
+	}
+#endif
+	if( g_gametype.integer == GT_SINGLE_PLAYER && ent->client->pers.localClient && oldTeam != TEAM_SPECTATOR ) {
+		trap->SendServerCommand( ent - g_entities, "print \"May not switch teams in single player.\n\"" );
 		return;
 	}
 
@@ -696,7 +763,8 @@ void Cmd_Team_f( gentity_t *ent ) {
 
 	SetTeam( ent, s );
 
-	ent->client->switchTeamTime = level.time + 5000;
+	if ( oldTeam != ent->client->sess.sessionTeam )
+		ent->client->switchTeamTime = level.time + 5000;
 }
 
 
@@ -708,6 +776,11 @@ Cmd_Follow_f
 void Cmd_Follow_f( gentity_t *ent ) {
 	int		i;
 	char	arg[MAX_TOKEN_CHARS];
+
+	if ( ent->client->sess.spectatorState == SPECTATOR_NOT && ent->client->switchTeamTime > level.time ) {
+		trap->SendServerCommand( ent - g_entities, "print \"May not switch teams more than once per 5 seconds.\n\"" );
+		return;
+	}
 
 	if ( trap->Cmd_Argc() != 2 ) {
 		if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW ) {
@@ -741,6 +814,8 @@ void Cmd_Follow_f( gentity_t *ent ) {
 	// first set them to spectator
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		SetTeam( ent, "spectator" );
+		if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR )
+			ent->client->switchTeamTime = level.time + 5000;
 	}
 
 	ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -756,6 +831,11 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 	int		clientnum;
 	int		original;
 
+	if ( ent->client->sess.spectatorState == SPECTATOR_NOT && ent->client->switchTeamTime > level.time ) {
+		trap->SendServerCommand( ent - g_entities, "print \"May not switch teams more than once per 5 seconds.\n\"" );
+		return;
+	}
+
 	// if they are playing a tournement game, count as a loss
 	if ( (g_gametype.integer == GT_TOURNAMENT )
 		&& ent->client->sess.sessionTeam == TEAM_FREE ) {
@@ -764,6 +844,8 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 	// first set them to spectator
 	if ( ent->client->sess.spectatorState == SPECTATOR_NOT ) {
 		SetTeam( ent, "spectator" );
+		if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR )
+			ent->client->switchTeamTime = level.time + 5000;
 	}
 
 	if ( dir != 1 && dir != -1 ) {
@@ -1169,8 +1251,6 @@ static void Cmd_VoiceTaunt_f( gentity_t *ent ) {
 	G_Voice( ent, NULL, SAY_ALL, VOICECHAT_TAUNT, false );
 }
 #endif
-
-
 
 static char	*gc_orders[] = {
 	"hold your position",
@@ -1578,7 +1658,6 @@ void Cmd_TeamVote_f( gentity_t *ent ) {
 	// for players entering or leaving
 }
 
-
 /*
 =================
 Cmd_SetViewpos_f
@@ -1609,8 +1688,6 @@ void Cmd_SetViewpos_f( gentity_t *ent ) {
 
 	TeleportPlayer( ent, origin, angles );
 }
-
-
 
 /*
 =================
@@ -1647,7 +1724,6 @@ void ClientCommand( int clientNum ) {
 	if (!ent->client || ent->client->pers.connected != CON_CONNECTED) {
 		return;		// not fully in game yet
 	}
-
 
 	trap->Cmd_Argv( 0, cmd, sizeof( cmd ) );
 

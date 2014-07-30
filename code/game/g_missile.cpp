@@ -144,6 +144,12 @@ void ProximityMine_Trigger( gentity_t *trigger, gentity_t *other, trace_t *trace
 			return;
 		}
 	}
+	else {
+		// don't triger self mines
+		if( trigger->parent->s.generic1 == other->s.number ) {
+			return;
+		}
+	}
 
 	// ok, now check for ability to damage so we don't get triggered thru walls, closed doors, etc...
 	if( !CanDamage( other, trigger->s.pos.trBase ) ) {
@@ -212,7 +218,9 @@ static void ProximityMine_ExplodeOnPlayer( gentity_t *mine ) {
 	if ( player->client->invulnerabilityTime > level.time ) {
 		G_Damage( player, mine->parent, mine->parent, vec3_origin, mine->s.origin, 1000, DAMAGE_NO_KNOCKBACK, MOD_JUICED );
 		player->client->invulnerabilityTime = 0;
-		G_TempEntity( player->client->ps.origin, EV_JUICED );
+		// Only play event if we actually died, in case of cheaters or some other powerup damage blocker :?
+		if( player->health <= 0 )
+			G_TempEntity( player->client->ps.origin, EV_JUICED );
 	}
 	else {
 		G_SetOrigin( mine, player->s.pos.trBase );
