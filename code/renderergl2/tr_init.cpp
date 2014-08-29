@@ -49,6 +49,8 @@ cvar_t	*r_railSegmentLength;
 cvar_t	*r_verbose;
 cvar_t	*r_ignore;
 
+cvar_t  *r_displayRefresh;
+
 cvar_t	*r_detailTextures;
 
 cvar_t	*r_znear;
@@ -108,6 +110,8 @@ cvar_t  *r_mergeLeafSurfaces;
 
 cvar_t  *r_cameraExposure;
 
+cvar_t  *r_externalGLSL;
+
 cvar_t  *r_hdr;
 cvar_t  *r_floatLightmap;
 cvar_t  *r_postProcess;
@@ -143,7 +147,6 @@ cvar_t  *r_baseNormalY;
 cvar_t  *r_baseParallax;
 cvar_t  *r_baseSpecular;
 cvar_t  *r_baseGloss;
-cvar_t  *r_recalcMD3Normals;
 cvar_t  *r_mergeLightmaps;
 cvar_t  *r_dlightMode;
 cvar_t  *r_pshadowDist;
@@ -1165,6 +1168,8 @@ void R_Register( void )
 	r_greyscale = ri->Cvar_Get("r_greyscale", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	ri->Cvar_CheckRange(r_greyscale, 0, 1, false);
 
+	r_externalGLSL = ri->Cvar_Get( "r_externalGLSL", "0", CVAR_LATCH );
+
 	r_hdr = ri->Cvar_Get( "r_hdr", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_floatLightmap = ri->Cvar_Get( "r_floatLightmap", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_postProcess = ri->Cvar_Get( "r_postProcess", "1", CVAR_ARCHIVE );
@@ -1203,7 +1208,6 @@ void R_Register( void )
 	r_baseGloss = ri->Cvar_Get( "r_baseGloss", "0.3", CVAR_ARCHIVE | CVAR_LATCH );
 	r_dlightMode = ri->Cvar_Get( "r_dlightMode", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_pshadowDist = ri->Cvar_Get( "r_pshadowDist", "128", CVAR_ARCHIVE );
-	r_recalcMD3Normals = ri->Cvar_Get( "r_recalcMD3Normals", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_mergeLightmaps = ri->Cvar_Get( "r_mergeLightmaps", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_imageUpsample = ri->Cvar_Get( "r_imageUpsample", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_imageUpsampleMaxSize = ri->Cvar_Get( "r_imageUpsampleMaxSize", "1024", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1228,6 +1232,8 @@ void R_Register( void )
 	//
 	// temporary latched variables that can only change over a restart
 	//
+	r_displayRefresh = ri->Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	ri->Cvar_CheckRange( r_displayRefresh, 0, 200, qtrue );
 	r_fullbright = ri->Cvar_Get ("r_fullbright", "0", CVAR_LATCH|CVAR_CHEAT );
 	r_mapOverBrightBits = ri->Cvar_Get ("r_mapOverBrightBits", "2", CVAR_LATCH );
 	r_intensity = ri->Cvar_Get ("r_intensity", "1", CVAR_LATCH );

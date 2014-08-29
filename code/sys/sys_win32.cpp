@@ -191,33 +191,6 @@ char *Sys_GetCurrentUser( void )
 	return s_userName;
 }
 
-/*
-================
-Sys_GetClipboardData
-================
-*/
-char *Sys_GetClipboardData( void )
-{
-	char *data = NULL;
-	char *cliptext;
-
-	if ( OpenClipboard( NULL ) != 0 ) {
-		HANDLE hClipboardData;
-
-		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
-			if ( ( cliptext = (char *)GlobalLock( hClipboardData ) ) != 0 ) {
-				data = (char *)Z_Malloc( GlobalSize( hClipboardData ) + 1 );
-				Q_strncpyz( data, cliptext, GlobalSize( hClipboardData ) );
-				GlobalUnlock( hClipboardData );
-				
-				strtok( data, "\n\r\b" );
-			}
-		}
-		CloseClipboard();
-	}
-	return data;
-}
-
 #define MEM_THRESHOLD 96*1024*1024
 
 /*
@@ -644,10 +617,6 @@ dialogResult_t Sys_Dialog( dialogType_t type, const char *message, const char *t
 	}
 }
 
-#ifndef DEDICATED
-static bool SDL_VIDEODRIVER_externallySet = false;
-#endif
-
 /*
 ==============
 Sys_GLimpSafeInit
@@ -657,14 +626,6 @@ Windows specific "safe" GL implementation initialisation
 */
 void Sys_GLimpSafeInit( void )
 {
-#ifndef DEDICATED
-	if( !SDL_VIDEODRIVER_externallySet )
-	{
-		// Here, we want to let SDL decide what do to unless
-		// explicitly requested otherwise
-		_putenv( "SDL_VIDEODRIVER=" );
-	}
-#endif
 }
 
 /*
@@ -676,25 +637,6 @@ Windows specific GL implementation initialisation
 */
 void Sys_GLimpInit( void )
 {
-#ifndef DEDICATED
-	if( !SDL_VIDEODRIVER_externallySet )
-	{
-		// It's a little bit weird having in_mouse control the
-		// video driver, but from ioq3's point of view they're
-		// virtually the same except for the mouse input anyway
-		if( Cvar_VariableIntegerValue( "in_mouse" ) == -1 )
-		{
-			// Use the windib SDL backend, which is closest to
-			// the behaviour of idq3 with in_mouse set to -1
-			_putenv( "SDL_VIDEODRIVER=windib" );
-		}
-		else
-		{
-			// Use the DirectX SDL backend
-			_putenv( "SDL_VIDEODRIVER=directx" );
-		}
-	}
-#endif
 }
 
 /*
@@ -708,21 +650,11 @@ void Sys_PlatformInit( void )
 {
 #ifndef DEDICATED
 	TIMECAPS ptc;
-	const char *SDL_VIDEODRIVER = getenv( "SDL_VIDEODRIVER" );
 #endif
 
 	Sys_SetFloatEnv();
 
 #ifndef DEDICATED
-	if( SDL_VIDEODRIVER )
-	{
-		Com_Printf( "SDL_VIDEODRIVER is externally set to \"%s\", "
-				"in_mouse -1 will have no effect\n", SDL_VIDEODRIVER );
-		SDL_VIDEODRIVER_externallySet = true;
-	}
-	else
-		SDL_VIDEODRIVER_externallySet = false;
-
 	if(timeGetDevCaps(&ptc, sizeof(ptc)) == MMSYSERR_NOERROR)
 	{
 		timerResolution = ptc.wPeriodMin;

@@ -3087,7 +3087,6 @@ void R_MergeLeafSurfaces(void)
 	R_IssuePendingRenderCommands();
 
 	// actually merge surfaces
-	numIboIndexes = 0;
 	mergedSurfIndex = 0;
 	mergedSurf = s_worldData.mergedSurfaces;
 	for (i = 0; i < numWorldSurfaces; i++)
@@ -3308,6 +3307,9 @@ void RE_LoadWorldMap( const char *name ) {
 	tr.toneMinAvgMaxLevel[0] = -8.0f;
 	tr.toneMinAvgMaxLevel[1] = -2.0f;
 	tr.toneMinAvgMaxLevel[2] = 0.0f;
+
+	// reset last cascade sun direction so last shadow cascade is rerendered
+	VectorClear(tr.lastCascadeSunDirection);
 
 	tr.worldMapLoaded = true;
 

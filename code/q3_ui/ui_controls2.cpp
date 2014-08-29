@@ -210,14 +210,14 @@ typedef struct
 	menuradiobutton_s	joyenable;
 	menuslider_s		joythreshold;
 	int					section;
-	bool			waitingforkey;
+	bool				waitingforkey;
 	char				playerModel[64];
 	vec3_t				playerViewangles;
 	vec3_t				playerMoveangles;
 	int					playerLegs;
 	int					playerTorso;
-	int					playerWeapon;
-	bool			playerChat;
+	weapon_t			playerWeapon;
+	bool				playerChat;
 
 	menubitmap_s		back;
 	menutext_s			name;
@@ -434,7 +434,7 @@ static void Controls_UpdateModel( int anim ) {
 	s_controls.playerMoveangles[YAW] = s_controls.playerViewangles[YAW];
 	s_controls.playerLegs		     = LEGS_IDLE;
 	s_controls.playerTorso			 = TORSO_STAND;
-	s_controls.playerWeapon			 = -1;
+	s_controls.playerWeapon			 = WP_NUM_WEAPONS;
 	s_controls.playerChat			 = false;
 
 	switch( anim ) {
